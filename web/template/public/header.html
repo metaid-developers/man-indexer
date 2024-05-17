@@ -1,0 +1,58 @@
+{{define "public/header.html"}}
+<header class="u-header">
+  <div class="u-header-left">
+    <a class="u-header-logo" href="index.html">
+      <div class="u-logo-desktop" style="margin-top: 10px;">
+        <div style="float: left;"><img src="/assets/img/logo.png" width="45" alt="metaid man"></div>
+        <div style="float: left;position: relative;;">
+          <div class="title">MetaID App Node</div>
+          <div class="version" style="position: absolute;top:-5px;right:5px;">alpha</div>
+        </div>
+      </div>
+      <img class="img-fluid u-logo-mobile" src="/assets/img/logo.png" width="50" alt="Man">
+    </a>
+  </div>
+
+  <div class="u-header-middle">
+    <a class="js-sidebar-invoker u-sidebar-invoker" href="#!" data-is-close-all-except-this="true"
+       data-target="#sidebar">
+      <div class="sidebar-icon">
+        <svg class="icon" aria-hidden="true">
+          <use xlink:href="#icon-menu"></use>
+        </svg>
+      </div>
+    </a>
+
+    <div class="u-header-search" data-search-mobile-invoker="#headerSearchMobileInvoker"
+         data-search-target="#headerSearch">
+      <a id="headerSearchMobileInvoker" class="btn btn-link input-group-prepend u-header-search__mobile-invoker"
+         href="#!">
+        <div class="sidebar-icon">
+          <svg class="icon" aria-hidden="true">
+            <use xlink:href="#icon-fenxiang"></use>
+          </svg>
+        </div>
+      </a>
+
+      <div id="headerSearch" class="u-header-search-form">
+        <form>
+          <div class="input-group">
+            <input class="form-control u-header-search__field" type="search" placeholder="Type to search…">
+            <button class="btn-link input-group-prepend u-header-search__btn" type="submit">
+              <div style="font-size: 20px;margin-top: 5px;">
+                <svg class="icon" aria-hidden="true">
+                  <use xlink:href="#icon-fenxiang"></use>
+                </svg>
+              </div>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="u-header-right">
+    <!-- Activities -->
+  </div>
+</header>
+{{end}}

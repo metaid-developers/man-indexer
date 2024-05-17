@@ -1,0 +1,76 @@
+{{ define "home/blocks.html" }}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<!-- Head -->
+{{ template "public/head.html"}}
+<!-- End Head -->
+
+<body>
+  <!-- Header (Topbar) -->
+  {{ template "public/header.html"}}
+  <!-- End Header (Topbar) -->
+  <main class="u-main" role="main">
+    <!-- Sidebar -->
+    {{ template "public/aside.html" .}}
+    <!-- End Sidebar -->
+
+    <div class="u-content">
+      <div class="u-body" style="min-height: 500px;">
+        <h1>Blocks</h1>
+        <div class="row">
+          {{ range $i, $v := .msgList }}
+          <div class="pin-card blur shadow-blur bloks">
+            <div class="pin-card-body">
+              <div class="block-height"><a href="/block/{{$v}}" class="link2">#{{$v}}</a></div>
+              <div class="block-content">
+                <div class="row">
+                  {{ range $i1, $v1 := (index $.msgMap $v) }}
+                  <div class="col-md-4 col-lg-3 col-xl-3 mb-4 ">
+                    <a href="/pin/{{$v1.Number}}" class="link">
+                      <div class="pin-card height-200 blur shadow-blur">
+                        <div class="pin-card-body">
+                          <div class="number">#{{ $v1.Number }}</div>
+                          <div class="type">{{ $v1.Type }}</div>
+                          {{if eq $v1.Type "image/jpeg"}}
+                          <div class="img"><img src="{{ $v1.Content }}" /></div>
+                          {{else if eq $v1.Type "image/png"}}
+                          <div class="img"><img src="{{ $v1.Content }}" /></div>
+                          {{else}}
+                          <div class="content">{{ $v1.Content }}</div>
+                          {{end}}
+                        </div>
+                      </div>
+                    </a>
+                  </div>
+                  {{ end }}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {{ end }}
+        </div>
+      </div>
+      <div style="margin-left: 40px;font-size: 18px;margin-bottom: 20px;">
+        {{if eq .PrePage 0}}
+        Prev
+        {{else}}
+        <a href="/blocks/{{.PrePage}}" class="link">Prev</a>
+        {{end}}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        {{if eq .NextPage 0}}
+        Next
+        {{else}}
+        <a href="/blocks/{{.NextPage}}" class="link">Next</a>
+        {{end}}
+      </div>
+      <!-- Footer -->
+      {{ template "public/footer.html"}}
+      <!-- End Footer -->
+    </div>
+  </main>
+</body>
+
+</html>
+{{end}}

@@ -1,0 +1,135 @@
+{{ define "home/index.html" }}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<!-- Head -->
+{{ template "public/head.html"}}
+<!-- End Head -->
+
+<body>
+  <!-- Header (Topbar) -->
+  {{ template "public/header.html"}}
+  <!-- End Header (Topbar) -->
+  <main class="u-main" role="main">
+    <!-- Sidebar -->
+    {{ template "public/aside.html" .}}
+    <!-- End Sidebar -->
+    <div class="u-content">
+      <div class="u-body" style="min-height: 500px;">
+        <div>
+          <div class="row">
+            <div class="col-sm-6 col-xl-3 mb-4">
+              <div class="card">
+                <div class="card-body media align-items-center px-xl-3">
+                  <div class="u-doughnut u-doughnut--70 mr-3 mr-xl-2">
+                    <div class="u-doughnut__label text-warning">B</div>
+                  </div>
+
+                  <div class="media-body">
+                    <h5 class="h6 text-muted text-uppercase mb-2">
+                      Total BLOCK <i class="fa fa-arrow-up text-success ml-1"></i>
+                    </h5>
+                    <span class="h2 mb-0">{{ .Count.Block }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3 mb-4">
+              <div class="card">
+                <div class="card-body media align-items-center px-xl-3">
+                  <div class="u-doughnut u-doughnut--70 mr-3 mr-xl-2">
+                    <div class="u-doughnut__label text-warning">P</div>
+                  </div>
+
+                  <div class="media-body">
+                    <h5 class="h6 text-muted text-uppercase mb-2">
+                      TOTAL PIN <i class="fa fa-arrow-down text-danger ml-1"></i>
+                    </h5>
+                    <span class="h2 mb-0">{{ .Count.Pin }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3 mb-4">
+              <div class="card">
+                <div class="card-body media align-items-center px-xl-3">
+                  <div class="u-doughnut u-doughnut--70 mr-3 mr-xl-2">
+                    <div class="u-doughnut__label text-warning">M</div>
+                  </div>
+
+                  <div class="media-body">
+                    <h5 class="h6 text-muted text-uppercase mb-2">
+                      TOTAL METAID <i class="fa fa-arrow-up text-success ml-1"></i>
+                    </h5>
+                    <span class="h2 mb-0">{{ .Count.MetaId }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3 mb-4">
+              <div class="card">
+                <div class="card-body media align-items-center px-xl-3">
+                  <div class="u-doughnut u-doughnut--70 mr-3 mr-xl-2">
+                    <div class="u-doughnut__label text-warning">A</div>
+                  </div>
+
+                  <div class="media-body">
+                    <h5 class="h6 text-muted text-uppercase mb-2">
+                      TOTAL APP <i class="fa fa-arrow-up text-danger ml-1"></i>
+                    </h5>
+                    <span class="h2 mb-0">{{ .Count.App }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h1>All Personal Information Nodes</h1>
+        <div class="row">
+          {{ range $i, $v := .Pins }}
+          <div class="col-md-4 col-lg-3 col-xl-3 mb-4 ">
+            <a href="/pin/{{$v.Number}}" class="link">
+              <div class="pin-card height-200 blur shadow-blur">
+                <div class="pin-card-body">
+                  <div class="number">#{{ $v.Number }} <span class="type">{{ $v.Operation }} | {{ $v.RootId |
+                      formatRootId }}</span></div>
+                  <div class="type">[{{ $v.Type }}]&nbsp;&nbsp;{{ $v.Path }}</div>
+                  <div class="type">PoP = {{ $v.Pop | formatRootId }}</div>
+                  {{if eq $v.Type "image/jpeg"}}
+                  <div class="img"><img src="{{ $v.Content }}" /></div>
+                  {{else if eq $v.Type "image/png"}}
+                  <div class="img"><img src="{{ $v.Content }}" /></div>
+                  {{else}}
+                  <div class="content">{{ $v.Content }}</div>
+                  {{end}}
+                </div>
+              </div>
+            </a>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+      <div style="margin-left: 40px;font-size: 18px;margin-bottom: 20px;">
+        {{if eq .PrePage 0}}
+        Prev
+        {{else}}
+        <a href="/pin/list/{{.PrePage}}" class="link">Prev</a>
+        {{end}}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        {{if eq .NextPage 0}}
+        Next
+        {{else}}
+        <a href="/pin/list/{{.NextPage}}" class="link">Next</a>
+        {{end}}
+      </div>
+      <!-- Footer -->
+      {{ template "public/footer.html"}}
+      <!-- End Footer -->
+    </div>
+  </main>
+</body>
+
+</html>
+{{end}}

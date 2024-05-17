@@ -1,0 +1,77 @@
+{{ define "home/block.html" }}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<!-- Head -->
+{{ template "public/head.html"}}
+<!-- End Head -->
+<body>
+  <!-- Header (Topbar) -->
+  {{ template "public/header.html"}}
+  <!-- End Header (Topbar) -->
+  <main class="u-main" role="main">
+    <!-- Sidebar -->
+    {{ template "public/aside.html"}}
+    <!-- End Sidebar -->
+    <div class="u-content">
+      <div class="u-body" style="min-height: 500px;">
+        <h2>Block {{.Height}}</h2>
+        <div class="row mt-4">
+          <div class="col-lg-5 mb-lg-0 mb-4">
+            <span style="font-weight: bold;">Hash&nbsp;:&nbsp;</span>{{.Block.BlockHash}}<br>
+            <span style="font-weight: bold;">Target&nbsp;:&nbsp;</span>{{.Block.Target}}<br>
+            <span style="font-weight: bold;">Timestamp&nbsp;:&nbsp;</span>{{.Block.Timestamp}}<br>
+            <span style="font-weight: bold;">Size&nbsp;:&nbsp;</span>{{.Block.Size}}<br>
+            <span style="font-weight: bold;">Weight&nbsp;:&nbsp;</span>{{.Block.Weight}}
+          </div>
+        </div>
+        <div class="row mt-4">
+          <div>
+            <div class="row row-title">{{ .PinNum }} Pins</div>
+            <div class="row">
+              {{ range $i1, $v1 := .Pins }}
+              <div class="col-md-4 col-lg-3 col-xl-2 mb-4 ">
+                <a href="/pin/{{$v1.Number}}" class="link">
+                  <div class="pin-card height-200 blur shadow-blur">
+                    <div class="pin-card-body">
+                      <div class="number">#{{ $v1.Number }}</div>
+                      <div class="type">{{ $v1.Type }}</div>
+                      {{if eq $v1.Type "application/json"}}
+                      <div class="content">{{ $v1.Content }}</div>
+                      {{else if eq $v1.Type "image/jpeg"}}
+                      <div class="img"><img src="{{ $v1.Content }}" /></div>
+                      {{end}}
+                    </div>
+                  </div>
+                </a>
+              </div>
+              {{ end }}
+            </div>
+          </div>
+        </div>
+        <div class="row mt-4">
+          <div class="col-lg-7">
+            <div class="row row-title">{{ .Block.TransactionNum }} Transactions</div>
+            <div class="row">
+              <ul>
+                {{ range $i1, $v1 := .Block.Transaction }}
+                <li style="padding-left: 30px;">
+                  <div style="line-height: 30px;"><a href="/tx/{{$v1}}" class="link3"> {{$v1}} </a></div>
+                </li>
+                {{ end }}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+
+      </div>
+      <!-- Footer -->
+      {{ template "public/footer.html"}}
+      <!-- End Footer -->
+    </div>
+  </main>
+</body>
+
+</html>
+{{end}}

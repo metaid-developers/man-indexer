@@ -1,0 +1,110 @@
+{{define "public/aside.html"}}
+<aside id="sidebar" class="u-sidebar">
+  <div class="u-sidebar-inner">
+    <header class="u-sidebar-header">
+      <a class="u-sidebar-logo" href="index.html">
+        <img class="img-fluid" src="/assets/img/logo.png" width="124" alt="Stream Dashboard">
+      </a>
+    </header>
+    <hr class="horizontal dark mt-0">
+
+    <nav class="u-sidebar-nav">
+      <ul class="u-sidebar-nav-menu u-sidebar-nav-menu--top-level">
+        <!-- Dashboard -->
+        <li class="u-sidebar-nav-menu__item">
+          <a class="u-sidebar-nav-menu__link {{if eq .Active " index" }} active {{end}}" href="/">
+            <div class="sidebar-icon shadow">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-textedit_pen"></use>
+              </svg>
+            </div>
+            <span class="u-sidebar-nav-menu__item-title">PIN</span>
+          </a>
+        </li>
+        <li class="u-sidebar-nav-menu__item">
+          <a class="u-sidebar-nav-menu__link {{if eq .Active " metaid" }} active {{end}}" href="/metaid/1">
+            <div class="sidebar-icon shadow">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-id-card-solid"></use>
+              </svg>
+            </div>
+            <span class="u-sidebar-nav-menu__item-title">MetaID</span>
+          </a>
+        </li>
+        <!-- End Dashboard -->
+        <!-- Forms -->
+        <li class="u-sidebar-nav-menu__item">
+          <a class="u-sidebar-nav-menu__link {{if eq .Active " blocks" }} active {{end}}" href="/blocks/1">
+            <div class="sidebar-icon shadow">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-textedit_3D"></use>
+              </svg>
+            </div>
+            <span class="u-sidebar-nav-menu__item-title">Block</span>
+          </a>
+        </li>
+        <!--
+        <li class="u-sidebar-nav-menu__item">
+          <a class="u-sidebar-nav-menu__link {{if eq .Active " mrc20" }} active {{end}}" href="/mrc20/1">
+            <div class="sidebar-icon shadow">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-textedit_3D"></use>
+              </svg>
+            </div>
+            <span class="u-sidebar-nav-menu__item-title">Mrc20</span>
+          </a>
+        </li>
+        -->
+        <li class="u-sidebar-nav-menu__item">
+          <a class="u-sidebar-nav-menu__link {{if eq .Active " mempool" }} active {{end}}" href="/mempool/1">
+            <div class="sidebar-icon shadow">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-pools"></use>
+              </svg>
+            </div>
+            <span class="u-sidebar-nav-menu__item-title">Mempool</span>
+          </a>
+        </li>
+        <!-- End Forms -->
+
+        <!-- Tables -->
+        <li class="u-sidebar-nav-menu__item">
+          <a class="u-sidebar-nav-menu__link" href="https://doc.metaid.io/" target="_blank">
+            <div class="sidebar-icon shadow">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-book"></use>
+              </svg>
+            </div>
+            <span class="u-sidebar-nav-menu__item-title">Handbook</span>
+          </a>
+        </li>
+        <!-- End Tables -->
+        <!-- Tables -->
+        <li class="u-sidebar-nav-menu__item">
+          <a class="u-sidebar-nav-menu__link" href="https://github.com/MetaID-Labs/man-indexer" target="_blank">
+            <div class="sidebar-icon shadow">
+              <svg class="icon " aria-hidden="true">
+                <use xlink:href="#icon-github"></use>
+              </svg>
+            </div>
+            <span class="u-sidebar-nav-menu__item-title">Github</span>
+          </a>
+        </li>
+        <!-- End Tables -->
+        <!-- Tables -->
+        <li class="u-sidebar-nav-menu__item">
+          <a class="u-sidebar-nav-menu__link" href="https://twitter.com/metaidio" target="_blank">
+            <div class="sidebar-icon shadow">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-twiter"></use>
+              </svg>
+            </div>
+            <span class="u-sidebar-nav-menu__item-title">X</span>
+          </a>
+        </li>
+        <!-- End Tables -->
+      </ul>
+    </nav>
+  </div>
+</aside>
+{{end}}

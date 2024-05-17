@@ -1,0 +1,69 @@
+{{ define "home/mrc20history.html" }}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<!-- Head -->
+{{ template "public/head.html"}}
+<!-- End Head -->
+
+<body>
+  <!-- Header (Topbar) -->
+  {{ template "public/header.html"}}
+  <!-- End Header (Topbar) -->
+
+  <main class="u-main" role="main">
+    <!-- Sidebar -->
+    {{ template "public/aside.html" }}
+    <!-- End Sidebar -->
+    <div class="u-content">
+      <div class="u-body" style="min-height: 500px;">
+        <h2>Tick {{.Tick}}</h2>
+        <div>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th scope="col">TickName</th>
+                  <th scope="col">From</th>
+                  <th scope="col">To</th>
+                  <th scope="col">Amt</th>
+                  <th scope="col">Option</th>
+                  <th scope="col">Verify</th>
+                  <th scope="col">Msg</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {{ range $i, $v := .List }}
+                <tr>
+                  <td>{{$v.Tick}}</td>
+                  <td> {{$v.FromAddress | formatRootId }}</td>
+                  <td>{{ $v.ToAddress | formatRootId }}</td>
+                  <td>
+                    {{ $v.AmtChange }}
+                  </td>
+                  <td>{{ $v.MrcOption }}</td>
+                  <td>
+                    {{ $v.Verify }}
+                  </td>
+                  <td>
+                    {{ $v.ErrorMsg }}
+                  </td>
+                </tr>
+                {{ end }}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div>
+
+      </div>
+      <!-- Footer -->
+      {{ template "public/footer.html"}}
+      <!-- End Footer -->
+    </div>
+  </main>
+</body>
+
+</html>
+{{end}}

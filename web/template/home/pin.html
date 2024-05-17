@@ -1,0 +1,119 @@
+{{ define "home/pin.html" }}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<!-- Head -->
+{{ template "public/head.html"}}
+<!-- End Head -->
+<body>
+  <!-- Header (Topbar) -->
+  {{ template "public/header.html"}}
+  <!-- End Header (Topbar) -->
+  <main class="u-main" role="main">
+    <!-- Sidebar -->
+    {{ template "public/aside.html"}}
+    <!-- End Sidebar -->
+    <div class="u-content">
+      <div class="u-body" style="min-height: 500px;">
+        <h2>Personal Information Node {{.Number}}</h2>
+        {{.ContentTypeDetect}}
+        {{if eq .ContentTypeDetect "image/png"}}
+        <div class="img2">
+          <p><img src="{{ .ContentSummary }}" /></p>
+        </div>
+        {{else if eq .ContentTypeDetect "image/jpeg"}}
+        <div class="img2">
+          <p><img src="{{ .ContentSummary }}" /></p>
+        </div>
+        {{else}}
+        <p>
+        <div class="content2">{{ .ContentSummary }}</div>
+        </p>
+        {{end}}
+        <p>
+        <div class="h4">[id]</div>
+        <div class="info">{{.Id}}</div>
+        </p>
+        <p>
+        <div class="h4">[root txid]</div>
+        <div class="info">{{.RootTxId}}</div>
+        </p>
+        <p>
+        <div class="h4">[operation]</div>
+        <div class="info">{{.Operation}}</div>
+        </p>
+        <p>
+        <div class="h4">[path]</div>
+        <div class="info">{{.Path}}</div>
+        </p>
+        <p>
+        <div class="h4">[version]</div>
+        <div class="info">{{.Version}}</div>
+        </p>
+        <p>
+        <div class="h4">[encryption]</div>
+        <div class="info">{{.Encryption}}</div>
+        </p>
+
+        <p>
+        <div class="h4">[address]</div>
+        <div class="info">{{.Address}}</div>
+        </p>
+        <p>
+        <div class="h4">[output value]</div>
+        <div class="info">{{.OutputValue}}</div>
+        </p>
+
+        <p>
+        <div class="h4">[preview]</div>
+        <div class="info">link</div>
+        </p>
+        <p>
+        <div class="h4">[content]</div>
+        <div class="info">link</div>
+        </p>
+        <p>
+        <div class="h4">[content length]</div>
+        <div class="info">{{.ContentLength}}</div>
+        </p>
+        <p>
+        <div class="h4">[content type]</div>
+        <div class="info">{{.ContentType}}</div>
+        </p>
+        <p>
+        <div class="h4">[timestamp]</div>
+        <div class="info">{{.Timestamp}}</div>
+        </p>
+        <p>
+        <div class="h4">[genesis height]</div>
+        <div class="info">{{.GenesisHeight}}</div>
+        </p>
+        <p>
+        <div class="h4">[genesis transactione]</div>
+        <div class="info">{{.GenesisTransaction}}</div>
+        </p>
+        <p>
+        <div class="h4">[location]</div>
+        <div class="info">{{.Output}}:{{.TxInIndex}}</div>
+        </p>
+        <p>
+        <div class="h4">[output]</div>
+        <div class="info">{{.Output}}</div>
+        </p>
+        <p>
+        <div class="h4">[offset]</div>
+        <div class="info">{{.TxInOffset}}</div>
+        </p>
+
+      </div>
+      <div>
+
+      </div>
+      <!-- Footer -->
+      {{ template "public/footer.html"}}
+      <!-- End Footer -->
+    </div>
+  </main>
+</body>
+
+</html>
+{{end}}

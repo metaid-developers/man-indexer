@@ -1,0 +1,7 @@
+.idea
+go.sum
+manindexer
+pem/
+.vscode
+pebble_data
+config.toml

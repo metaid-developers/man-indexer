@@ -1,0 +1,37 @@
+version = "0.0.1"
+net = "mainnet"
+[sync]
+syncAllData = true
+syncBeginTime = ""
+syncEndTime = ""
+syncProtocols = ["payLike"]
+[protocols]
+  [protocols.payLike]
+  fields = [{name = "isLike",class = "string",length = 1},
+           {name = "likeTo",class = "string",length = 100}]
+  indexes = [{fields = ["likeTo"],unique = false},
+             {fields = ["pinId"],unique = true},
+             {fields = ["pinNumber"],unique = false},
+             {fields = ["pinAddress"],unique = false},
+            ]
+  key = "likeTo"
+[btc]
+initialHeight = 0
+rpcHost = "127.0.0.1:8332"
+rpcUser = "test"
+rpcPass = "test"
+rpcHttpPostMode = true
+rpcDisableTLS = true
+zmqHost = "tcp://127.0.0.1:28336"
+[mongodb]
+mongoURI = "mongodb://root:123456@127.0.0.1:27017"
+dbName = "man_test"
+poolSize = 200
+timeOut = 20
+[pebble]
+dir = "./pebble_data"
+[web]
+port = ":7777"
+pemFile = ""
+keyFile = ""
+host = "https://man.test.com"

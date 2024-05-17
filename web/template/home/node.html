@@ -1,0 +1,68 @@
+{{ define "home/node.html" }}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<!-- Head -->
+{{ template "public/head.html"}}
+<!-- End Head -->
+<body>
+  <!-- Header (Topbar) -->
+  {{ template "public/header.html"}}
+  <!-- End Header (Topbar) -->
+
+  <main class="u-main" role="main">
+    <!-- Sidebar -->
+    {{ template "public/aside.html" }}
+    <!-- End Sidebar -->
+    <div class="u-content">
+      <div class="u-body" style="min-height: 500px;">
+        <h2>MetaID {{.RootId}}</h2>
+        <div>
+          <div class="table-responsive">
+								<table class="table table-hover">
+									<thead>
+										<tr>
+											<th scope="col">#</th>
+                      <th scope="col">Number</th>
+											<th scope="col">Path</th>
+											<th scope="col">Version</th>
+											<th scope="col">Encryption</th>
+											<th scope="col">ContentType</th>
+											<th scope="col">ContentLength</th>
+										</tr>
+									</thead>
+
+									<tbody>
+                    {{ range $i, $v := .Pins }}
+										<tr>
+											<td>{{$i}}</td>
+											<td><a href="/pin/{{$v.Number }}" class="link4"> {{$v.Number }}</a></td>
+											<td>{{ $v.Path }}</td>
+											<td>
+												{{ $v.Version }}
+											</td>
+											<td>{{ $v.Encryption }}</td>
+											<td>
+												{{ $v.ContentType }}
+											</td>
+                      <td>
+												{{ $v.ContentLength }}
+											</td>
+										</tr>
+                    {{ end }}
+									</tbody>
+								</table>
+							</div>
+        </div>
+      </div>
+      <div>
+
+      </div>
+      <!-- Footer -->
+      {{ template "public/footer.html"}}
+      <!-- End Footer -->
+    </div>
+  </main>
+</body>
+
+</html>
+{{end}}

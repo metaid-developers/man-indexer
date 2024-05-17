@@ -1,0 +1,67 @@
+{{ define "home/metaid.html" }}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<!-- Head -->
+{{ template "public/head.html"}}
+<!-- End Head -->
+
+<body>
+  <!-- Header (Topbar) -->
+  {{ template "public/header.html"}}
+  <!-- End Header (Topbar) -->
+  <main class="u-main" role="main">
+    <!-- Sidebar -->
+    {{ template "public/aside.html" .}}
+    <!-- End Sidebar -->
+    <div class="u-content">
+      <div class="u-body" style="min-height: 500px;">
+        <h1>All MetaIDs</h1>
+        <div class="row">
+          {{ range $i, $v := .List }}
+          <div class="col-md-4 col-xl-3 mb-4 ">
+            <a href="/pin/{{$v.MetaId}}" class="link">
+              <div class="pin-card height-150 blur shadow-blur">
+                <div class="pin-card-body">
+                  <div class="number2">#{{ $v.MetaId | formatRootId}}</div>
+                  <div class="row">
+                    <div style="display: flex;">
+                      {{if $v.Avatar }}
+                      <div class="nav-icon-normal">
+                        <img class="avatar" src="{{ .Avatar }}" />
+                      </div>
+                      {{else}}
+                      <div class="nav-icon-normal">{{ $v.Name }}</div>
+                      {{end}}
+                      <div class="name" style="margin-left: 5px;">
+                        {{ $v.Name }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row bio">{{ .Bio }}</div>
+                </div>
+              </div>
+            </a>
+          </div>
+          {{ end }}
+        </div>
+      </div>
+      <div style="margin-left: 40px;font-size: 18px;margin-bottom: 20px;">
+        {{if eq .PrePage 0}}
+        Prev
+        {{else}}
+        <a href="/metaid/{{.PrePage}}" class="link">Prev</a>
+        {{end}}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        {{if eq .NextPage 0}}
+        Next
+        {{else}}
+        <a href="/metaid/{{.NextPage}}" class="link">Next</a>
+        {{end}}
+      </div>
+      {{ template "public/footer.html"}}
+    </div>
+  </main>
+</body>
+
+</html>
+{{end}}
