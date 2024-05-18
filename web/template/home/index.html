@@ -96,7 +96,8 @@
                   <div class="number">#{{ $v.Number }} <span class="type">{{ $v.Operation }} | {{ $v.RootId |
                       formatRootId }}</span></div>
                   <div class="type">[{{ $v.Type }}]&nbsp;&nbsp;{{ $v.Path }}</div>
-                  <div class="type">PoP = {{ $v.Pop | formatRootId }}</div>
+                  <div class="type" style="color:#333">PoP : {{$v.Pop | popLevelCount}} ({{ $v.Pop | formatRootId }})
+                  </div>
                   {{if eq $v.Type "image/jpeg"}}
                   <div class="img"><img src="{{ $v.Content }}" /></div>
                   {{else if eq $v.Type "image/png"}}

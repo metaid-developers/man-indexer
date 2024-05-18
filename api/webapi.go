@@ -24,6 +24,9 @@ func formatRootId(rootId string) string {
 	}
 	return fmt.Sprintf("%s...%s", rootId[0:3], rootId[len(rootId)-3:])
 }
+func popLevelCount(pop string) string {
+	return man.IndexerAdapter.PopLevelCount(pop)
+}
 
 func CorsMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
@@ -46,7 +49,8 @@ func Start(f embed.FS) {
 	gin.DefaultWriter = io.Discard
 	r := gin.Default()
 	funcMap := template.FuncMap{
-		"formatRootId": formatRootId,
+		"formatRootId":  formatRootId,
+		"popLevelCount": popLevelCount,
 	}
 	//use embed.FS
 	fp, _ := fs.Sub(f, "web/static")

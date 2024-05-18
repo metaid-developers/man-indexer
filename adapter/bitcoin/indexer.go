@@ -14,11 +14,17 @@ import (
 	"github.com/btcsuite/btcd/wire"
 )
 
+var PopCutNum int = 0
+
 type Indexer struct {
 	ChainParams *chaincfg.Params
 	Block       interface{}
+	PopCutNum   int
 }
 
+func init() {
+	PopCutNum = common.Config.Btc.PopCutNum
+}
 func (indexer *Indexer) GetCurHeight() (height int64) {
 	return
 }
@@ -363,4 +369,12 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) 
 		}
 	}
 	return
+}
+func (indexer *Indexer) PopLevelCount(pop string) string {
+	cnt := len(pop) - len(strings.TrimLeft(pop, "0"))
+	if cnt <= PopCutNum {
+		return "--"
+	} else {
+		return fmt.Sprintf("Lv%d", cnt-PopCutNum)
+	}
 }

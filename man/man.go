@@ -72,6 +72,7 @@ func InitAdapter(chainType, dbType, test, server string) {
 		}
 		IndexerAdapter = &bitcoin.Indexer{
 			ChainParams: chainParams,
+			PopCutNum:   common.Config.Btc.PopCutNum,
 		}
 		// case "mvc":
 		// 	ChainAdapter = &mvc.MvcChain{}

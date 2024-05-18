@@ -47,6 +47,7 @@ type btcConfig struct {
 	RpcHTTPPostMode bool   `toml:"rpcHttpPostMode"`
 	RpcDisableTLS   bool   `toml:"rpcDisableTLS"`
 	ZmqHost         string `toml:"zmqHost"`
+	PopCutNum       int    `toml:"popCutNum"`
 }
 type mongoConfig struct {
 	MongoURI string `toml:"mongoURI"`
