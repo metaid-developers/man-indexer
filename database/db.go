@@ -34,6 +34,7 @@ type Db interface {
 	BatchUpsertMetaIdInfo(infoList []*pin.MetaIdInfo) (err error)
 	BatchAddPinTree(data []interface{}) (err error)
 	GetPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error)
+	GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error)
 	GetMempoolPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error)
 	DeleteMempoolInscription(txIds []string) (err error)
 	GetPinListByAddress(address string, addressType string, cursor int64, size int64) (pins []*pin.PinInscription, err error)

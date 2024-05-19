@@ -99,6 +99,7 @@ func (mg *Mongodb) GetPinPageList(page int64, size int64) (pins []*pin.PinInscri
 	err = result.All(context.TODO(), &pins)
 	return
 }
+
 func (mg *Mongodb) GetPinListByIdList(idList []string) (pinList []*pin.PinInscription, err error) {
 	filter := bson.M{"id": bson.M{"$in": idList}}
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter)
@@ -108,6 +109,7 @@ func (mg *Mongodb) GetPinListByIdList(idList []string) (pinList []*pin.PinInscri
 	err = result.All(context.TODO(), &pinList)
 	return
 }
+
 func (mg *Mongodb) GetMempoolPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error) {
 	cursor := (page - 1) * size
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
@@ -137,6 +139,29 @@ func (mg *Mongodb) GetPinListByAddress(address string, addressType string, curso
 		return
 	}
 	err = result.All(context.TODO(), &pins)
+	return
+}
+func (mg *Mongodb) GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error) {
+	filter := bson.D{{Key: "address", Value: address}, {Key: "status", Value: 0}}
+	match := bson.D{{Key: "$match", Value: filter}}
+	groupStage := bson.D{
+		{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: nil},
+			{Key: "utxo_sum", Value: bson.D{{Key: "$sum", Value: "$outputvalue"}}},
+			{Key: "utxo_num", Value: bson.D{{Key: "$sum", Value: 1}}},
+		}}}
+	cursor, err := mongoClient.Collection(PinsCollection).Aggregate(context.TODO(), mongo.Pipeline{match, groupStage})
+	if err != nil {
+		return
+	}
+	var results []bson.M
+	if err = cursor.All(context.TODO(), &results); err != nil {
+		return
+	}
+	for _, result := range results {
+		utxoNum += int64(result["utxo_num"].(int32))
+		utxoSum += result["utxo_sum"].(int64)
+	}
 	return
 }
 

@@ -49,6 +49,9 @@ func (pg *Postgresql) BatchAddPinTree(data []interface{}) (err error) {
 func (pg *Postgresql) GetPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error) {
 	return
 }
+func (pg *Postgresql) GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error) {
+	return
+}
 func (pg *Postgresql) GetMempoolPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error) {
 	return
 }

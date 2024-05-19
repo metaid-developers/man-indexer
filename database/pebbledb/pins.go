@@ -226,7 +226,9 @@ func (pb *Pebble) GetPinListByAddress(address string, addressType string, cursor
 	pins = batchGetPinById(ids)
 	return
 }
-
+func (pb *Pebble) GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error) {
+	return
+}
 func (pb *Pebble) GetPinRootByAddress(address string) (pinNode *pin.PinInscription, err error) {
 	id, closer, err := Pb[PinRootId].Get([]byte(address))
 	if err != nil {

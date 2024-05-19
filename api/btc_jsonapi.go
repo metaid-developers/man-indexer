@@ -27,6 +27,7 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.GET("/node/list", nodeList)
 
 	btcGroup.GET("/pin/:numberOrId", getPinById)
+	btcGroup.GET("/address/pin/utxo/count/:address", getPinUtxoCountByAddress)
 	btcGroup.GET("/address/pin/list/:addressType/:address", getPinListByAddress)
 	btcGroup.GET("/address/pin/root/:address", getRootPinByAddress)
 	btcGroup.GET("/node/child/:pinId", getChildNodeById)
@@ -183,6 +184,23 @@ func blockList(ctx *gin.Context) {
 		}
 	}
 	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"msgMap": msgMap, "msgList": msgList, "Active": "blocks"}))
+}
+
+// get Pin Utxo Count By Address
+func getPinUtxoCountByAddress(ctx *gin.Context) {
+	if ctx.Param("address") == "" {
+		ctx.JSON(200, apiError(100, "address is null"))
+	}
+	utxoNum, utxoSum, err := man.DbAdapter.GetPinUtxoCountByAddress(ctx.Param("address"))
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(200, apiError(100, "no  data found."))
+		} else {
+			ctx.JSON(200, apiError(404, "service exception."))
+		}
+		return
+	}
+	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"utxoNum": utxoNum, "utxoSum": utxoSum}))
 }
 
 // get pin list by address
