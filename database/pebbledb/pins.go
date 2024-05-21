@@ -145,7 +145,7 @@ func (pb *Pebble) BatchAddPins(pins []interface{}) (err error) {
 	}
 	return
 }
-func (pb *Pebble) UpdateTransferPin(addressMap map[string]string) (err error) {
+func (pb *Pebble) UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error) {
 	return
 }
 func (pb *Pebble) BatchUpdatePins(pins []*pin.PinInscription) (err error) {
@@ -229,25 +229,7 @@ func (pb *Pebble) GetPinListByAddress(address string, addressType string, cursor
 func (pb *Pebble) GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error) {
 	return
 }
-func (pb *Pebble) GetPinRootByAddress(address string) (pinNode *pin.PinInscription, err error) {
-	id, closer, err := Pb[PinRootId].Get([]byte(address))
-	if err != nil {
-		return
-	}
-	defer closer.Close()
-	pinNode, _ = getPinById(id)
-	if pinNode == nil {
-		v, closer, err1 := Pb[MempoolRootPin].Get([]byte(address))
-		if err1 != nil {
-			return
-		}
-		defer closer.Close()
-		var p pin.PinInscription
-		err = json.Unmarshal(v, &p)
-		pinNode = &p
-	}
-	return
-}
+
 func getPinById(id []byte) (pinNode *pin.PinInscription, err error) {
 	value, closer, err := Pb[PinsCollection].Get(id)
 	if err != nil {
@@ -295,15 +277,20 @@ func (pb *Pebble) GetPinByNumberOrId(numberOrId string) (pinInscription *pin.Pin
 	}
 	return getPinById([]byte(id))
 }
-
+func (pb *Pebble) GetPinByOutput(output string) (pinInscription *pin.PinInscription, err error) {
+	return
+}
+func (pb *Pebble) GetPinByMeatIdOrId(key string) (pinInscription *pin.PinInscription, err error) {
+	return
+}
 func (pb *Pebble) GetBlockPin(height int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
 	return
 }
 
-func (pb *Pebble) GetMetaIdPin(roottxid string, page int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
+func (pb *Pebble) GetMetaIdPin(address string, page int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
 	return
 }
-func (pb *Pebble) GetChildNodeById(roottxid string) (pins []*pin.PinInscription, err error) {
+func (pb *Pebble) GetChildNodeById(pinId string) (pins []*pin.PinInscription, err error) {
 
 	return
 }
@@ -491,7 +478,7 @@ func (pb *Pebble) AddMempoolPin(pin *pin.PinInscription) (err error) {
 	}
 	//add MempoolMetaIdInfo
 	if pin.OriginalPath == "/info/name" || pin.OriginalPath == "/info/avatar" || pin.Path == "/info/name" || pin.Path == "/info/avatar" {
-		key := fmt.Sprintf("%s_%s_%d", pin.RootTxId, pin.Id, pin.Timestamp)
+		key := fmt.Sprintf("%s_%s_%d", pin.Address, pin.Id, pin.Timestamp)
 		Pb[MempoolMetaIdInfo].Set([]byte(key), b, opts)
 
 	}
@@ -570,7 +557,7 @@ func (pb *Pebble) DeleteMempoolInscription(txIds []string) (err error) {
 			addNumLog("mem_"+pinNode.Path, -1)
 		}
 		if pinNode.OriginalPath == "/info/name" || pinNode.OriginalPath == "/info/avatar" || pinNode.Path == "/info/name" || pinNode.Path == "/info/avatar" {
-			key := fmt.Sprintf("%s_%s_%d", pinNode.RootTxId, pinNode.Id, pinNode.Timestamp)
+			key := fmt.Sprintf("%s_%s_%d", pinNode.Address, pinNode.Id, pinNode.Timestamp)
 			batchPath.Delete([]byte(key), pebble.Sync)
 		}
 		if pinNode.Operation == "init" {

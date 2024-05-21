@@ -93,10 +93,10 @@
             <a href="/pin/{{$v.Number}}" class="link">
               <div class="pin-card height-200 blur shadow-blur">
                 <div class="pin-card-body">
-                  <div class="number">#{{ $v.Number }} <span class="type">{{ $v.Operation }} | {{ $v.RootId |
+                  <div class="number">#{{ $v.Number }} <span class="type">{{ $v.Operation }} | {{ $v.MetaId |
                       formatRootId }}</span></div>
                   <div class="type">[{{ $v.Type }}]&nbsp;&nbsp;{{ $v.Path }}</div>
-                  <div class="type" style="color:#333">PoP : {{$v.Pop | popLevelCount}} ({{ $v.Pop | formatRootId }})
+                  <div class="type" style="color:#333">PoP : {{$v.Pop | popLevelCount}} ({{ $v.Pop | popStrShow }})
                   </div>
                   {{if eq $v.Type "image/jpeg"}}
                   <div class="img"><img src="{{ $v.Content }}" /></div>

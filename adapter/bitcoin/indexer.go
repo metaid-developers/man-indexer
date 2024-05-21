@@ -62,34 +62,37 @@ func (indexer *Indexer) CatchPins(blockHeight int64) (pinInscriptions []*pin.Pin
 	}
 	return
 }
-func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (addressMap map[string]string) {
-	addressMap = make(map[string]string)
+func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map[string]*pin.PinTransferInfo) {
+	trasferMap = make(map[string]*pin.PinTransferInfo)
 	block := indexer.Block.(*wire.MsgBlock)
 	for _, tx := range block.Transactions {
 		for _, in := range tx.TxIn {
 			id := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			if _, ok := idMap[id]; ok {
-				newAddress, err := indexer.getOWnerAddress(id, tx)
-				if err == nil && newAddress != "" {
-					addressMap[id] = newAddress
-				} else {
-					addressMap[id] = "errAddress"
+				info, err := indexer.getOWnerAddress(id, tx)
+				if err == nil && info != nil {
+					trasferMap[id] = info
 				}
 			}
 		}
 	}
 	return
 }
-func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (address string, err error) {
+func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (info *pin.PinTransferInfo, err error) {
 	//fmt.Println("tx:", tx.TxHash().String(), inputId)
+	info = &pin.PinTransferInfo{}
 	firstInputId := fmt.Sprintf("%si%d", tx.TxIn[0].PreviousOutPoint.Hash, tx.TxIn[0].PreviousOutPoint.Index)
 	if len(tx.TxIn) == 1 || firstInputId == inputId {
 		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(tx.TxOut[0].PkScript, indexer.ChainParams)
 		if len(addresses) > 0 {
-			address = addresses[0].String()
+			info.Address = addresses[0].String()
 		} else if class.String() == "nulldata" {
-			address = hex.EncodeToString(tx.TxOut[0].PkScript)
+			info.Address = hex.EncodeToString(tx.TxOut[0].PkScript)
 		}
+		info.Location = fmt.Sprintf("%s:%d:%d", tx.TxHash().String(), 0, 0)
+		info.Offset = 0
+		info.Output = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
+		info.OutputValue = tx.TxOut[0].Value
 		return
 	}
 	totalOutputValue := int64(0)
@@ -113,16 +116,19 @@ func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (address
 		}
 	}
 	outputValue := int64(0)
-	for _, out := range tx.TxOut {
+	for i, out := range tx.TxOut {
 		outputValue += out.Value
-		//fmt.Println(out.Value)
-		if outputValue > inputValue {
+		if outputValue >= inputValue {
 			class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
 			if len(addresses) > 0 {
-				address = addresses[0].String()
+				info.Address = addresses[0].String()
 			} else if class.String() == "nulldata" {
-				address = hex.EncodeToString(out.PkScript)
+				info.Address = hex.EncodeToString(out.PkScript)
 			}
+			info.Output = fmt.Sprintf("%s:%d", tx.TxHash().String(), i)
+			info.Location = fmt.Sprintf("%s:%d", info.Output, outputValue-inputValue)
+			info.Offset = uint64(i)
+			info.OutputValue = out.Value
 			break
 		}
 	}
@@ -157,14 +163,9 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 		if pinInscription == nil {
 			continue
 		}
-		address, outIdx := indexer.getPinOwner(msgTx, index)
+		address, outIdx, locationIdx := indexer.getPinOwner(msgTx, index)
 		id := fmt.Sprintf("%si%d", msgTx.TxHash().String(), outIdx)
-		rootTxId := ""
-		metaId := ""
-		if pinInscription.Operation == "init" {
-			rootTxId = msgTx.TxHash().String()
-			metaId = id
-		}
+		metaId := common.GetMetaIdByAddress(address)
 		contentTypeDetect := common.DetectContentType(&pinInscription.ContentBody)
 		pop := ""
 		if merkleRoot != "" && blockHash != "" {
@@ -174,7 +175,6 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 		pinInscriptions = append(pinInscriptions, &pin.PinInscription{
 			//Pin:                pinInscription,
 			Id:                 id,
-			RootTxId:           rootTxId,
 			MetaId:             metaId,
 			Number:             0,
 			Address:            address,
@@ -185,9 +185,10 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 			Output:             fmt.Sprintf("%s:%d", msgTx.TxHash().String(), outIdx),
 			OutputValue:        msgTx.TxOut[outIdx].Value,
 			TxInIndex:          uint32(index),
-			TxInOffset:         uint64(0),
+			Offset:             uint64(outIdx),
 			TxIndex:            txIndex,
 			Operation:          pinInscription.Operation,
+			Location:           fmt.Sprintf("%s:%d:%d", msgTx.TxHash().String(), outIdx, locationIdx),
 			Path:               pinInscription.Path,
 			OriginalPath:       pinInscription.Path,
 			ParentPath:         pinInscription.ParentPath,
@@ -223,7 +224,7 @@ func getContentSummary(pinode *pin.PersonalInformationNode, id string, contentTy
 		}
 	}
 }
-func (indexer *Indexer) getPinOwner(tx *wire.MsgTx, inIdx int) (address string, outIdx int) {
+func (indexer *Indexer) getPinOwner(tx *wire.MsgTx, inIdx int) (address string, outIdx int, locationIdx int64) {
 	if len(tx.TxIn) == 1 || len(tx.TxOut) == 1 || inIdx == 0 {
 		_, addresses, _, _ := txscript.ExtractPkScriptAddrs(tx.TxOut[0].PkScript, indexer.ChainParams)
 		if len(addresses) > 0 {
@@ -245,7 +246,8 @@ func (indexer *Indexer) getPinOwner(tx *wire.MsgTx, inIdx int) (address string, 
 	outputValue := int64(0)
 	for x, out := range tx.TxOut {
 		outputValue += out.Value
-		if outputValue > inputValue {
+		if outputValue >= inputValue {
+			locationIdx = outputValue - inputValue
 			_, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
 			if len(addresses) > 0 {
 				address = addresses[0].String()
@@ -370,11 +372,15 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) 
 	}
 	return
 }
-func (indexer *Indexer) PopLevelCount(pop string) string {
+func (indexer *Indexer) PopLevelCount(pop string) (lv int, lastStr string) {
 	cnt := len(pop) - len(strings.TrimLeft(pop, "0"))
 	if cnt <= PopCutNum {
-		return "--"
+		lv = -1
+		lastStr = pop[PopCutNum:]
+		return
 	} else {
-		return fmt.Sprintf("Lv%d", cnt-PopCutNum)
+		lv = cnt - PopCutNum
+		lastStr = pop[PopCutNum:]
+		return
 	}
 }

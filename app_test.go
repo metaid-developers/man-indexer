@@ -110,3 +110,9 @@ func TestGetSaveData(t *testing.T) {
 	//err := mg.BatchUpsertMetaIdInfo(d)
 	fmt.Println(a)
 }
+func TestHash(t *testing.T) {
+	add := "tb1pss8ce6tgupnhmfj8u9h4saue48upucu04c7549tzal6n67v8njyst7e0fx"
+	h := common.GetMetaIdByAddress(add)
+	fmt.Println(add)
+	fmt.Println(h)
+}

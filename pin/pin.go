@@ -1,14 +1,14 @@
 package pin
 
 const (
-	ProtocolID    string = "746573746964" //testid(HEX16)
+	ProtocolID string = "746573746964" //testid(HEX16)
+	//ProtocolID    string = "6d6574616964" //metaid
 	CompliantPath string = "info;file;protocols;nft;ft;mrc20"
 )
 
 type PinInscription struct {
 	Id                 string `json:"id"`
 	Number             int64  `json:"number"`
-	RootTxId           string `json:"rootTxId"`
 	MetaId             string `json:"metaid"`
 	Address            string `json:"address"`
 	CreateAddress      string `json:"createAddress"`
@@ -20,7 +20,8 @@ type PinInscription struct {
 	GenesisTransaction string `json:"genesisTransaction"`
 	TxIndex            int    `json:"txIndex"`
 	TxInIndex          uint32 `json:"txInIndex"`
-	TxInOffset         uint64 `json:"txInOffset"`
+	Offset             uint64 `json:"offset"`
+	Location           string `json:"location"`
 	Operation          string `json:"operation"`
 	Path               string `json:"path"`
 	ParentPath         string `json:"parentPath"`
@@ -38,8 +39,15 @@ type PinInscription struct {
 	Preview            string `json:"preview"`
 	Content            string `json:"content"`
 	Pop                string `json:"pop"`
+	PopLv              int    `json:"popLv"`
 }
-
+type PinTransferInfo struct {
+	Address     string `json:"address"`
+	Output      string `json:"output"`
+	OutputValue int64  `json:"outputValue"`
+	Offset      uint64 `json:"offset"`
+	Location    string `json:"location"`
+}
 type PersonalInformationNode struct {
 	Operation     string `json:"operation"`
 	Path          string `json:"path"`
@@ -54,7 +62,6 @@ type PersonalInformationNode struct {
 
 type MetaIdInfo struct {
 	Number        int64  `json:"number"`
-	RootTxId      string `json:"rootTxId"`
 	MetaId        string `json:"metaid"`
 	Name          string `json:"name"`
 	NameId        string `json:"nameId"`
@@ -80,7 +87,6 @@ type PinMsg struct {
 	Id        string `json:"id"`
 	Type      string `json:"type"`
 	Path      string `json:"path"`
-	RootId    string `json:"rootId"`
 	MetaId    string `json:"metaid"`
 	Pop       string `json:"pop"`
 }

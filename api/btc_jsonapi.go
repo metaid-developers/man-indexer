@@ -29,13 +29,12 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.GET("/pin/:numberOrId", getPinById)
 	btcGroup.GET("/address/pin/utxo/count/:address", getPinUtxoCountByAddress)
 	btcGroup.GET("/address/pin/list/:addressType/:address", getPinListByAddress)
-	btcGroup.GET("/address/pin/root/:address", getRootPinByAddress)
 	btcGroup.GET("/node/child/:pinId", getChildNodeById)
 	btcGroup.GET("/node/parent/:pinId", getParentNodeById)
 	btcGroup.GET("/info/address/:address", getInfoByAddress)
-	btcGroup.GET("/info/rootId/:rootId", getInfoByRootId)
 	btcGroup.GET("/getAllPinByPath", getAllPinByPath)
 	btcGroup.POST("/generalQuery", generalQuery)
+	btcGroup.GET("/pin/ByOutput/:output", getPinByOutput)
 }
 func apiError(code int, msg string) (res *ApiResponse) {
 	return &ApiResponse{Code: code, Msg: msg}
@@ -83,7 +82,7 @@ func pinList(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, RootId: p.RootTxId, MetaId: p.MetaId, Pop: p.Pop}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, MetaId: p.MetaId, Pop: p.Pop}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -109,7 +108,7 @@ func mempoolList(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, MetaId: p.MetaId, RootId: p.RootTxId}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, MetaId: p.MetaId}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -154,6 +153,24 @@ func getPinById(ctx *gin.Context) {
 	pinMsg.Content = common.Config.Web.Host + "/content/" + pinMsg.Id
 	ctx.JSON(200, apiSuccess(1, "ok", pinMsg))
 }
+func getPinByOutput(ctx *gin.Context) {
+	pinMsg, err := man.DbAdapter.GetPinByOutput(ctx.Param("output"))
+	if err != nil || pinMsg == nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(200, apiError(100, "no pin found."))
+		} else {
+			ctx.JSON(200, apiError(404, "service exception."))
+		}
+		return
+	}
+	//pinMsg.ContentBody = []byte{}
+	pinMsg.ContentSummary = string(pinMsg.ContentBody)
+	pinMsg.Preview = common.Config.Web.Host + "/pin/" + pinMsg.Id
+	pinMsg.Content = common.Config.Web.Host + "/content/" + pinMsg.Id
+	pinMsg.PopLv, _ = man.IndexerAdapter.PopLevelCount(pinMsg.Pop)
+	ctx.JSON(200, apiSuccess(1, "ok", pinMsg))
+}
+
 func blockList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
@@ -175,7 +192,7 @@ func blockList(ctx *gin.Context) {
 	msgMap := make(map[int64][]*pin.PinMsg)
 	var msgList []int64
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Operation: p.Operation, Path: p.Path, RootId: p.RootTxId, Content: p.ContentSummary, Number: p.Number, Id: p.Id, Type: p.ContentTypeDetect, MetaId: p.MetaId, Height: p.GenesisHeight, Pop: p.Pop}
+		pmsg := &pin.PinMsg{Operation: p.Operation, Path: p.Path, Content: p.ContentSummary, Number: p.Number, Id: p.Id, Type: p.ContentTypeDetect, MetaId: p.MetaId, Height: p.GenesisHeight, Pop: p.Pop}
 		if _, ok := msgMap[pmsg.Height]; ok {
 			msgMap[pmsg.Height] = append(msgMap[pmsg.Height], pmsg)
 		} else {
@@ -230,21 +247,6 @@ func getPinListByAddress(ctx *gin.Context) {
 	ctx.JSON(200, apiSuccess(1, "ok", pinList))
 }
 
-// get pin root by address
-func getRootPinByAddress(ctx *gin.Context) {
-	pinMsg, err := man.DbAdapter.GetPinRootByAddress(ctx.Param("address"))
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no init pin found."))
-		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
-		}
-		return
-	}
-	pinMsg.ContentBody = []byte{}
-	ctx.JSON(200, apiSuccess(1, "ok", pinMsg))
-}
-
 // get child node by id
 func getChildNodeById(ctx *gin.Context) {
 	pinList, err := man.DbAdapter.GetChildNodeById(ctx.Param("pinId"))
@@ -283,29 +285,20 @@ type metaInfo struct {
 }
 
 func getInfoByAddress(ctx *gin.Context) {
-	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo(ctx.Param("address"), "address")
+	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo(ctx.Param("address"), true)
 	if err != nil {
 		ctx.JSON(200, apiError(404, "service exception."))
 		return
 	}
 	if metaid == nil {
-		ctx.JSON(200, apiError(100, "no metaid found."))
+		metaid = &pin.MetaIdInfo{MetaId: common.GetMetaIdByAddress(ctx.Param("address")), Address: ctx.Param("address")}
+		//ctx.JSON(200, apiError(100, "no metaid found."))
+		ctx.JSON(200, apiSuccess(1, "ok", metaInfo{metaid, ""}))
 		return
 	}
 	ctx.JSON(200, apiSuccess(1, "ok", metaInfo{metaid, unconfirmed}))
 }
-func getInfoByRootId(ctx *gin.Context) {
-	metaid, _, err := man.DbAdapter.GetMetaIdInfo(ctx.Param("rootId"), "rootid")
-	if err != nil || metaid == nil {
-		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no metaid  found."))
-		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
-		}
-		return
-	}
-	ctx.JSON(200, apiSuccess(1, "ok", metaid))
-}
+
 func generalQuery(ctx *gin.Context) {
 	var g database.Generator
 	if err := ctx.BindJSON(&g); err != nil {

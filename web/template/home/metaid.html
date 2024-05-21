@@ -19,28 +19,28 @@
         <div class="row">
           {{ range $i, $v := .List }}
           <div class="col-md-4 col-xl-3 mb-4 ">
-            <a href="/pin/{{$v.MetaId}}" class="link">
-              <div class="pin-card height-150 blur shadow-blur">
-                <div class="pin-card-body">
-                  <div class="number2">#{{ $v.MetaId | formatRootId}}</div>
-                  <div class="row">
-                    <div style="display: flex;">
-                      {{if $v.Avatar }}
-                      <div class="nav-icon-normal">
-                        <img class="avatar" src="{{ .Avatar }}" />
-                      </div>
-                      {{else}}
-                      <div class="nav-icon-normal">{{ $v.Name }}</div>
-                      {{end}}
-                      <div class="name" style="margin-left: 5px;">
-                        {{ $v.Name }}
-                      </div>
+
+            <div class="pin-card height-150 blur shadow-blur">
+              <div class="pin-card-body">
+                <div class="number2">#{{ $v.MetaId | formatRootId}}</div>
+                <div class="row">
+                  <div style="display: flex;">
+                    {{if $v.Avatar }}
+                    <div class="nav-icon-normal">
+                      <img class="avatar" src="{{ .Avatar }}" />
+                    </div>
+                    {{else}}
+                    <div class="nav-icon-normal">{{ $v.Name }}</div>
+                    {{end}}
+                    <div class="name" style="margin-left: 5px;">
+                      {{ $v.Name }}
                     </div>
                   </div>
-                  <div class="row bio">{{ .Bio }}</div>
                 </div>
+                <div class="row bio">{{ .Bio }}</div>
               </div>
-            </a>
+            </div>
+
           </div>
           {{ end }}
         </div>

@@ -19,15 +19,23 @@ import (
 )
 
 func formatRootId(rootId string) string {
-	if len(rootId) <= 3 {
+	if len(rootId) < 6 {
 		return ""
 	}
-	return fmt.Sprintf("%s...%s", rootId[0:3], rootId[len(rootId)-3:])
+	//return fmt.Sprintf("%s...%s", rootId[0:3], rootId[len(rootId)-3:])
+	return rootId[0:6]
 }
 func popLevelCount(pop string) string {
-	return man.IndexerAdapter.PopLevelCount(pop)
+	lv, _ := man.IndexerAdapter.PopLevelCount(pop)
+	if lv == -1 {
+		return "--"
+	}
+	return fmt.Sprintf("Lv%d", lv)
 }
-
+func popStrShow(pop string) string {
+	_, lastStr := man.IndexerAdapter.PopLevelCount(pop)
+	return lastStr[0:8] + "..."
+}
 func CorsMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		method := context.Request.Method
@@ -51,6 +59,7 @@ func Start(f embed.FS) {
 	funcMap := template.FuncMap{
 		"formatRootId":  formatRootId,
 		"popLevelCount": popLevelCount,
+		"popStrShow":    popStrShow,
 	}
 	//use embed.FS
 	fp, _ := fs.Sub(f, "web/static")
@@ -69,6 +78,7 @@ func Start(f embed.FS) {
 	r.GET("/mempool/:page", mempool)
 	r.GET("/block/:height", block)
 	r.GET("/pin/:number", pinshow)
+	r.GET("/search/:key", searchshow)
 	r.GET("/tx/:txid", tx)
 	r.GET("/node/:rootid", node)
 	r.GET("/content/:number", content)
@@ -92,7 +102,7 @@ func home(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, RootId: p.RootTxId, Pop: p.Pop}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop, MetaId: p.MetaId}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -110,7 +120,7 @@ func pinPageList(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, RootId: p.RootTxId, Pop: p.Pop}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -138,7 +148,7 @@ func mempool(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, RootId: p.RootTxId}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, MetaId: p.MetaId}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -187,6 +197,16 @@ func pinshow(ctx *gin.Context) {
 	ctx.HTML(200, "home/pin.html", pinMsg)
 }
 
+// searchshow
+func searchshow(ctx *gin.Context) {
+	pinMsg, err := man.DbAdapter.GetPinByMeatIdOrId(ctx.Param("key"))
+	if err != nil || pinMsg == nil {
+		ctx.HTML(200, "home/search.html", pinMsg)
+		return
+	}
+	pinMsg.ContentBody = []byte{}
+	ctx.HTML(200, "home/search.html", gin.H{"Key": ctx.Param("key"), "Data": pinMsg})
+}
 func content(ctx *gin.Context) {
 	p, err := man.DbAdapter.GetPinByNumberOrId(ctx.Param("number"))
 	if err != nil || p == nil {

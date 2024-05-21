@@ -31,16 +31,14 @@ func (pg *Postgresql) BatchAddPins(pins []interface{}) (err error) {
 func (pg *Postgresql) BatchUpdatePins(pins []*pin.PinInscription) (err error) {
 	return
 }
-func (pg *Postgresql) UpdateTransferPin(addressMap map[string]string) (err error) {
+func (pg *Postgresql) UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error) {
 	return
 }
-func (pg *Postgresql) GetRootTxId(address string) (metaId string, err error) {
+
+func (pg *Postgresql) GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error) {
 	return
 }
-func (pg *Postgresql) GetMetaIdInfo(rootTxid string, key string) (info *pin.MetaIdInfo, unconfirmed string, err error) {
-	return
-}
-func (pg *Postgresql) BatchUpsertMetaIdInfo(infoList []*pin.MetaIdInfo) (err error) {
+func (pg *Postgresql) BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (err error) {
 	return
 }
 func (pg *Postgresql) BatchAddPinTree(data []interface{}) (err error) {
@@ -61,6 +59,12 @@ func (pg *Postgresql) DeleteMempoolInscription(txIds []string) (err error) {
 func (pg *Postgresql) GetPinByNumberOrId(number string) (pinInscription *pin.PinInscription, err error) {
 	return
 }
+func (pg *Postgresql) GetPinByOutput(output string) (pinInscription *pin.PinInscription, err error) {
+	return
+}
+func (pg *Postgresql) GetPinByMeatIdOrId(key string) (pinInscription *pin.PinInscription, err error) {
+	return
+}
 func (pg *Postgresql) GetPinListByIdList(idList []string) (pinList []*pin.PinInscription, err error) {
 	return
 }
@@ -70,7 +74,7 @@ func (pg *Postgresql) GetMetaIdPageList(page int64, size int64) (pins []*pin.Met
 func (pg *Postgresql) GetBlockPin(height int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
 	return
 }
-func (pg *Postgresql) GetMetaIdPin(roottxid string, page int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
+func (pg *Postgresql) GetMetaIdPin(address string, page int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
 	return
 }
 func (pg *Postgresql) Count() (count pin.PinCount) {
@@ -79,10 +83,8 @@ func (pg *Postgresql) Count() (count pin.PinCount) {
 func (pg *Postgresql) GetPinListByAddress(address string, addressType string, cursor int64, size int64) (pins []*pin.PinInscription, err error) {
 	return
 }
-func (pg *Postgresql) GetPinRootByAddress(address string) (pin *pin.PinInscription, err error) {
-	return
-}
-func (pg *Postgresql) GetChildNodeById(roottxid string) (pins []*pin.PinInscription, err error) {
+
+func (pg *Postgresql) GetChildNodeById(pinId string) (pins []*pin.PinInscription, err error) {
 	return
 }
 func (pg *Postgresql) GetParentNodeById(pinId string) (pinnode *pin.PinInscription, err error) {
