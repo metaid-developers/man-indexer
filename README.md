@@ -90,6 +90,37 @@ keyFile = ""  //ssl certificate, key file path
 Run
 ./manindexer -chain=btc -databse=mongo -server=1 -test=1
 ```
+
+
+# Browser
+
+The MAN indexer comes with a built-in MetaID browser that supports MetaID-related data queries.
+
+## Running
+We support the following three deployment and execution methods.
+1. ### Compile and run
+(1) Compile according to the documentation's compilation section.
+(2) Properly configure the config.toml file in the same directory as the executable.
+(3) Run the executable.
+```
+./manindexer -chain=btc -databse=mongo -server=1 -test=1
+```
+2. ### Download the release
+(1) Download the latest release from here.
+(2) Extract the files.
+(3) Properly configure the config.toml file in the same directory as the executable.
+(4) Run the executable.
+3. ### shell 
+(1) Download the latest shell file from here.
+(2) Execute the shell file on the server.
+```
+./run_manindex.sh
+```
+
+To start an HTTP web service, specify the server parameter as 1 when running the program.
+
+`./manindexer -server=1`
+
 ## Parameters
 ```
 -chain string
@@ -101,16 +132,7 @@ Run
   -test string
         Connect to testnet (default "0")
 ```
-
-# Browser
-
-The MAN indexer comes with a built-in MetaID browser that supports MetaID-related data queries.
-
-## Running
-
-To start an HTTP web service, specify the server parameter as 1 when running the program.
-
-`./manindexer -server=1`
+The optional values for 'test' are 0, 1, and 2, corresponding to mainnet, testnet3, and regtest networks, respectively.
 
 The service's default port is 80/443. If a specific port needs to be specified, it can be done through the port setting under the web category in the configuration file.
 
