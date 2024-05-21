@@ -1,4 +1,5 @@
 {{define "public/head.html"}}
+
 <head>
   <title>MetaID App Node</title>
 
@@ -15,7 +16,7 @@
   <!-- Theme Styles -->
   <link rel="stylesheet" href="/assets/css/theme.css">
   <script src="/assets/js/iconfont.js"></script>
-   <!-- Global Vendor -->
+  <!-- Global Vendor -->
   <script src="/assets/js/jquery.min.js"></script>
   <script src="/assets/js/bootstrap.min.js"></script>
   <!-- Initialization  -->
@@ -28,5 +29,13 @@
       height: 70px !important;
     }
   </style>
+  <script>
+    function search() {
+      const key = document.getElementById("search_key").value.replace(/^s*|s*$/g, '')
+      if (key.length > 0) {
+        location.href = "/search/" + key;
+      }
+    }
+  </script>
 </head>
 {{end}}

@@ -1,4 +1,4 @@
-{{ define "home/pin.html" }}
+{{ define "home/search.html" }}
 <!DOCTYPE html>
 <html lang="en" class="no-js">
 <!-- Head -->
@@ -15,66 +15,61 @@
     <!-- End Sidebar -->
     <div class="u-content">
       <div class="u-body" style="min-height: 500px;">
-        <h2>Personal Information Node {{.Number}}</h2>
-        {{.ContentTypeDetect}}
-        {{if eq .ContentTypeDetect "image/png"}}
+        <h2>Search Result For "{{.Key}}"</h2>
+        {{.Data.ContentTypeDetect}}
+        {{if eq .Data.ContentTypeDetect "image/png"}}
         <div class="img2">
-          <p><img src="{{ .ContentSummary }}" /></p>
+          <p><img src="{{ .Data.ContentSummary }}" /></p>
         </div>
-        {{else if eq .ContentTypeDetect "image/jpeg"}}
+        {{else if eq .Data.ContentTypeDetect "image/jpeg"}}
         <div class="img2">
-          <p><img src="{{ .ContentSummary }}" /></p>
+          <p><img src="{{ .Data.ContentSummary }}" /></p>
         </div>
         {{else}}
         <p>
-        <div class="content2">{{ .ContentSummary }}</div>
+        <div class="content2">{{ .Data.ContentSummary }}</div>
         </p>
         {{end}}
         <p>
         <div class="h4">[id]</div>
-        <div class="info">{{.Id}}</div>
+        <div class="info">{{.Data.Id}}</div>
         </p>
         <p>
         <div class="h4">[MetaID]</div>
-        <div class="info">{{.MetaId}}</div>
-        </p>
-        <p>
-        <div class="h4">[PoP]</div>
-        <div class="info" style="width:90%;word-wrap:break-word; word-break:normal; white-space:normal">{{.Pop}}</div>
+        <div class="info">{{.Data.MetaId}}</div>
         </p>
         <p>
         <div class="h4">[operation]</div>
-        <div class="info">{{.Operation}}</div>
+        <div class="info">{{.Data.Operation}}</div>
         </p>
         <p>
         <div class="h4">[path]</div>
-        <div class="info">{{.Path}}</div>
+        <div class="info">{{.Data.Path}}</div>
         </p>
         <p>
         <div class="h4">[version]</div>
-        <div class="info">{{.Version}}</div>
+        <div class="info">{{.Data.Version}}</div>
         </p>
         <p>
         <div class="h4">[encryption]</div>
-        <div class="info">{{.Encryption}}</div>
+        <div class="info">{{.Data.Encryption}}</div>
         </p>
 
         <p>
         <div class="h4">[address]</div>
-        <div class="info">{{.Address}}</div>
+        <div class="info">{{.Data.Address}}</div>
         </p>
         <p>
         <div class="h4">[output value]</div>
-        <div class="info">{{.OutputValue}}</div>
+        <div class="info">{{.Data.OutputValue}}</div>
         </p>
-
         <p>
         <div class="h4">[preview]</div>
-        <div class="info"><a href="/pin/{{.Id}}" target="_blank">link</a></div>
+        <div class="info"><a href="/pin/{{.Data.Id}}" target="_blank">link</a></div>
         </p>
         <p>
         <div class="h4">[content]</div>
-        <div class="info"><a href="/content/{{.Id}}" target="_blank">link</a></div>
+        <div class="info"><a href="/content/{{.Data.Id}}" target="_blank">link</a></div>
         </p>
         <p>
         <div class="h4">[content length]</div>
@@ -106,7 +101,7 @@
         </p>
         <p>
         <div class="h4">[offset]</div>
-        <div class="info">{{.Offset}}</div>
+        <div class="info">{{.TxInOffset}}</div>
         </p>
 
       </div>

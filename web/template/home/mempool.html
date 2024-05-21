@@ -23,7 +23,7 @@
             <a href="/pin/{{$v.Id}}" class="link">
               <div class="pin-card height-200 blur shadow-blur">
                 <div class="pin-card-body">
-                  <div class="number">#{{ $v.Number }} <span class="type">{{ $v.Operation }} | {{ $v.RootId |
+                  <div class="number">#{{ $v.Number }} <span class="type">{{ $v.Operation }} | {{ $v.MetaId |
                       formatRootId }}</span></div>
                   <div class="type">[{{ $v.Type }}]&nbsp;&nbsp;{{ $v.Path }}</div>
                   {{if eq $v.Type "image/jpeg"}}

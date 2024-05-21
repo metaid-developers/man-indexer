@@ -28,7 +28,7 @@ var (
 	BaseFilter      []string = []string{"/info", "/file"}
 	SyncBaseFilter  map[string]struct{}
 	ProtocolsFilter map[string]struct{}
-	OptionLimit     []string = []string{"init", "create", "modify", "revoke"}
+	OptionLimit     []string = []string{"create", "modify", "revoke"}
 )
 
 const (
@@ -48,6 +48,7 @@ const (
 )
 
 func InitAdapter(chainType, dbType, test, server string) {
+
 	ProtocolsFilter = make(map[string]struct{})
 	SyncBaseFilter = make(map[string]struct{})
 	syncConfig := common.Config.Sync
@@ -72,6 +73,7 @@ func InitAdapter(chainType, dbType, test, server string) {
 		}
 		IndexerAdapter = &bitcoin.Indexer{
 			ChainParams: chainParams,
+			PopCutNum:   common.Config.Btc.PopCutNum,
 		}
 		// case "mvc":
 		// 	ChainAdapter = &mvc.MvcChain{}
@@ -87,6 +89,8 @@ func InitAdapter(chainType, dbType, test, server string) {
 		DbAdapter = &pebbledb.Pebble{}
 	}
 	DbAdapter.InitDatabase()
+	bestHeight := ChainAdapter.GetBestHeight()
+	common.InitHeightFile("./del_mempool_height.txt", bestHeight)
 }
 func ZmqRun() {
 	//zmq
@@ -95,18 +99,6 @@ func ZmqRun() {
 	//go IndexerAdapter.ZmqHashblock()
 	for x := range s {
 		for _, pinNode := range x {
-			if pinNode.Operation == "init" {
-				pinNode.RootTxId = pinNode.GenesisTransaction
-				pinNode.MetaId = pinNode.Id
-			} else {
-				id, err := DbAdapter.GetRootTxId(pinNode.Address)
-				if err != nil {
-					continue
-				}
-				index := strings.LastIndex(string(id), "i")
-				pinNode.MetaId = id
-				pinNode.RootTxId = string(id)[0:index]
-			}
 			if pinNode.Operation == "modify" || pinNode.Operation == "revoke" {
 				pinNode.OriginalId = strings.Replace(pinNode.Path, "@", "", -1)
 				originalPins, err := DbAdapter.GetPinListByIdList([]string{pinNode.OriginalId})
@@ -129,9 +121,16 @@ func ZmqRun() {
 }
 func CheckNewBlock() {
 	bestHeight := ChainAdapter.GetBestHeight()
-	if CurBlockHeight < bestHeight {
-		DeleteMempoolData(bestHeight)
-		CurBlockHeight = bestHeight
+	localLastHeight, err := common.GetLocalLastHeight("./del_mempool_height.txt")
+	if err != nil {
+		return
+	}
+	if localLastHeight >= bestHeight {
+		return
+	}
+	for i := localLastHeight; i <= bestHeight; i++ {
+		DeleteMempoolData(i)
+		common.UpdateLocalLastHeight("./del_mempool_height.txt", i)
 	}
 }
 func DeleteMempoolData(bestHeight int64) {
@@ -196,10 +195,9 @@ func IndexerRun() (err error) {
 	bar.Finish()
 	return
 }
-func GetSaveData(blockHeight int64) (pinList []interface{}, protocolsData []*pin.PinInscription, metaIdData []*pin.MetaIdInfo, pinTreeData []interface{}, updatedData []*pin.PinInscription, mrc20List []*pin.PinInscription, err error) {
+func GetSaveData(blockHeight int64) (pinList []interface{}, protocolsData []*pin.PinInscription, metaIdData map[string]*pin.MetaIdInfo, pinTreeData []interface{}, updatedData []*pin.PinInscription, mrc20List []*pin.PinInscription, err error) {
+	metaIdData = make(map[string]*pin.MetaIdInfo)
 	pins, txInList := IndexerAdapter.CatchPins(blockHeight)
-	curBlockMetaId := make(map[string]string)
-	var unCheckMetaIdData []*pin.MetaIdInfo
 	//check transfer
 	transferCheck, err := DbAdapter.GetPinListByIdList(txInList)
 	if err == nil && len(transferCheck) > 0 {
@@ -207,8 +205,8 @@ func GetSaveData(blockHeight int64) (pinList []interface{}, protocolsData []*pin
 		for _, t := range transferCheck {
 			idMap[t.Id] = struct{}{}
 		}
-		addressMap := IndexerAdapter.CatchTransfer(idMap)
-		DbAdapter.UpdateTransferPin(addressMap)
+		trasferMap := IndexerAdapter.CatchTransfer(idMap)
+		DbAdapter.UpdateTransferPin(trasferMap)
 	}
 	for _, pinNode := range pins {
 		err := validator(pinNode)
@@ -229,14 +227,9 @@ func GetSaveData(blockHeight int64) (pinList []interface{}, protocolsData []*pin
 		// }
 	}
 
-	handlePathAndOperation(&pinList, &unCheckMetaIdData, &curBlockMetaId, &pinTreeData, &updatedData)
-	createPinNumber(&pinList, curBlockMetaId)
-	//getRootTxId(saveData, curBlockMetaId)
-	if len(unCheckMetaIdData) > 0 {
-		metaIdData = checkMetaIdInfo(unCheckMetaIdData, curBlockMetaId)
-	}
+	handlePathAndOperation(&pinList, &metaIdData, &pinTreeData, &updatedData)
+	createPinNumber(&pinList)
 	createMetaIdNumber(metaIdData)
-
 	return
 }
 
@@ -254,58 +247,40 @@ func handleProtocolsData(pinNode *pin.PinInscription) int {
 	}
 	return 0
 }
-func createPinNumber(pinList *[]interface{}, curBlockMetaId map[string]string) {
+func createPinNumber(pinList *[]interface{}) {
 	if len(*pinList) > 0 {
 		maxNumber := DbAdapter.GetMaxNumber()
 		for _, p := range *pinList {
 			pinNode := p.(*pin.PinInscription)
 			pinNode.Number = maxNumber
 			maxNumber += 1
-			if pinNode.RootTxId == "" {
-				id := getRootTxId(pinNode, curBlockMetaId)
-				if id == "" {
-					continue
-				}
-				index := strings.LastIndex(string(id), "i")
-				pinNode.MetaId = id
-				pinNode.RootTxId = string(id)[0:index]
+			if pinNode.MetaId == "" {
+				pinNode.MetaId = common.GetMetaIdByAddress(pinNode.Address)
 			}
 		}
 	}
 }
-func createMetaIdNumber(metaIdData []*pin.MetaIdInfo) {
+func createMetaIdNumber(metaIdData map[string]*pin.MetaIdInfo) {
 	if len(metaIdData) > 0 {
 		maxMetaIdNumber := DbAdapter.GetMaxMetaIdNumber()
 		for _, m := range metaIdData {
-			if m.IsInit {
+			if m.Number == 0 {
 				m.Number = maxMetaIdNumber
 				maxMetaIdNumber += 1
 			}
 		}
 	}
 }
-func handlePathAndOperation(pinList *[]interface{}, unCheckMetaIdData *[]*pin.MetaIdInfo, curBlockMetaId *map[string]string, pinTreeData *[]interface{}, updatedData *[]*pin.PinInscription) {
+func handlePathAndOperation(pinList *[]interface{}, metaIdData *map[string]*pin.MetaIdInfo, pinTreeData *[]interface{}, updatedData *[]*pin.PinInscription) {
 	var modifyPinIdList []string
 	newPinMap := make(map[string]*pin.PinInscription)
 	for _, p := range *pinList {
 		pinNode := p.(*pin.PinInscription)
-		if pinNode.RootTxId == "" {
-			id := getRootTxId(pinNode, *curBlockMetaId)
-			if id == "" {
-				continue
-			}
-			index := strings.LastIndex(string(id), "i")
-			pinNode.MetaId = id
-			pinNode.RootTxId = string(id)[0:index]
+		if pinNode.MetaId == "" {
+			pinNode.MetaId = common.GetMetaIdByAddress(pinNode.Address)
 		}
+		metaIdInfoParse(pinNode, "", metaIdData)
 		switch pinNode.Operation {
-		case "init":
-			metaIdInfo := metaIdInfoParse(pinNode, "")
-			if metaIdInfo != nil {
-				metaIdInfo.IsInit = true
-				*unCheckMetaIdData = append(*unCheckMetaIdData, metaIdInfo)
-				(*curBlockMetaId)[pinNode.Address] = pinNode.Id
-			}
 		case "modify":
 			updatePin := *pinNode
 			updatePin.Status = 1
@@ -323,15 +298,15 @@ func handlePathAndOperation(pinList *[]interface{}, unCheckMetaIdData *[]*pin.Me
 		}
 
 		path := pinNode.Path
-		if len(path) > 5 && path[0:5] == "/info" {
-			metaIdInfo := metaIdInfoParse(pinNode, "")
-			*unCheckMetaIdData = append(*unCheckMetaIdData, metaIdInfo)
-		}
+		// if len(path) > 5 && path[0:5] == "/info" {
+		// 	metaIdInfo := metaIdInfoParse(pinNode, "")
+		// 	*metaIdData = append(*metaIdData, metaIdInfo)
+		// }
 		pathArray := strings.Split(path, "/")
 		if len(pathArray) > 1 && path != "/" {
 			path = strings.Join(pathArray[0:len(pathArray)-1], "/")
 		}
-		pinTree := pin.PinTreeCatalog{RootTxId: pinNode.RootTxId, TreePath: path}
+		pinTree := pin.PinTreeCatalog{RootTxId: common.GetMetaIdByAddress(pinNode.Address), TreePath: path}
 		*pinTreeData = append(*pinTreeData, pinTree)
 	}
 	if len(modifyPinIdList) <= 0 {
@@ -364,11 +339,11 @@ func handlePathAndOperation(pinList *[]interface{}, unCheckMetaIdData *[]*pin.Me
 			}
 			if pinNode.Operation == "modify" && pinNode.Status >= 0 && check {
 				if len(originalPinMap[pinNode.OriginalId].OriginalPath) > 5 && originalPinMap[pinNode.OriginalId].OriginalPath[0:5] == "/info" {
-					metaIdInfo := metaIdInfoParse(pinNode, originalPinMap[pinNode.OriginalId].OriginalPath)
-					*unCheckMetaIdData = append(*unCheckMetaIdData, metaIdInfo)
+					metaIdInfoParse(pinNode, originalPinMap[pinNode.OriginalId].OriginalPath, metaIdData)
 				}
-
 			}
+		} else {
+			metaIdInfoParse(pinNode, "", metaIdData)
 		}
 	}
 }
@@ -425,47 +400,25 @@ func getModifyPinStatus(curPinMap map[string]*pin.PinInscription, originalPinMap
 	}
 	return
 }
-func checkMetaIdInfo(metaIdData []*pin.MetaIdInfo, curBlockMetaId map[string]string) (checkedMetaIdData []*pin.MetaIdInfo) {
-	for _, metaId := range metaIdData {
-		if metaId == nil {
-			continue
-		}
-		if metaId.RootTxId != "" {
-			checkedMetaIdData = append(checkedMetaIdData, metaId)
-			continue
-		}
-		if v, ok := curBlockMetaId[metaId.Address]; ok {
-			metaId.RootTxId = v
-			checkedMetaIdData = append(checkedMetaIdData, metaId)
-			continue
-		}
 
-	}
-	return
-}
-func getRootTxId(pinNode *pin.PinInscription, curBlockMetaId map[string]string) (metaId string) {
-	if pinNode.MetaId != "" {
-		metaId = pinNode.MetaId
-		return
-	}
-	if v, ok := curBlockMetaId[pinNode.Address]; ok {
-		metaId = v
-		return
-	}
-	metaId, _ = DbAdapter.GetRootTxId(pinNode.Address)
-	return
-}
-func metaIdInfoParse(pinNode *pin.PinInscription, path string) (metaIdInfo *pin.MetaIdInfo) {
-	metaIdInfo, _, err := DbAdapter.GetMetaIdInfo(pinNode.RootTxId, "rootid")
-	if err != nil {
-		return
+func metaIdInfoParse(pinNode *pin.PinInscription, path string, metaIdData *map[string]*pin.MetaIdInfo) {
+	var metaIdInfo *pin.MetaIdInfo
+	var ok bool
+	var err error
+	metaIdInfo, ok = (*metaIdData)[pinNode.Address]
+	if !ok {
+		metaIdInfo, _, err = DbAdapter.GetMetaIdInfo(pinNode.Address, false)
+		if err != nil {
+			return
+		}
 	}
 	if metaIdInfo == nil {
-		metaIdInfo = &pin.MetaIdInfo{RootTxId: pinNode.RootTxId, Address: pinNode.Address}
+		metaIdInfo = &pin.MetaIdInfo{MetaId: common.GetMetaIdByAddress(pinNode.Address), Address: pinNode.Address}
 	}
 	if path == "" {
 		path = pinNode.Path
 	}
+
 	if metaIdInfo.MetaId == "" {
 		metaIdInfo.MetaId = pinNode.Id
 	}
@@ -480,5 +433,5 @@ func metaIdInfoParse(pinNode *pin.PinInscription, path string) (metaIdInfo *pin.
 		metaIdInfo.Bio = string(pinNode.ContentBody)
 		metaIdInfo.BioId = pinNode.Id
 	}
-	return
+	(*metaIdData)[pinNode.Address] = metaIdInfo
 }

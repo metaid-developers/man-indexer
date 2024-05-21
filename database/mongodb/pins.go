@@ -47,13 +47,17 @@ func (mg *Mongodb) BatchAddPins(pins []interface{}) (err error) {
 	_, err = mongoClient.Collection(PinsCollection).InsertMany(context.TODO(), pins, &option)
 	return
 }
-func (mg *Mongodb) UpdateTransferPin(addressMap map[string]string) (err error) {
+func (mg *Mongodb) UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error) {
 	var models []mongo.WriteModel
-	for id, address := range addressMap {
+	for id, info := range trasferMap {
 		filter := bson.D{{Key: "id", Value: id}}
 		var updateInfo bson.D
 		updateInfo = append(updateInfo, bson.E{Key: "istransfered", Value: true})
-		updateInfo = append(updateInfo, bson.E{Key: "address", Value: address})
+		updateInfo = append(updateInfo, bson.E{Key: "address", Value: info.Address})
+		updateInfo = append(updateInfo, bson.E{Key: "location", Value: info.Location})
+		updateInfo = append(updateInfo, bson.E{Key: "offset", Value: info.Offset})
+		updateInfo = append(updateInfo, bson.E{Key: "output", Value: info.Output})
+		updateInfo = append(updateInfo, bson.E{Key: "outputvalue", Value: info.OutputValue})
 		update := bson.D{{Key: "$set", Value: updateInfo}}
 		m := mongo.NewUpdateOneModel()
 		m.SetFilter(filter).SetUpdate(update)
@@ -99,6 +103,7 @@ func (mg *Mongodb) GetPinPageList(page int64, size int64) (pins []*pin.PinInscri
 	err = result.All(context.TODO(), &pins)
 	return
 }
+
 func (mg *Mongodb) GetPinListByIdList(idList []string) (pinList []*pin.PinInscription, err error) {
 	filter := bson.M{"id": bson.M{"$in": idList}}
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter)
@@ -108,6 +113,7 @@ func (mg *Mongodb) GetPinListByIdList(idList []string) (pinList []*pin.PinInscri
 	err = result.All(context.TODO(), &pinList)
 	return
 }
+
 func (mg *Mongodb) GetMempoolPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error) {
 	cursor := (page - 1) * size
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
@@ -139,11 +145,26 @@ func (mg *Mongodb) GetPinListByAddress(address string, addressType string, curso
 	err = result.All(context.TODO(), &pins)
 	return
 }
-
-func (mg *Mongodb) GetPinRootByAddress(address string) (pin *pin.PinInscription, err error) {
-	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"address": address, "operation": "init"}).Decode(&pin)
-	if err == mongo.ErrNoDocuments {
-		err = mongoClient.Collection(MempoolPinsCollection).FindOne(context.TODO(), bson.M{"address": address, "operation": "init"}).Decode(&pin)
+func (mg *Mongodb) GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error) {
+	filter := bson.D{{Key: "address", Value: address}, {Key: "status", Value: 0}}
+	match := bson.D{{Key: "$match", Value: filter}}
+	groupStage := bson.D{
+		{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: nil},
+			{Key: "utxo_sum", Value: bson.D{{Key: "$sum", Value: "$outputvalue"}}},
+			{Key: "utxo_num", Value: bson.D{{Key: "$sum", Value: 1}}},
+		}}}
+	cursor, err := mongoClient.Collection(PinsCollection).Aggregate(context.TODO(), mongo.Pipeline{match, groupStage})
+	if err != nil {
+		return
+	}
+	var results []bson.M
+	if err = cursor.All(context.TODO(), &results); err != nil {
+		return
+	}
+	for _, result := range results {
+		utxoNum += int64(result["utxo_num"].(int32))
+		utxoSum += result["utxo_sum"].(int64)
 	}
 	return
 }
@@ -163,7 +184,14 @@ func (mg *Mongodb) GetPinByNumberOrId(numberOrId string) (pinInscription *pin.Pi
 	}
 	return
 }
-
+func (mg *Mongodb) GetPinByMeatIdOrId(key string) (pinInscription *pin.PinInscription, err error) {
+	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"$or": bson.A{bson.M{"id": key}, bson.M{"metaid": key}}}).Decode(&pinInscription)
+	return
+}
+func (mg *Mongodb) GetPinByOutput(output string) (pinInscription *pin.PinInscription, err error) {
+	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.D{{Key: "output", Value: output}}).Decode(&pinInscription)
+	return
+}
 func (mg *Mongodb) GetMemPoolPinByNumberOrId(numberOrId string) (pinInscription *pin.PinInscription, err error) {
 	number, err1 := strconv.ParseInt(numberOrId, 10, 64)
 	if err1 == nil {
@@ -192,9 +220,9 @@ func (mg *Mongodb) GetBlockPin(height int64, size int64) (pins []*pin.PinInscrip
 	return
 }
 
-func (mg *Mongodb) GetMetaIdPin(roottxid string, page int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
+func (mg *Mongodb) GetMetaIdPin(address string, page int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
 	cursor := (page - 1) * size
-	filter := bson.D{{Key: "roottxid", Value: roottxid}}
+	filter := bson.D{{Key: "address", Value: address}}
 	opts := options.Find().SetSort(bson.D{{Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -207,9 +235,9 @@ func (mg *Mongodb) GetMetaIdPin(roottxid string, page int64, size int64) (pins [
 	total, err = mongoClient.Collection(PinsCollection).CountDocuments(context.TODO(), filter)
 	return
 }
-func (mg *Mongodb) GetChildNodeById(roottxid string) (pins []*pin.PinInscription, err error) {
+func (mg *Mongodb) GetChildNodeById(pinId string) (pins []*pin.PinInscription, err error) {
 	var p *pin.PinInscription
-	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"roottxid": roottxid}).Decode(&p)
+	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"id": pinId}).Decode(&p)
 	if err != nil {
 		return
 	}
@@ -228,7 +256,7 @@ func (mg *Mongodb) GetParentNodeById(pinId string) (pinnode *pin.PinInscription,
 	if err != nil {
 		return
 	}
-	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"roottxid": p.RootTxId, "path": p.ParentPath}).Decode(&p)
+	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"metaid": p.MetaId, "path": p.ParentPath}).Decode(&p)
 	if err != nil {
 		return
 	}

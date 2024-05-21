@@ -54,17 +54,16 @@ func connectMongoDb() {
 	}
 	mongoClient = client.Database(mg.DbName)
 	createIndexIfNotExists(mongoClient, PinsCollection, "id_1", bson.D{{Key: "id", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, PinsCollection, "output_1", bson.D{{Key: "output", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinsCollection, "metaid_1", bson.D{{Key: "metaid", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "number_1", bson.D{{Key: "number", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, PinsCollection, "address_status_1", bson.D{{Key: "address", Value: 1}, {Key: "status", Value: 1}}, false)
 
 	createIndexIfNotExists(mongoClient, MempoolPinsCollection, "id_1", bson.D{{Key: "id", Value: 1}}, true)
 
 	createIndexIfNotExists(mongoClient, MetaIdInfoCollection, "address_1", bson.D{{Key: "address", Value: 1}}, true)
-	createIndexIfNotExists(mongoClient, MetaIdInfoCollection, "roottxid_1", bson.D{{Key: "roottxid", Value: 1}}, false)
 
 	createIndexIfNotExists(mongoClient, PinTreeCatalogCollection, "treepath_1", bson.D{{Key: "treepath", Value: 1}}, true)
-	createIndexIfNotExists(mongoClient, PinTreeCatalogCollection, "roottxid_1", bson.D{{Key: "roottxid", Value: 1}}, false)
-
 }
 
 func (mg *Mongodb) Count() (count pin.PinCount) {
