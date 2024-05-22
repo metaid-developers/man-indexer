@@ -186,7 +186,7 @@ General query for protocols data, supports fetching data using get, count, sum m
 Endpoint: /api/generalQuery
 
 **Method:** POST
-```
+```json
 {
     "collection": "pins", // Name of the collection to query, required
     "action": "sum", // Query operation, supports get, count, sum 
@@ -213,7 +213,7 @@ Endpoint: /api/generalQuery
 ```
 
 **Successful Response Example**
-```
+```json
 {
 	"collection": "paylike",
 	"action": "get",
@@ -231,7 +231,7 @@ Endpoint: /api/generalQuery
 ```
 
 **Failed Response Example**
-```
+```json
 {
     "code": -1,
     "message": "Data not found",
