@@ -28,7 +28,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 	man.InitAdapter(*chain, *db, *test, *server)
-	log.Println(fmt.Sprintf("ManIndex,chain=%s,test=%s,db=%s,server=%s", *chain, *test, *db, *server))
+	log.Printf("ManIndex,chain=%s,test=%s,db=%s,server=%s", *chain, *test, *db, *server)
 	if *server == "1" {
 		go api.Start(f)
 	}

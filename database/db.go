@@ -36,11 +36,12 @@ type Db interface {
 	GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error)
 	GetMempoolPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error)
 	DeleteMempoolInscription(txIds []string) (err error)
-	GetPinListByAddress(address string, addressType string, cursor int64, size int64) (pins []*pin.PinInscription, err error)
+	GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string) (pins []*pin.PinInscription, total int64, err error)
 	GetPinByNumberOrId(number string) (pinInscription *pin.PinInscription, err error)
 	GetPinByOutput(output string) (pinInscription *pin.PinInscription, err error)
 	GetPinByMeatIdOrId(key string) (pinInscription *pin.PinInscription, err error)
 	GetPinListByIdList(idList []string) (pinList []*pin.PinInscription, err error)
+	GetPinListByOutPutList(outputList []string) (pinList []*pin.PinInscription, err error)
 	GetMetaIdPageList(page int64, size int64) (pins []*pin.MetaIdInfo, err error)
 	GetBlockPin(height int64, size int64) (pins []*pin.PinInscription, total int64, err error)
 	GetMetaIdPin(address string, page int64, size int64) (pins []*pin.PinInscription, total int64, err error)
@@ -50,4 +51,7 @@ type Db interface {
 	GetAllPinByPath(page, limit int64, path string) (pins []*pin.PinInscription, total int64, err error)
 	BatchAddProtocolData(pins []*pin.PinInscription) (err error)
 	GeneratorFind(generator Generator) (data []map[string]interface{}, err error)
+	//follow
+	// BatchUpsertFollowData(followData map[string]*pin.FollowData) (err error)
+	// GetFollowDataByMetaId()
 }

@@ -5,6 +5,7 @@ import (
 	"manindexer/pin"
 	"time"
 
+	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 )
@@ -40,6 +41,15 @@ func (chain *BitcoinChain) GetBlock(blockHeight int64) (block interface{}, err e
 		return
 	}
 	block, err = client.GetBlock(blockhash)
+	return
+}
+func (chain *BitcoinChain) GetBlockByHash(hash string) (block *btcjson.GetBlockVerboseResult, err error) {
+	blockhash, err := chainhash.NewHashFromStr(hash)
+	if err != nil {
+		return
+	}
+	block, err = client.GetBlockVerbose(blockhash)
+
 	return
 }
 func (chain *BitcoinChain) GetTransaction(txId string) (tx interface{}, err error) {

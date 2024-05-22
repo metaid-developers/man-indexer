@@ -224,13 +224,14 @@ func getPinUtxoCountByAddress(ctx *gin.Context) {
 func getPinListByAddress(ctx *gin.Context) {
 	cursorStr := ctx.Query("cursor")
 	sizeStr := ctx.Query("size")
+	cnt := ctx.Query("cnt")
 	cursor := int64(0)
 	size := int64(10000)
 	if cursorStr != "" && sizeStr != "" {
 		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
 		size, _ = strconv.ParseInt(sizeStr, 10, 64)
 	}
-	pinList, err := man.DbAdapter.GetPinListByAddress(ctx.Param("address"), ctx.Param("addressType"), cursor, size)
+	pinList, total, err := man.DbAdapter.GetPinListByAddress(ctx.Param("address"), ctx.Param("addressType"), cursor, size, cnt)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			ctx.JSON(200, apiError(100, "no  pin found."))
@@ -244,7 +245,12 @@ func getPinListByAddress(ctx *gin.Context) {
 		pin.Preview = common.Config.Web.Host + "/pin/" + pin.Id
 		pin.Content = common.Config.Web.Host + "/content/" + pin.Id
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", pinList))
+	if cnt == "true" {
+		ctx.JSON(200, apiSuccess(1, "ok", gin.H{"list": pinList, "total": total}))
+	} else {
+		ctx.JSON(200, apiSuccess(1, "ok", pinList))
+	}
+
 }
 
 // get child node by id

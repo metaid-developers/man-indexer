@@ -25,7 +25,7 @@ var (
 	//Number          int64    = 0
 	MaxHeight       int64    = 0
 	CurBlockHeight  int64    = 0
-	BaseFilter      []string = []string{"/info", "/file"}
+	BaseFilter      []string = []string{"/info", "/file", "/flow"}
 	SyncBaseFilter  map[string]struct{}
 	ProtocolsFilter map[string]struct{}
 	OptionLimit     []string = []string{"create", "modify", "revoke"}
@@ -199,11 +199,11 @@ func GetSaveData(blockHeight int64) (pinList []interface{}, protocolsData []*pin
 	metaIdData = make(map[string]*pin.MetaIdInfo)
 	pins, txInList := IndexerAdapter.CatchPins(blockHeight)
 	//check transfer
-	transferCheck, err := DbAdapter.GetPinListByIdList(txInList)
+	transferCheck, err := DbAdapter.GetPinListByOutPutList(txInList)
 	if err == nil && len(transferCheck) > 0 {
 		idMap := make(map[string]struct{})
 		for _, t := range transferCheck {
-			idMap[t.Id] = struct{}{}
+			idMap[t.Output] = struct{}{}
 		}
 		trasferMap := IndexerAdapter.CatchTransfer(idMap)
 		DbAdapter.UpdateTransferPin(trasferMap)

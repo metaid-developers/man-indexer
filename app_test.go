@@ -74,12 +74,12 @@ func TestConfig(t *testing.T) {
 }
 
 func TestGetDbPin(t *testing.T) {
-	mg := mongodb.Mongodb{}
-	p, err := mg.GetPinByNumberOrId("64")
-	fmt.Println(err)
+	man.InitAdapter("btc", "mongo", "1", "1")
+	p, err := man.DbAdapter.GetPinByNumberOrId("256")
+	fmt.Println(err, p)
 	//fmt.Println(p.ContentBody)
-	contentType := common.DetectContentType(&p.ContentBody)
-	fmt.Println(contentType)
+	//contentType := common.DetectContentType(&p.ContentBody)
+	//fmt.Println(contentType)
 }
 func TestMongoGeneratorFind(t *testing.T) {
 	jsonData := `
@@ -104,11 +104,24 @@ func TestMongoGeneratorFind(t *testing.T) {
 	}
 }
 func TestGetSaveData(t *testing.T) {
-	man.InitAdapter("btc", "mongo", "2", "1")
-	a, _, _, _, _, _, _ := man.GetSaveData(471)
-	//mg := mongodb.Mongodb{}
-	//err := mg.BatchUpsertMetaIdInfo(d)
-	fmt.Println(a)
+	man.InitAdapter("btc", "mongo", "1", "1")
+	man.GetSaveData(2816534)
+	// chain := &bitcoin.BitcoinChain{}
+
+	// b, _ := chain.GetBlock(2816534)
+	// block := b.(*wire.MsgBlock)
+	// for _, tx := range block.Transactions {
+	// 	if tx.TxHash().String() == "1aa8b3f358fcd4931c1a59d0c1eab6476909b92f02d2c215471cbdd03bb910da" {
+	// 		for _, in := range tx.TxIn {
+	// 			id := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+	// 			if id == "fa387e936bd347b1f22a3d5f9989ae3b5d1a7726da00a4c5462a624387467014i0" {
+	// 				fmt.Println("find")
+	// 			}
+	// 		}
+	// 		break
+	// 	}
+	// }
+	//fmt.Println(block.Header.BlockHash().String())
 }
 func TestHash(t *testing.T) {
 	add := "tb1pss8ce6tgupnhmfj8u9h4saue48upucu04c7549tzal6n67v8njyst7e0fx"

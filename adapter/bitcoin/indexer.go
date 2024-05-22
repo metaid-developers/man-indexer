@@ -49,7 +49,7 @@ func (indexer *Indexer) CatchPins(blockHeight int64) (pinInscriptions []*pin.Pin
 	merkleRoot := block.Header.MerkleRoot.String()
 	for i, tx := range block.Transactions {
 		for _, in := range tx.TxIn {
-			id := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			txInList = append(txInList, id)
 		}
 		if !tx.HasWitness() {
@@ -67,7 +67,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 	block := indexer.Block.(*wire.MsgBlock)
 	for _, tx := range block.Transactions {
 		for _, in := range tx.TxIn {
-			id := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			if _, ok := idMap[id]; ok {
 				info, err := indexer.getOWnerAddress(id, tx)
 				if err == nil && info != nil {
@@ -81,7 +81,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (info *pin.PinTransferInfo, err error) {
 	//fmt.Println("tx:", tx.TxHash().String(), inputId)
 	info = &pin.PinTransferInfo{}
-	firstInputId := fmt.Sprintf("%si%d", tx.TxIn[0].PreviousOutPoint.Hash, tx.TxIn[0].PreviousOutPoint.Index)
+	firstInputId := fmt.Sprintf("%s:%d", tx.TxIn[0].PreviousOutPoint.Hash, tx.TxIn[0].PreviousOutPoint.Index)
 	if len(tx.TxIn) == 1 || firstInputId == inputId {
 		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(tx.TxOut[0].PkScript, indexer.ChainParams)
 		if len(addresses) > 0 {
@@ -101,7 +101,7 @@ func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (info *p
 	}
 	inputValue := int64(0)
 	for _, in := range tx.TxIn {
-		id := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash, in.PreviousOutPoint.Index)
+		id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash, in.PreviousOutPoint.Index)
 		if id == inputId {
 			break
 		}
@@ -118,7 +118,7 @@ func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (info *p
 	outputValue := int64(0)
 	for i, out := range tx.TxOut {
 		outputValue += out.Value
-		if outputValue >= inputValue {
+		if outputValue > inputValue {
 			class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
 			if len(addresses) > 0 {
 				info.Address = addresses[0].String()
@@ -246,7 +246,7 @@ func (indexer *Indexer) getPinOwner(tx *wire.MsgTx, inIdx int) (address string, 
 	outputValue := int64(0)
 	for x, out := range tx.TxOut {
 		outputValue += out.Value
-		if outputValue >= inputValue {
+		if outputValue > inputValue {
 			locationIdx = outputValue - inputValue
 			_, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
 			if len(addresses) > 0 {
