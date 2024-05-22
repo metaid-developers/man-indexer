@@ -188,26 +188,25 @@ Endpoint: /api/generalQuery
 **Method:** POST
 ```json
 {
-    "collection": "pins", // Name of the collection to query, required
-    "action": "sum", // Query operation, supports get, count, sum 
-    "filterRelation": "or", // Query condition relationship, supports or, and (cannot be mixed) 
-    "field": [ "number" // Field to return in the query, required for sum operation ], 
-     // Query conditions 
+    "collection": "Name of the collection to query, required, e.g.,: pins",
+    "action": "Query operation, supports get, count, sum , e.g.,: sum",
+    "filterRelation": "Query condition relationship, supports or, and (cannot be mixed), e.g.,: or", 
+    "field": [ "Field to return in the query, required for sum operation, e.g.,: number"], 
     "filter": [
 	       { 
-	         "operator": "=", // Condition operator, supports =, >, >=, <, <= 
-	         "key": "number", // Condition field
-	         "value": 1 // Query value 
+	         "operator": " Condition operator, supports =, >, >=, <, <=, e.g.,: =", 
+	         "key": "Condition field,e.g.,:number",
+	         "value": 1 
 	       },
 	       {
 	         "operator": "=", "key": "number", "value": 2
 	        }
           ],
-	"cursor": 0, // Starting point for returned data 
-	"limit": 1, // Number of data records to return
+	"cursor": 0,
+	"limit": 1, 
 	"sort": [ 
-        	"number", // Field to sort by 
-		"desc" // Order, supports asc, desc 
+        	"number", 
+		"desc"
         ]
 }
 ```
