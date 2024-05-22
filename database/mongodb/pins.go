@@ -140,11 +140,15 @@ func (mg *Mongodb) DeleteMempoolInscription(txIds []string) (err error) {
 	}
 	return
 }
-func (mg *Mongodb) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string) (pins []*pin.PinInscription, total int64, err error) {
+func (mg *Mongodb) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string, path string) (pins []*pin.PinInscription, total int64, err error) {
 	opts := options.Find().SetSort(bson.D{{Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
-	filter := bson.M{"address": address, "status": 0}
+	addStr := "address"
 	if addressType == "creator" {
-		filter = bson.M{"createaddress": address, "status": 0}
+		addStr = "createaddress"
+	}
+	filter := bson.M{addStr: address, "status": 0}
+	if path != "" {
+		filter = bson.M{addStr: address, "status": 0, "originalpath": path}
 	}
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -196,7 +200,7 @@ func (mg *Mongodb) GetPinByNumberOrId(numberOrId string) (pinInscription *pin.Pi
 	return
 }
 func (mg *Mongodb) GetPinByMeatIdOrId(key string) (pinInscription *pin.PinInscription, err error) {
-	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"$or": bson.A{bson.M{"id": key}, bson.M{"metaid": key}}}).Decode(&pinInscription)
+	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"$or": bson.A{bson.M{"id": key}, bson.M{"metaid": key}, bson.M{"genesistransaction": key}}}).Decode(&pinInscription)
 	return
 }
 func (mg *Mongodb) GetPinByOutput(output string) (pinInscription *pin.PinInscription, err error) {

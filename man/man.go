@@ -173,7 +173,7 @@ func IndexerRun() (err error) {
 	for i := from + 1; i <= to; i++ {
 		bar.Add(1)
 		MaxHeight = i
-		pinList, protocolsData, metaIdData, pinTreeData, updatedData, _, _ := GetSaveData(i)
+		pinList, protocolsData, metaIdData, pinTreeData, updatedData, _, followData, infoAdditional, _ := GetSaveData(i)
 		if len(metaIdData) > 0 {
 			err = DbAdapter.BatchUpsertMetaIdInfo(metaIdData)
 			//metaIdData = metaIdData[0:0]
@@ -191,11 +191,26 @@ func IndexerRun() (err error) {
 		if len(updatedData) > 0 {
 			DbAdapter.BatchUpdatePins(updatedData)
 		}
+		if len(followData) > 0 {
+			DbAdapter.BatchUpsertFollowData(followData)
+		}
+		if len(infoAdditional) > 0 {
+			DbAdapter.BatchUpsertMetaIdInfoAddition(infoAdditional)
+		}
 	}
 	bar.Finish()
 	return
 }
-func GetSaveData(blockHeight int64) (pinList []interface{}, protocolsData []*pin.PinInscription, metaIdData map[string]*pin.MetaIdInfo, pinTreeData []interface{}, updatedData []*pin.PinInscription, mrc20List []*pin.PinInscription, err error) {
+func GetSaveData(blockHeight int64) (
+	pinList []interface{},
+	protocolsData []*pin.PinInscription,
+	metaIdData map[string]*pin.MetaIdInfo,
+	pinTreeData []interface{},
+	updatedData []*pin.PinInscription,
+	mrc20List []*pin.PinInscription,
+	followData []*pin.FollowData,
+	infoAdditional []*pin.MetaIdInfoAdditional,
+	err error) {
 	metaIdData = make(map[string]*pin.MetaIdInfo)
 	pins, txInList := IndexerAdapter.CatchPins(blockHeight)
 	//check transfer
@@ -227,7 +242,7 @@ func GetSaveData(blockHeight int64) (pinList []interface{}, protocolsData []*pin
 		// }
 	}
 
-	handlePathAndOperation(&pinList, &metaIdData, &pinTreeData, &updatedData)
+	handlePathAndOperation(&pinList, &metaIdData, &pinTreeData, &updatedData, &followData, &infoAdditional)
 	createPinNumber(&pinList)
 	createMetaIdNumber(metaIdData)
 	return
@@ -271,7 +286,13 @@ func createMetaIdNumber(metaIdData map[string]*pin.MetaIdInfo) {
 		}
 	}
 }
-func handlePathAndOperation(pinList *[]interface{}, metaIdData *map[string]*pin.MetaIdInfo, pinTreeData *[]interface{}, updatedData *[]*pin.PinInscription) {
+func handlePathAndOperation(
+	pinList *[]interface{},
+	metaIdData *map[string]*pin.MetaIdInfo,
+	pinTreeData *[]interface{},
+	updatedData *[]*pin.PinInscription,
+	followData *[]*pin.FollowData,
+	infoAdditional *[]*pin.MetaIdInfoAdditional) {
 	var modifyPinIdList []string
 	newPinMap := make(map[string]*pin.PinInscription)
 	for _, p := range *pinList {
@@ -308,6 +329,15 @@ func handlePathAndOperation(pinList *[]interface{}, metaIdData *map[string]*pin.
 		}
 		pinTree := pin.PinTreeCatalog{RootTxId: common.GetMetaIdByAddress(pinNode.Address), TreePath: path}
 		*pinTreeData = append(*pinTreeData, pinTree)
+		//follow
+		if path == "/follow " {
+			*followData = append(*followData, creatFollowData(pinNode, true))
+		}
+		//infoAdditional
+		additional := createInfoAdditional(pinNode, path)
+		if additional != (pin.MetaIdInfoAdditional{}) {
+			*infoAdditional = append(*infoAdditional, &additional)
+		}
 	}
 	if len(modifyPinIdList) <= 0 {
 		return
@@ -342,10 +372,55 @@ func handlePathAndOperation(pinList *[]interface{}, metaIdData *map[string]*pin.
 					metaIdInfoParse(pinNode, originalPinMap[pinNode.OriginalId].OriginalPath, metaIdData)
 				}
 			}
+			//unfollow
+			if pinNode.Operation == "revoke" && pinNode.OriginalPath == "/follow" {
+				*followData = append(*followData, creatFollowData(pinNode, false))
+			}
+			//infoAdditional
+			if pinNode.Operation == "modify" {
+				additional := createInfoAdditional(pinNode, pinNode.OriginalPath)
+				if additional != (pin.MetaIdInfoAdditional{}) {
+					*infoAdditional = append(*infoAdditional, &additional)
+				}
+			}
+
 		} else {
 			metaIdInfoParse(pinNode, "", metaIdData)
 		}
 	}
+}
+func createInfoAdditional(pinNode *pin.PinInscription, path string) (addition pin.MetaIdInfoAdditional) {
+	if len(path) > 7 && path[0:6] == "/info/" {
+		infoPathArr := strings.Split(path, "/")
+		if len(infoPathArr) < 3 || infoPathArr[2] == "name" || infoPathArr[2] == "avatar" || infoPathArr[2] == "bio" {
+			return
+		}
+		addition = pin.MetaIdInfoAdditional{
+			MetaId:    pinNode.MetaId,
+			InfoKey:   infoPathArr[2],
+			InfoValue: string(pinNode.ContentBody),
+			PinId:     pinNode.Id,
+		}
+	}
+	return
+}
+func creatFollowData(pinNode *pin.PinInscription, follow bool) (followData *pin.FollowData) {
+	if pinNode.MetaId == "" {
+		pinNode.MetaId = common.GetMetaIdByAddress(pinNode.Address)
+	}
+	followData = &pin.FollowData{}
+	if follow {
+		followData.MetaId = string(pinNode.ContentBody)
+		followData.FollowMetaId = pinNode.MetaId
+		followData.FollowPinId = pinNode.Id
+		followData.FollowTime = pinNode.Timestamp
+		followData.Status = true
+	} else {
+		followData.FollowMetaId = strings.Replace(pinNode.Path, "@", "", -1)
+		followData.UnFollowPinId = pinNode.Id
+		followData.Status = false
+	}
+	return
 }
 func getModifyPinStatus(curPinMap map[string]*pin.PinInscription, originalPinMap map[string]*pin.PinInscription) (statusMap map[string]int) {
 	statusMap = make(map[string]int)

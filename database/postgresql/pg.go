@@ -83,7 +83,7 @@ func (pg *Postgresql) GetMetaIdPin(address string, page int64, size int64) (pins
 func (pg *Postgresql) Count() (count pin.PinCount) {
 	return
 }
-func (pg *Postgresql) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string) (pins []*pin.PinInscription, total int64, err error) {
+func (pg *Postgresql) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string, path string) (pins []*pin.PinInscription, total int64, err error) {
 	return
 }
 
@@ -103,5 +103,14 @@ func (pg *Postgresql) BatchAddProtocolData(pins []*pin.PinInscription) (err erro
 	return
 }
 func (pg *Postgresql) GeneratorFind(generator database.Generator) (data []map[string]interface{}, err error) {
+	return
+}
+func (pg *Postgresql) BatchUpsertFollowData(followData []*pin.FollowData) (err error) {
+	return
+}
+func (pg *Postgresql) GetFollowDataByMetaId(metaId string) (followData []*pin.FollowData, err error) {
+	return
+}
+func (pg *Postgresql) BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAdditional) (err error) {
 	return
 }

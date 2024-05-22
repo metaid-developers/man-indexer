@@ -31,12 +31,13 @@ type Db interface {
 	AddMempoolPin(pin *pin.PinInscription) (err error)
 	GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error)
 	BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (err error)
+	BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAdditional) (err error)
 	BatchAddPinTree(data []interface{}) (err error)
 	GetPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error)
 	GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error)
 	GetMempoolPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error)
 	DeleteMempoolInscription(txIds []string) (err error)
-	GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string) (pins []*pin.PinInscription, total int64, err error)
+	GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string, path string) (pins []*pin.PinInscription, total int64, err error)
 	GetPinByNumberOrId(number string) (pinInscription *pin.PinInscription, err error)
 	GetPinByOutput(output string) (pinInscription *pin.PinInscription, err error)
 	GetPinByMeatIdOrId(key string) (pinInscription *pin.PinInscription, err error)
@@ -52,6 +53,6 @@ type Db interface {
 	BatchAddProtocolData(pins []*pin.PinInscription) (err error)
 	GeneratorFind(generator Generator) (data []map[string]interface{}, err error)
 	//follow
-	// BatchUpsertFollowData(followData map[string]*pin.FollowData) (err error)
-	// GetFollowDataByMetaId()
+	BatchUpsertFollowData(followData []*pin.FollowData) (err error)
+	GetFollowDataByMetaId(metaId string) (followData []*pin.FollowData, err error)
 }

@@ -225,13 +225,14 @@ func getPinListByAddress(ctx *gin.Context) {
 	cursorStr := ctx.Query("cursor")
 	sizeStr := ctx.Query("size")
 	cnt := ctx.Query("cnt")
+	path := ctx.Query("path")
 	cursor := int64(0)
 	size := int64(10000)
 	if cursorStr != "" && sizeStr != "" {
 		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
 		size, _ = strconv.ParseInt(sizeStr, 10, 64)
 	}
-	pinList, total, err := man.DbAdapter.GetPinListByAddress(ctx.Param("address"), ctx.Param("addressType"), cursor, size, cnt)
+	pinList, total, err := man.DbAdapter.GetPinListByAddress(ctx.Param("address"), ctx.Param("addressType"), cursor, size, cnt, path)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			ctx.JSON(200, apiError(100, "no  pin found."))
