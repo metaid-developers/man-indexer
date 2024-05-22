@@ -68,6 +68,9 @@ func (pg *Postgresql) GetPinByMeatIdOrId(key string) (pinInscription *pin.PinIns
 func (pg *Postgresql) GetPinListByIdList(idList []string) (pinList []*pin.PinInscription, err error) {
 	return
 }
+func (pg *Postgresql) GetPinListByOutPutList(outputList []string) (pinList []*pin.PinInscription, err error) {
+	return
+}
 func (pg *Postgresql) GetMetaIdPageList(page int64, size int64) (pins []*pin.MetaIdInfo, err error) {
 	return
 }
@@ -80,7 +83,7 @@ func (pg *Postgresql) GetMetaIdPin(address string, page int64, size int64) (pins
 func (pg *Postgresql) Count() (count pin.PinCount) {
 	return
 }
-func (pg *Postgresql) GetPinListByAddress(address string, addressType string, cursor int64, size int64) (pins []*pin.PinInscription, err error) {
+func (pg *Postgresql) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string) (pins []*pin.PinInscription, total int64, err error) {
 	return
 }
 

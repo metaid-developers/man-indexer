@@ -50,7 +50,7 @@ func (mg *Mongodb) BatchAddPins(pins []interface{}) (err error) {
 func (mg *Mongodb) UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error) {
 	var models []mongo.WriteModel
 	for id, info := range trasferMap {
-		filter := bson.D{{Key: "id", Value: id}}
+		filter := bson.D{{Key: "output", Value: id}}
 		var updateInfo bson.D
 		updateInfo = append(updateInfo, bson.E{Key: "istransfered", Value: true})
 		updateInfo = append(updateInfo, bson.E{Key: "address", Value: info.Address})
@@ -113,7 +113,15 @@ func (mg *Mongodb) GetPinListByIdList(idList []string) (pinList []*pin.PinInscri
 	err = result.All(context.TODO(), &pinList)
 	return
 }
-
+func (mg *Mongodb) GetPinListByOutPutList(outputList []string) (pinList []*pin.PinInscription, err error) {
+	filter := bson.M{"output": bson.M{"$in": outputList}}
+	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter)
+	if err != nil {
+		return
+	}
+	err = result.All(context.TODO(), &pinList)
+	return
+}
 func (mg *Mongodb) GetMempoolPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error) {
 	cursor := (page - 1) * size
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
@@ -132,7 +140,7 @@ func (mg *Mongodb) DeleteMempoolInscription(txIds []string) (err error) {
 	}
 	return
 }
-func (mg *Mongodb) GetPinListByAddress(address string, addressType string, cursor int64, size int64) (pins []*pin.PinInscription, err error) {
+func (mg *Mongodb) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string) (pins []*pin.PinInscription, total int64, err error) {
 	opts := options.Find().SetSort(bson.D{{Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
 	filter := bson.M{"address": address, "status": 0}
 	if addressType == "creator" {
@@ -143,6 +151,9 @@ func (mg *Mongodb) GetPinListByAddress(address string, addressType string, curso
 		return
 	}
 	err = result.All(context.TODO(), &pins)
+	if cnt == "true" {
+		total, err = mongoClient.Collection(PinsCollection).CountDocuments(context.TODO(), filter)
+	}
 	return
 }
 func (mg *Mongodb) GetPinUtxoCountByAddress(address string) (utxoNum int64, utxoSum int64, err error) {

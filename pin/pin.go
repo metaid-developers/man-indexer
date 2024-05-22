@@ -1,8 +1,8 @@
 package pin
 
 const (
-	ProtocolID string = "746573746964" //testid(HEX16)
-	//ProtocolID    string = "6d6574616964" //metaid
+	//ProtocolID string = "746573746964" //testid(HEX16)
+	ProtocolID    string = "6d6574616964" //metaid
 	CompliantPath string = "info;file;protocols;nft;ft;mrc20"
 )
 
@@ -59,7 +59,14 @@ type PersonalInformationNode struct {
 	ParentPath    string `json:"parentPath"`
 	Protocols     bool   `json:"protocols"`
 }
-
+type FollowData struct {
+	MetaId        string `json:"metaId"`
+	FollowMetaId  string `json:"followMetaId"`
+	FoloowTime    int64  `json:"foloowTime"`
+	FollowPinId   string `json:"followPinId"`
+	UnFollowPinId string `json:"unFollowPinId"`
+	Status        bool   `json:"status"`
+}
 type MetaIdInfo struct {
 	Number        int64  `json:"number"`
 	MetaId        string `json:"metaid"`

@@ -6,3 +6,6 @@ pem/
 pebble_data
 config.toml
 del_mempool_height.txt
+releases
+.gitignore
+manindex-linux.tar.gz
