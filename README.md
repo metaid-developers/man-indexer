@@ -95,6 +95,7 @@ Run
 # Browser
 
 The MAN indexer comes with a built-in MetaID browser that supports MetaID-related data queries.
+This is the deployed and live MAN browser: https://man.metaid.io
 
 ## Running
 We support the following three deployment and execution methods.
@@ -106,7 +107,7 @@ We support the following three deployment and execution methods.
 ./manindexer -chain=btc -databse=mongo -server=1 -test=1
 ```
 2. ### Download the release
-  - Download the latest release from here.
+  - Download the latest release from [here](https://github.com/metaid-developers/man-indexer/releases).
   - Extract the files.
   - Properly configure the config.toml file in the same directory as the executable.
   - Run the executable.
@@ -147,8 +148,7 @@ Accepts keywords such as MetaID, MetaID Number, Pin Id for querying, but does no
 ### PIN
 
 Lists all PINs in reverse chronological order. Clicking on a PIN allows you to view more information, such as:
-
-[420127091f518b0625d19c4d0796c4c6f1f30a111233c09b9e78964aca4712eci0](https://man-test.metaid.io/pin/420127091f518b0625d19c4d0796c4c6f1f30a111233c09b9e78964aca4712eci0)
+[9bc429654d35a11e5dde0136e3466faa03507d7377769743fafa069e38580243i0](https://man.metaid.io/pin/9bc429654d35a11e5dde0136e3466faa03507d7377769743fafa069e38580243i0)
 
 ### MetaID
 
@@ -157,8 +157,7 @@ Lists all MetaIDs in descending order of creation time. Clicking on a MetaID all
 ### Block
 
 Lists all blocks with MetaID protocol data in reverse order of block height. Clicking on a card allows you to view the specific transaction details in that block, such as:
-
-[https://man-test.metaid.io/block/2581919](https://man-test.metaid.io/block/2581919)
+[https://man.metaid.io/block/844453](https://man.metaid.io/block/844453)
 
 ### Mempool
 
@@ -189,23 +188,28 @@ Endpoint: /api/generalQuery
 **Method:** POST
 ```
 {
-	"collection": "pins", // Name of the collection to query, required
+    "collection": "pins", // Name of the collection to query, required
     "action": "sum", // Query operation, supports get, count, sum 
     "filterRelation": "or", // Query condition relationship, supports or, and (cannot be mixed) 
     "field": [ "number" // Field to return in the query, required for sum operation ], 
      // Query conditions 
-      "filter": [ { 
-              "operator": "=", // Condition operator, supports =, >, >=, <, <= 
-              "key": "number", // Condition field
-              "value": 1 // Query value 
-              },
-			{ "operator": "=", "key": "number", "value": 2 }
-	], "cursor": 0, // Starting point for returned data 
+    "filter": [
+	       { 
+	         "operator": "=", // Condition operator, supports =, >, >=, <, <= 
+	         "key": "number", // Condition field
+	         "value": 1 // Query value 
+	       },
+	       {
+	         "operator": "=", "key": "number", "value": 2
+	        }
+          ],
+	"cursor": 0, // Starting point for returned data 
 	"limit": 1, // Number of data records to return
 	"sort": [ 
-        "number", // Field to sort by 
-             "desc" // Order, supports asc, desc 
-    ] }
+        	"number", // Field to sort by 
+		"desc" // Order, supports asc, desc 
+        ]
+}
 ```
 
 **Successful Response Example**
