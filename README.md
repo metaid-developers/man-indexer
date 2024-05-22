@@ -112,7 +112,7 @@ We support the following three deployment and execution methods.
   - Properly configure the config.toml file in the same directory as the executable.
   - Run the executable.
 3. ### shell 
-  - Download the latest shell file from here.
+  - Download the latest shell file from [here](https://github.com/metaid-developers/man-indexer/blob/main/doc/run_manindex.sh).
   - Execute the shell file on the server.
 ```
 ./run_manindex.sh
@@ -166,7 +166,7 @@ Lists MetaID data in the memory pool, which is automatically deleted after being
 # JSON API
 
 ## Basic API
-
+Here is the deployed public API service: https://man.metaid.io
 |Endpoint|Method|Parameter|Description|
 |---|---|---|---|
 |/api/pin/{numberOrId}|GET|PIN number or PIN id|Get PIN details based on PIN number or PIN id|
