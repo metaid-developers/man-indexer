@@ -1,5 +1,6 @@
 version = "0.0.1"
 net = "mainnet"
+protocolID = "6d6574616964"
 [sync]
 syncAllData = true
 syncBeginTime = ""
@@ -23,6 +24,7 @@ rpcPass = "test"
 rpcHttpPostMode = true
 rpcDisableTLS = true
 zmqHost = "tcp://127.0.0.1:28336"
+popCutNum = 21
 [mongodb]
 mongoURI = "mongodb://root:123456@127.0.0.1:27017"
 dbName = "man_test"
