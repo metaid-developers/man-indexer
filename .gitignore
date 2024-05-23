@@ -5,6 +5,7 @@ pem/
 .vscode
 pebble_data
 config.toml
+example/config.toml
 del_mempool_height.txt
 releases
 .gitignore
