@@ -1,8 +1,10 @@
 
 # Introduction
+
 The MetaID App Node is an open source backend indexer that accompanies MetaID, which makes it convenient to synchronize MetaID data and asset protocols. MAN is the abbreviation of MetaID App Node. In this document, it specifically refers to the data indexer for UTXO chain applications developed based on the MetaID protocol.
 
 ## Main features of MAN
+
 1. Support all UTXO model blockchains
 2. Discover MetaID protocol data in block order and transaction order, while supporting data indexing in the memory pool
 3. Out of the box, it supports multiple database adapters, such as mongodb, elasticsearch, mariadb, postgresql, etc. Developers can choose according to the application blockchain.
@@ -19,34 +21,46 @@ Carry out development and debugging on the test network of the relevant UTXO cha
 Mainnet release
 
 # Build and Run
+
 ## Dependencies
+
 ### 1. libzmq
+
 The man indexer memory pool data depends on zmq, and libzmq needs to be installed before compilation, otherwise the compilation will fail.
 
 #### OSX
+
 ```
 brew install zmq
 ```
+
 #### Linux
+
 Fedora
 ```
 dnf install zeromq-devel
 ```
+
 #### Ubuntu/Debian/Mint
+
 ```
 apt-get install libzmq3-dev
 ```
 For more information, please refer to https://zeromq.org/download/
 
 ### 2. golang version
+
 MAN's main development language is golang, and go >= 1.20 is required
 
 ## Build
+
 ```
 go mod tidy
 go build 
 ```
+
 ## Configuration file
+
 The configuration file is in the same directory as the program running file, and the name must be config.toml
 ```
 [sync]
@@ -98,6 +112,7 @@ The MAN indexer comes with a built-in MetaID browser that supports MetaID-relate
 This is the deployed and live MAN browser: https://man.metaid.io
 
 ## Running
+
 We support the following three deployment and execution methods.
 1. ### Compile and run
  - Compile according to the documentation's compilation section.
