@@ -71,7 +71,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 		for _, in := range tx.TxIn {
 			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			if _, ok := idMap[id]; ok {
-				info, err := indexer.getOWnerAddress(id, tx)
+				info, err := indexer.GetOWnerAddress(id, tx)
 				if err == nil && info != nil {
 					trasferMap[id] = info
 				}
@@ -80,7 +80,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 	}
 	return
 }
-func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (info *pin.PinTransferInfo, err error) {
+func (indexer *Indexer) GetOWnerAddress(inputId string, tx *wire.MsgTx) (info *pin.PinTransferInfo, err error) {
 	//fmt.Println("tx:", tx.TxHash().String(), inputId)
 	info = &pin.PinTransferInfo{}
 	firstInputId := fmt.Sprintf("%s:%d", tx.TxIn[0].PreviousOutPoint.Hash, tx.TxIn[0].PreviousOutPoint.Index)
@@ -166,7 +166,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 		if pinInscription == nil {
 			continue
 		}
-		address, outIdx, locationIdx := indexer.getPinOwner(msgTx, index)
+		address, outIdx, locationIdx := indexer.GetPinOwner(msgTx, index)
 		id := fmt.Sprintf("%si%d", msgTx.TxHash().String(), outIdx)
 		metaId := common.GetMetaIdByAddress(address)
 		contentTypeDetect := common.DetectContentType(&pinInscription.ContentBody)
@@ -227,7 +227,7 @@ func getContentSummary(pinode *pin.PersonalInformationNode, id string, contentTy
 		}
 	}
 }
-func (indexer *Indexer) getPinOwner(tx *wire.MsgTx, inIdx int) (address string, outIdx int, locationIdx int64) {
+func (indexer *Indexer) GetPinOwner(tx *wire.MsgTx, inIdx int) (address string, outIdx int, locationIdx int64) {
 	if len(tx.TxIn) == 1 || len(tx.TxOut) == 1 || inIdx == 0 {
 		_, addresses, _, _ := txscript.ExtractPkScriptAddrs(tx.TxOut[0].PkScript, indexer.ChainParams)
 		if len(addresses) > 0 {

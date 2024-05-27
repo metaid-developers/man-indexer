@@ -1,10 +1,12 @@
 package api
 
 import (
+	"manindexer/api/respond"
 	"manindexer/common"
 	"manindexer/database"
 	"manindexer/man"
 	"manindexer/pin"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -36,48 +38,45 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.POST("/generalQuery", generalQuery)
 	btcGroup.GET("/pin/ByOutput/:output", getPinByOutput)
 	btcGroup.GET("/follow/record", getFollowRecord)
+	btcGroup.GET("/metaid/followList/:metaid", getFollowListByMetaId)
+
 }
-func apiError(code int, msg string) (res *ApiResponse) {
-	return &ApiResponse{Code: code, Msg: msg}
-}
-func apiSuccess(code int, msg string, data interface{}) (res *ApiResponse) {
-	return &ApiResponse{Code: code, Msg: msg, Data: data}
-}
+
 func metaidList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	list, err := man.DbAdapter.GetMetaIdPageList(page, size)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no data found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", list))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", list))
 }
 func pinList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	list, err := man.DbAdapter.GetPinPageList(page, size)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no data found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
@@ -87,23 +86,23 @@ func pinList(ctx *gin.Context) {
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
-	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"Pins": msg, "Count": &count, "Active": "index"}))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"Pins": msg, "Count": &count, "Active": "index"}))
 }
 func mempoolList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	list, err := man.DbAdapter.GetMempoolPinPageList(page, size)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments || list == nil {
-			ctx.JSON(200, apiError(100, "no data found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
@@ -113,28 +112,28 @@ func mempoolList(ctx *gin.Context) {
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
-	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"Pins": msg, "Count": &count, "Active": "mempool"}))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"Pins": msg, "Count": &count, "Active": "mempool"}))
 }
 func nodeList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	rootid := ctx.Query("rootid")
 	list, total, err := man.DbAdapter.GetMetaIdPin(rootid, page, size)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no data found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"RootId": rootid, "Total": total, "Pins": list}))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"RootId": rootid, "Total": total, "Pins": list}))
 }
 
 // get pin by id
@@ -142,9 +141,9 @@ func getPinById(ctx *gin.Context) {
 	pinMsg, err := man.DbAdapter.GetPinByNumberOrId(ctx.Param("numberOrId"))
 	if err != nil || pinMsg == nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no pin found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoPinFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
@@ -157,15 +156,15 @@ func getPinById(ctx *gin.Context) {
 	if err == nil && check != nil {
 		pinMsg.Status = -9
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", pinMsg))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", pinMsg))
 }
 func getPinByOutput(ctx *gin.Context) {
 	pinMsg, err := man.DbAdapter.GetPinByOutput(ctx.Param("output"))
 	if err != nil || pinMsg == nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no pin found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoPinFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
@@ -174,24 +173,24 @@ func getPinByOutput(ctx *gin.Context) {
 	pinMsg.Preview = common.Config.Web.Host + "/pin/" + pinMsg.Id
 	pinMsg.Content = common.Config.Web.Host + "/content/" + pinMsg.Id
 	pinMsg.PopLv, _ = man.IndexerAdapter.PopLevelCount(pinMsg.Pop)
-	ctx.JSON(200, apiSuccess(1, "ok", pinMsg))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", pinMsg))
 }
 
 func blockList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "Parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
 	list, err := man.DbAdapter.GetPinPageList(page, size)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no data found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
@@ -206,24 +205,24 @@ func blockList(ctx *gin.Context) {
 			msgList = append(msgList, pmsg.Height)
 		}
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"msgMap": msgMap, "msgList": msgList, "Active": "blocks"}))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"msgMap": msgMap, "msgList": msgList, "Active": "blocks"}))
 }
 
 // get Pin Utxo Count By Address
 func getPinUtxoCountByAddress(ctx *gin.Context) {
 	if ctx.Param("address") == "" {
-		ctx.JSON(200, apiError(100, "address is null"))
+		ctx.JSON(http.StatusOK, respond.ErrAddressIsEmpty)
 	}
 	utxoNum, utxoSum, err := man.DbAdapter.GetPinUtxoCountByAddress(ctx.Param("address"))
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no  data found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"utxoNum": utxoNum, "utxoSum": utxoSum}))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"utxoNum": utxoNum, "utxoSum": utxoSum}))
 }
 
 // get pin list by address
@@ -241,9 +240,9 @@ func getPinListByAddress(ctx *gin.Context) {
 	pinList, total, err := man.DbAdapter.GetPinListByAddress(ctx.Param("address"), ctx.Param("addressType"), cursor, size, cnt, path)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no  pin found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoPinFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
@@ -294,9 +293,9 @@ func getPinListByAddress(ctx *gin.Context) {
 	}
 	result = append(result, fixPinList...)
 	if cnt == "true" {
-		ctx.JSON(200, apiSuccess(1, "ok", gin.H{"list": result, "total": total}))
+		ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": result, "total": total}))
 	} else {
-		ctx.JSON(200, apiSuccess(1, "ok", result))
+		ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", result))
 	}
 
 }
@@ -306,16 +305,16 @@ func getChildNodeById(ctx *gin.Context) {
 	pinList, err := man.DbAdapter.GetChildNodeById(ctx.Param("pinId"))
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no child found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoChildFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
 	for _, pin := range pinList {
 		pin.ContentBody = []byte{}
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", pinList))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", pinList))
 }
 
 // get parent node by id
@@ -323,14 +322,14 @@ func getParentNodeById(ctx *gin.Context) {
 	pinMsg, err := man.DbAdapter.GetParentNodeById(ctx.Param("pinId"))
 	if err != nil || pinMsg == nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no node found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoNodeFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
 	pinMsg.ContentBody = []byte{}
-	ctx.JSON(200, apiSuccess(1, "ok", pinMsg))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", pinMsg))
 }
 
 type metaInfo struct {
@@ -341,13 +340,13 @@ type metaInfo struct {
 func getInfoByAddress(ctx *gin.Context) {
 	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo(ctx.Param("address"), true)
 	if err != nil {
-		ctx.JSON(200, apiError(404, "service exception."))
+		ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		return
 	}
 	if metaid == nil {
 		metaid = &pin.MetaIdInfo{MetaId: common.GetMetaIdByAddress(ctx.Param("address")), Address: ctx.Param("address")}
 		//ctx.JSON(200, apiError(100, "no metaid found."))
-		ctx.JSON(200, apiSuccess(1, "ok", metaInfo{metaid, ""}))
+		ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", metaInfo{metaid, ""}))
 		return
 	}
 	if metaid.Address == "" {
@@ -356,47 +355,47 @@ func getInfoByAddress(ctx *gin.Context) {
 	if metaid.MetaId == "" {
 		metaid.MetaId = common.GetMetaIdByAddress(ctx.Param("address"))
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", metaInfo{metaid, unconfirmed}))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", metaInfo{metaid, unconfirmed}))
 }
 
 func generalQuery(ctx *gin.Context) {
 	var g database.Generator
 	if err := ctx.BindJSON(&g); err != nil {
-		ctx.JSON(200, apiError(404, "request parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 		return
 	}
 	ret, err := man.DbAdapter.GeneratorFind(g)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no result found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", ret))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", ret))
 }
 func getAllPinByPath(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(101, "page parameter error"))
+		ctx.JSON(http.StatusOK, respond.ApiError(101, "page parameter error"))
 		return
 	}
 	limit, err := strconv.ParseInt(ctx.Query("limit"), 10, 64)
 	if err != nil {
-		ctx.JSON(200, apiError(101, "limit parameter error"))
+		ctx.JSON(http.StatusOK, respond.ApiError(101, "limit parameter error"))
 		return
 	}
 	if ctx.Query("path") == "" {
-		ctx.JSON(200, apiError(101, "parentPath parameter error"))
+		ctx.JSON(http.StatusOK, respond.ApiError(101, "parentPath parameter error"))
 		return
 	}
 	pinList1, total, err := man.DbAdapter.GetAllPinByPath(page, limit, ctx.Query("path"))
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no  pin found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoPinFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
@@ -405,7 +404,7 @@ func getAllPinByPath(ctx *gin.Context) {
 		pinNode.ContentSummary = string(pinNode.ContentBody)
 		pinList = append(pinList, pinNode)
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"list": pinList, "total": total}))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": pinList, "total": total}))
 }
 
 // getFollowListByMetaId
@@ -429,13 +428,13 @@ func getFollowListByMetaId(ctx *gin.Context) {
 	list, total, err := man.DbAdapter.GetFollowDataByMetaId(ctx.Param("metaid"), myFollow, followDetail, cursor, size)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no  result found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"list": list, "total": total}))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": list, "total": total}))
 
 }
 
@@ -444,18 +443,18 @@ func getFollowRecord(ctx *gin.Context) {
 	metaId := ctx.Query("metaId")
 	followMetaId := ctx.Query("followMetaId")
 	if metaId == "" || followMetaId == "" {
-		ctx.JSON(200, apiError(101, "parameter error."))
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 		return
 	}
 	info, err := man.DbAdapter.GetFollowRecord(metaId, followMetaId)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			ctx.JSON(200, apiError(100, "no  result found."))
+			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)
 		} else {
-			ctx.JSON(200, apiError(404, "service exception."))
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		}
 		return
 	}
-	ctx.JSON(200, apiSuccess(1, "ok", info))
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", info))
 
 }
