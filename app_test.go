@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"manindexer/adapter/bitcoin"
@@ -75,11 +76,13 @@ func TestConfig(t *testing.T) {
 
 func TestGetDbPin(t *testing.T) {
 	man.InitAdapter("btc", "mongo", "1", "1")
-	p, err := man.DbAdapter.GetPinByNumberOrId("256")
-	fmt.Println(err, p)
-	//fmt.Println(p.ContentBody)
+	p, err := man.DbAdapter.GetPinByNumberOrId("999")
+	fmt.Println(err)
+	//fmt.Println(string(p.ContentBody))
 	//contentType := common.DetectContentType(&p.ContentBody)
 	//fmt.Println(contentType)
+	standardEncoded := base64.StdEncoding.EncodeToString(p.ContentBody)
+	fmt.Println(standardEncoded)
 }
 func TestMongoGeneratorFind(t *testing.T) {
 	jsonData := `

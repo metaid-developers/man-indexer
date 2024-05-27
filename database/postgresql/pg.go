@@ -108,9 +108,21 @@ func (pg *Postgresql) GeneratorFind(generator database.Generator) (data []map[st
 func (pg *Postgresql) BatchUpsertFollowData(followData []*pin.FollowData) (err error) {
 	return
 }
-func (pg *Postgresql) GetFollowDataByMetaId(metaId string) (followData []*pin.FollowData, err error) {
+func (pg *Postgresql) GetFollowDataByMetaId(metaId string, myFollow bool, followDetail bool, cursor int64, size int64) (metaIdList []interface{}, total int64, err error) {
+	return
+}
+func (pg *Postgresql) GetFollowRecord(metaId string, followMetaid string) (followData pin.FollowData, err error) {
 	return
 }
 func (pg *Postgresql) BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAdditional) (err error) {
+	return
+}
+func (pg *Postgresql) AddMempoolTransfer(transferData *pin.MemPoolTrasferPin) (err error) {
+	return
+}
+func (pg *Postgresql) GetMempoolTransfer(address string, act string) (list []*pin.MemPoolTrasferPin, err error) {
+	return
+}
+func (pg *Postgresql) GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasferPin, err error) {
 	return
 }

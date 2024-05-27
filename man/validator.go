@@ -2,6 +2,7 @@ package man
 
 import (
 	"errors"
+	"fmt"
 	"manindexer/pin"
 	"strings"
 )
@@ -24,24 +25,24 @@ func validator(pinode *pin.PinInscription) (err error) {
 		}
 	}
 	if !limitCheck {
-		err = errors.New("option error")
+		err = fmt.Errorf("option %s error", pinode.Operation)
 		return
 	}
 	switch pinode.Operation {
 	case "modify":
 		if len(pinode.Path) <= 1 || pinode.Path[0:1] != "@" {
-			err = errors.New("path error")
+			err = errors.New("modify path error")
 			return
 		}
 	case "revoke":
 		if len(pinode.Path) <= 1 || pinode.Path[0:1] != "@" {
-			err = errors.New("path error")
+			err = errors.New("revoke path error")
 			return
 		}
 	case "create":
 		pathArr := strings.Split(pinode.Path, "/")
 		if len(pinode.Path) < 1 || len(pathArr) < 2 {
-			err = errors.New("path length error")
+			err = errors.New("create path length error")
 			return
 		}
 		if _, ok := compliantPath[pathArr[1]]; !ok {

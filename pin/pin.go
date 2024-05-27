@@ -1,8 +1,8 @@
 package pin
 
 const (
-	//ProtocolID string = "746573746964" //testid(HEX16)
-	ProtocolID    string = "6d6574616964" //metaid
+	ProtocolID string = "746573746964" //testid(HEX16)
+	//ProtocolID    string = "6d6574616964" //metaid
 	CompliantPath string = "info;file;protocols;nft;ft;mrc20;follow"
 )
 
@@ -117,4 +117,11 @@ type PinCount struct {
 	Pin    int64 `json:"Pin"`
 	MetaId int64 `json:"metaId"`
 	App    int64 `json:"app"`
+}
+type MemPoolTrasferPin struct {
+	PinId       string `json:"pinId"`
+	FromAddress string `json:"fromAddress"`
+	ToAddress   string `json:"toAddress"`
+	InTime      int64  `json:"inTime"`
+	TxHash      string `json:"txHash"`
 }

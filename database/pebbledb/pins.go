@@ -581,3 +581,12 @@ func (pb *Pebble) DeleteMempoolInscription(txIds []string) (err error) {
 	}
 	return
 }
+func (pb *Pebble) AddMempoolTransfer(transferData *pin.MemPoolTrasferPin) (err error) {
+	return
+}
+func (pb *Pebble) GetMempoolTransfer(address string, act string) (list []*pin.MemPoolTrasferPin, err error) {
+	return
+}
+func (pb *Pebble) GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasferPin, err error) {
+	return
+}

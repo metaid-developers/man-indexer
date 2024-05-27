@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"manindexer/common"
 	"manindexer/pin"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/btcsuite/btcd/wire"
 	zmq "github.com/pebbe/zmq4"
@@ -29,7 +33,10 @@ func (indexer *Indexer) ZmqHashblock() {
 func (indexer *Indexer) ZmqRun(chanMsg chan []*pin.PinInscription) {
 	q, _ := zmq.NewSocket(zmq.SUB)
 	defer q.Close()
-	q.Connect(common.Config.Btc.ZmqHost)
+	err := q.Connect(common.Config.Btc.ZmqHost)
+	if err != nil {
+		log.Println("ZmqRun:", err)
+	}
 	q.SetSubscribe("rawtx")
 
 	for {
@@ -42,5 +49,39 @@ func (indexer *Indexer) ZmqRun(chanMsg chan []*pin.PinInscription) {
 		if len(pinInscriptions) > 0 {
 			chanMsg <- pinInscriptions
 		}
+		//PIN transfer check
+		tansferList, err := indexer.transferCheck(&msgTx)
+		if err == nil && len(tansferList) > 0 {
+			chanMsg <- tansferList
+		}
 	}
+}
+func (indexer *Indexer) transferCheck(tx *wire.MsgTx) (transferPinList []*pin.PinInscription, err error) {
+	var outputList []string
+	for _, in := range tx.TxIn {
+		output := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+		outputList = append(outputList, output)
+	}
+	pinList, err := (*indexer.DbAdapter).GetPinListByOutPutList(outputList)
+	if err != nil {
+		return
+	}
+	timeNow := time.Now().Unix()
+	for _, pinNode := range pinList {
+		arr := strings.Split(pinNode.Output, ":")
+		if len(arr) < 2 {
+			continue
+		}
+		idx, _ := strconv.Atoi(arr[1])
+		transferPin := pin.PinInscription{
+			Id:                 pinNode.Id,
+			CreateAddress:      pinNode.Address,
+			Timestamp:          timeNow,
+			GenesisTransaction: tx.TxHash().String(),
+			IsTransfered:       true,
+		}
+		transferPin.Address, _, _ = indexer.getPinOwner(tx, idx)
+		transferPinList = append(transferPinList, &transferPin)
+	}
+	return
 }

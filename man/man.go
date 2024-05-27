@@ -61,6 +61,16 @@ func InitAdapter(chainType, dbType, test, server string) {
 			ProtocolsFilter[p] = struct{}{}
 		}
 	}
+
+	switch dbType {
+	case "mongo":
+		DbAdapter = &mongodb.Mongodb{}
+	case "pg":
+		DbAdapter = &postgresql.Postgresql{}
+	case "pb":
+		DbAdapter = &pebbledb.Pebble{}
+	}
+	DbAdapter.InitDatabase()
 	switch chainType {
 	case "btc":
 		ChainAdapter = &bitcoin.BitcoinChain{}
@@ -74,21 +84,12 @@ func InitAdapter(chainType, dbType, test, server string) {
 		IndexerAdapter = &bitcoin.Indexer{
 			ChainParams: chainParams,
 			PopCutNum:   common.Config.Btc.PopCutNum,
+			DbAdapter:   &DbAdapter,
 		}
 		// case "mvc":
 		// 	ChainAdapter = &mvc.MvcChain{}
 		// 	IndexerAdapter = &mvc.Indexer{}
 	}
-
-	switch dbType {
-	case "mongo":
-		DbAdapter = &mongodb.Mongodb{}
-	case "pg":
-		DbAdapter = &postgresql.Postgresql{}
-	case "pb":
-		DbAdapter = &pebbledb.Pebble{}
-	}
-	DbAdapter.InitDatabase()
 	bestHeight := ChainAdapter.GetBestHeight()
 	common.InitHeightFile("./del_mempool_height.txt", bestHeight)
 }
@@ -99,25 +100,42 @@ func ZmqRun() {
 	//go IndexerAdapter.ZmqHashblock()
 	for x := range s {
 		for _, pinNode := range x {
-			if pinNode.Operation == "modify" || pinNode.Operation == "revoke" {
-				pinNode.OriginalId = strings.Replace(pinNode.Path, "@", "", -1)
-				originalPins, err := DbAdapter.GetPinListByIdList([]string{pinNode.OriginalId})
-				if err == nil && len(originalPins) > 0 {
-					pinNode.OriginalPath = originalPins[0].OriginalPath
-				}
+			if !pinNode.IsTransfered {
+				handleMempoolPin(pinNode)
+			} else if pinNode.IsTransfered {
+				handleMempoolTransferPin(pinNode)
 			}
-			pinNode.Timestamp = time.Now().Unix()
-			pinNode.Number = -1
-			pinNode.ContentTypeDetect = common.DetectContentType(&pinNode.ContentBody)
-			if len(ProtocolsFilter) > 0 && pinNode.Path != "" {
-				p := strings.ToLower(pinNode.Path)
-				if _, protCheck := ProtocolsFilter[p]; protCheck {
-					DbAdapter.BatchAddProtocolData([]*pin.PinInscription{pinNode})
-				}
-			}
-			DbAdapter.AddMempoolPin(pinNode)
 		}
 	}
+}
+func handleMempoolPin(pinNode *pin.PinInscription) {
+	if pinNode.Operation == "modify" || pinNode.Operation == "revoke" {
+		pinNode.OriginalId = strings.Replace(pinNode.Path, "@", "", -1)
+		originalPins, err := DbAdapter.GetPinListByIdList([]string{pinNode.OriginalId})
+		if err == nil && len(originalPins) > 0 {
+			pinNode.OriginalPath = originalPins[0].OriginalPath
+		}
+	}
+	pinNode.Timestamp = time.Now().Unix()
+	pinNode.Number = -1
+	pinNode.ContentTypeDetect = common.DetectContentType(&pinNode.ContentBody)
+	if len(ProtocolsFilter) > 0 && pinNode.Path != "" {
+		p := strings.ToLower(pinNode.Path)
+		if _, protCheck := ProtocolsFilter[p]; protCheck {
+			DbAdapter.BatchAddProtocolData([]*pin.PinInscription{pinNode})
+		}
+	}
+	DbAdapter.AddMempoolPin(pinNode)
+}
+func handleMempoolTransferPin(pinNode *pin.PinInscription) {
+	transferPin := pin.MemPoolTrasferPin{
+		PinId:       pinNode.Id,
+		FromAddress: pinNode.CreateAddress,
+		ToAddress:   pinNode.Address,
+		InTime:      pinNode.Timestamp,
+		TxHash:      pinNode.GenesisTransaction,
+	}
+	DbAdapter.AddMempoolTransfer(&transferPin)
 }
 func CheckNewBlock() {
 	bestHeight := ChainAdapter.GetBestHeight()
@@ -296,6 +314,7 @@ func handlePathAndOperation(
 	var modifyPinIdList []string
 	newPinMap := make(map[string]*pin.PinInscription)
 	for _, p := range *pinList {
+
 		pinNode := p.(*pin.PinInscription)
 		if pinNode.MetaId == "" {
 			pinNode.MetaId = common.GetMetaIdByAddress(pinNode.Address)
@@ -330,11 +349,11 @@ func handlePathAndOperation(
 		pinTree := pin.PinTreeCatalog{RootTxId: common.GetMetaIdByAddress(pinNode.Address), TreePath: path}
 		*pinTreeData = append(*pinTreeData, pinTree)
 		//follow
-		if path == "/follow " {
+		if pinNode.Path == "/follow" {
 			*followData = append(*followData, creatFollowData(pinNode, true))
 		}
 		//infoAdditional
-		additional := createInfoAdditional(pinNode, path)
+		additional := createInfoAdditional(pinNode, pinNode.Path)
 		if additional != (pin.MetaIdInfoAdditional{}) {
 			*infoAdditional = append(*infoAdditional, &additional)
 		}
@@ -416,7 +435,7 @@ func creatFollowData(pinNode *pin.PinInscription, follow bool) (followData *pin.
 		followData.FollowTime = pinNode.Timestamp
 		followData.Status = true
 	} else {
-		followData.FollowMetaId = strings.Replace(pinNode.Path, "@", "", -1)
+		followData.FollowPinId = strings.Replace(pinNode.Path, "@", "", -1)
 		followData.UnFollowPinId = pinNode.Id
 		followData.Status = false
 	}

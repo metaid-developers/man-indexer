@@ -35,6 +35,7 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.GET("/getAllPinByPath", getAllPinByPath)
 	btcGroup.POST("/generalQuery", generalQuery)
 	btcGroup.GET("/pin/ByOutput/:output", getPinByOutput)
+	btcGroup.GET("/follow/record", getFollowRecord)
 }
 func apiError(code int, msg string) (res *ApiResponse) {
 	return &ApiResponse{Code: code, Msg: msg}
@@ -149,8 +150,13 @@ func getPinById(ctx *gin.Context) {
 	}
 	//pinMsg.ContentBody = []byte{}
 	pinMsg.ContentSummary = string(pinMsg.ContentBody)
+	pinMsg.PopLv, _ = man.IndexerAdapter.PopLevelCount(pinMsg.Pop)
 	pinMsg.Preview = common.Config.Web.Host + "/pin/" + pinMsg.Id
 	pinMsg.Content = common.Config.Web.Host + "/content/" + pinMsg.Id
+	check, err := man.DbAdapter.GetMempoolTransferById(pinMsg.Id)
+	if err == nil && check != nil {
+		pinMsg.Status = -9
+	}
 	ctx.JSON(200, apiSuccess(1, "ok", pinMsg))
 }
 func getPinByOutput(ctx *gin.Context) {
@@ -241,15 +247,56 @@ func getPinListByAddress(ctx *gin.Context) {
 		}
 		return
 	}
+	//get mempool transfer pin
+	memTransRecive := make(map[string]struct{})
+	memTransSend := make(map[string]struct{})
+	mempoolTransferList, err := man.DbAdapter.GetMempoolTransfer(ctx.Param("address"), "")
+	if err == nil {
+		for _, transfer := range mempoolTransferList {
+			if transfer.FromAddress == ctx.Param("address") {
+				memTransSend[transfer.PinId] = struct{}{}
+			} else if transfer.ToAddress == ctx.Param("address") {
+				memTransRecive[transfer.PinId] = struct{}{}
+			}
+		}
+		total -= int64(len(memTransSend))
+	}
+	var result []*pin.PinInscription
+	if cursor == 0 && len(memTransRecive) > 0 {
+		var idList []string
+		for k := range memTransRecive {
+			idList = append(idList, k)
+		}
+		list, err := man.DbAdapter.GetPinListByIdList(idList)
+		if err == nil && len(list) > 0 {
+			for _, p := range list {
+				p.Status = -9
+				p.ContentBody = []byte{}
+				p.Preview = common.Config.Web.Host + "/pin/" + p.Id
+				p.Content = common.Config.Web.Host + "/content/" + p.Id
+				p.PopLv, _ = man.IndexerAdapter.PopLevelCount(p.Pop)
+				result = append(result, p)
+			}
+		}
+		total += int64(len(list))
+	}
+	var fixPinList []*pin.PinInscription
 	for _, pin := range pinList {
+		_, ok := memTransSend[pin.Id]
+		if ok {
+			continue
+		}
 		pin.ContentBody = []byte{}
 		pin.Preview = common.Config.Web.Host + "/pin/" + pin.Id
 		pin.Content = common.Config.Web.Host + "/content/" + pin.Id
+		pin.PopLv, _ = man.IndexerAdapter.PopLevelCount(pin.Pop)
+		fixPinList = append(fixPinList, pin)
 	}
+	result = append(result, fixPinList...)
 	if cnt == "true" {
-		ctx.JSON(200, apiSuccess(1, "ok", gin.H{"list": pinList, "total": total}))
+		ctx.JSON(200, apiSuccess(1, "ok", gin.H{"list": result, "total": total}))
 	} else {
-		ctx.JSON(200, apiSuccess(1, "ok", pinList))
+		ctx.JSON(200, apiSuccess(1, "ok", result))
 	}
 
 }
@@ -303,6 +350,12 @@ func getInfoByAddress(ctx *gin.Context) {
 		ctx.JSON(200, apiSuccess(1, "ok", metaInfo{metaid, ""}))
 		return
 	}
+	if metaid.Address == "" {
+		metaid.Address = ctx.Param("address")
+	}
+	if metaid.MetaId == "" {
+		metaid.MetaId = common.GetMetaIdByAddress(ctx.Param("address"))
+	}
 	ctx.JSON(200, apiSuccess(1, "ok", metaInfo{metaid, unconfirmed}))
 }
 
@@ -353,4 +406,56 @@ func getAllPinByPath(ctx *gin.Context) {
 		pinList = append(pinList, pinNode)
 	}
 	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"list": pinList, "total": total}))
+}
+
+// getFollowListByMetaId
+func getFollowListByMetaId(ctx *gin.Context) {
+	cursorStr := ctx.Query("cursor")
+	sizeStr := ctx.Query("size")
+	cursor := int64(0)
+	size := int64(100)
+	myFollow := false
+	if ctx.Query("myFollow") == "true" {
+		myFollow = true
+	}
+	followDetail := false
+	if ctx.Query("followDetail") == "true" {
+		followDetail = true
+	}
+	if cursorStr != "" && sizeStr != "" {
+		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
+		size, _ = strconv.ParseInt(sizeStr, 10, 64)
+	}
+	list, total, err := man.DbAdapter.GetFollowDataByMetaId(ctx.Param("metaid"), myFollow, followDetail, cursor, size)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(200, apiError(100, "no  result found."))
+		} else {
+			ctx.JSON(200, apiError(404, "service exception."))
+		}
+		return
+	}
+	ctx.JSON(200, apiSuccess(1, "ok", gin.H{"list": list, "total": total}))
+
+}
+
+// getFollowRecord
+func getFollowRecord(ctx *gin.Context) {
+	metaId := ctx.Query("metaId")
+	followMetaId := ctx.Query("followMetaId")
+	if metaId == "" || followMetaId == "" {
+		ctx.JSON(200, apiError(101, "parameter error."))
+		return
+	}
+	info, err := man.DbAdapter.GetFollowRecord(metaId, followMetaId)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(200, apiError(100, "no  result found."))
+		} else {
+			ctx.JSON(200, apiError(404, "service exception."))
+		}
+		return
+	}
+	ctx.JSON(200, apiSuccess(1, "ok", info))
+
 }

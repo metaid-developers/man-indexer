@@ -52,7 +52,12 @@ type Db interface {
 	GetAllPinByPath(page, limit int64, path string) (pins []*pin.PinInscription, total int64, err error)
 	BatchAddProtocolData(pins []*pin.PinInscription) (err error)
 	GeneratorFind(generator Generator) (data []map[string]interface{}, err error)
+	//mempoolTransfer
+	AddMempoolTransfer(transferData *pin.MemPoolTrasferPin) (err error)
+	GetMempoolTransfer(address string, act string) (list []*pin.MemPoolTrasferPin, err error)
+	GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasferPin, err error)
 	//follow
 	BatchUpsertFollowData(followData []*pin.FollowData) (err error)
-	GetFollowDataByMetaId(metaId string) (followData []*pin.FollowData, err error)
+	GetFollowDataByMetaId(metaId string, myFollow bool, followDetail bool, cursor int64, size int64) (metaIdList []interface{}, total int64, err error)
+	GetFollowRecord(metaId string, followMetaid string) (followData pin.FollowData, err error)
 }

@@ -59,6 +59,62 @@ func (mg *Mongodb) BatchUpsertFollowData(followData []*pin.FollowData) (err erro
 	}
 	return
 }
-func (mg *Mongodb) GetFollowDataByMetaId(metaId string) (followData []*pin.FollowData, err error) {
+func (mg *Mongodb) GetFollowDataByMetaId(metaId string, myFollow bool, followDetail bool, cursor int64, size int64) (metaIdList []interface{}, total int64, err error) {
+	filterA := bson.M{"metaid": metaId, "status": true}
+	if myFollow {
+		filterA = bson.M{"followmetaid": metaId, "status": true}
+	}
+	opts := options.Find().SetSort(bson.D{{Key: "followtime", Value: -1}}).SetSkip(cursor).SetLimit(size)
+	total, err = mongoClient.Collection(FollowCollection).CountDocuments(context.TODO(), filterA)
+	if err != nil {
+		return
+	}
+	result, err := mongoClient.Collection(FollowCollection).Find(context.TODO(), filterA, opts)
+	if err != nil {
+		return
+	}
+	var followData []*pin.FollowData //pin.FollowData
+	err = result.All(context.TODO(), &followData)
+	if err != nil || len(followData) <= 0 {
+		return
+	}
+	var idList []string
+	for _, f := range followData {
+		if myFollow {
+			if !followDetail {
+				metaIdList = append(metaIdList, f.MetaId)
+			} else {
+				idList = append(idList, f.MetaId)
+			}
+		} else {
+			if !followDetail {
+				metaIdList = append(metaIdList, f.FollowMetaId)
+			} else {
+				idList = append(idList, f.FollowMetaId)
+			}
+
+		}
+	}
+	if !followDetail {
+		return
+	}
+
+	filter := bson.M{"metaid": bson.M{"$in": idList}}
+	find, err := mongoClient.Collection(MetaIdInfoCollection).Find(context.TODO(), filter)
+	if err != nil {
+		return
+	}
+	var list []*pin.MetaIdInfo
+	err = find.All(context.TODO(), &list)
+	if err == nil {
+		for _, p := range list {
+			metaIdList = append(metaIdList, p)
+		}
+	}
+	return
+}
+func (mg *Mongodb) GetFollowRecord(metaId string, followMetaId string) (followData pin.FollowData, err error) {
+	filter := bson.M{"metaid": metaId, "followmetaid": followMetaId, "status": true}
+	err = mongoClient.Collection(FollowCollection).FindOne(context.TODO(), filter).Decode(&followData)
 	return
 }
