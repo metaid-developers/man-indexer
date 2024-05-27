@@ -1,8 +1,10 @@
 
 # Introduction
+
 The MetaID App Node is an open source backend indexer that accompanies MetaID, which makes it convenient to synchronize MetaID data and asset protocols. MAN is the abbreviation of MetaID App Node. In this document, it specifically refers to the data indexer for UTXO chain applications developed based on the MetaID protocol.
 
 ## Main features of MAN
+
 1. Support all UTXO model blockchains
 2. Discover MetaID protocol data in block order and transaction order, while supporting data indexing in the memory pool
 3. Out of the box, it supports multiple database adapters, such as mongodb, elasticsearch, mariadb, postgresql, etc. Developers can choose according to the application blockchain.
@@ -19,34 +21,46 @@ Carry out development and debugging on the test network of the relevant UTXO cha
 Mainnet release
 
 # Build and Run
+
 ## Dependencies
+
 ### 1. libzmq
+
 The man indexer memory pool data depends on zmq, and libzmq needs to be installed before compilation, otherwise the compilation will fail.
 
 #### OSX
+
 ```
 brew install zmq
 ```
+
 #### Linux
+
 Fedora
 ```
 dnf install zeromq-devel
 ```
+
 #### Ubuntu/Debian/Mint
+
 ```
 apt-get install libzmq3-dev
 ```
 For more information, please refer to https://zeromq.org/download/
 
 ### 2. golang version
+
 MAN's main development language is golang, and go >= 1.20 is required
 
 ## Build
+
 ```
 go mod tidy
 go build 
 ```
+
 ## Configuration file
+
 The configuration file is in the same directory as the program running file, and the name must be config.toml
 ```
 [sync]
@@ -90,6 +104,39 @@ keyFile = ""  //ssl certificate, key file path
 Run
 ./manindexer -chain=btc -databse=mongo -server=1 -test=1
 ```
+
+
+# Browser
+
+The MAN indexer comes with a built-in MetaID browser that supports MetaID-related data queries.
+This is the deployed and live MAN browser: https://man.metaid.io
+
+## Running
+
+We support the following three deployment and execution methods.
+1. ### Compile and run
+ - Compile according to the documentation's compilation section.
+ - Properly configure the config.toml file in the same directory as the executable.
+ -  Run the executable.
+```
+./manindexer -chain=btc -databse=mongo -server=1 -test=1
+```
+2. ### Download the release
+  - Download the latest release from [here](https://github.com/metaid-developers/man-indexer/releases).
+  - Extract the files.
+  - Properly configure the config.toml file in the same directory as the executable.
+  - Run the executable.
+3. ### shell 
+  - Download the latest shell file from [here](https://github.com/metaid-developers/man-indexer/blob/main/doc/run_manindex.sh).
+  - Execute the shell file on the server.
+```
+./run_manindex.sh
+```
+
+To start an HTTP web service, specify the server parameter as 1 when running the program.
+
+`./manindexer -server=1`
+
 ## Parameters
 ```
 -chain string
@@ -101,16 +148,7 @@ Run
   -test string
         Connect to testnet (default "0")
 ```
-
-# Browser
-
-The MAN indexer comes with a built-in MetaID browser that supports MetaID-related data queries.
-
-## Running
-
-To start an HTTP web service, specify the server parameter as 1 when running the program.
-
-`./manindexer -server=1`
+The optional values for 'test' are 0, 1, and 2, corresponding to mainnet, testnet3, and regtest networks, respectively.
 
 The service's default port is 80/443. If a specific port needs to be specified, it can be done through the port setting under the web category in the configuration file.
 
@@ -125,8 +163,7 @@ Accepts keywords such as MetaID, MetaID Number, Pin Id for querying, but does no
 ### PIN
 
 Lists all PINs in reverse chronological order. Clicking on a PIN allows you to view more information, such as:
-
-[420127091f518b0625d19c4d0796c4c6f1f30a111233c09b9e78964aca4712eci0](https://man-test.metaid.io/pin/420127091f518b0625d19c4d0796c4c6f1f30a111233c09b9e78964aca4712eci0)
+[9bc429654d35a11e5dde0136e3466faa03507d7377769743fafa069e38580243i0](https://man.metaid.io/pin/9bc429654d35a11e5dde0136e3466faa03507d7377769743fafa069e38580243i0)
 
 ### MetaID
 
@@ -135,8 +172,7 @@ Lists all MetaIDs in descending order of creation time. Clicking on a MetaID all
 ### Block
 
 Lists all blocks with MetaID protocol data in reverse order of block height. Clicking on a card allows you to view the specific transaction details in that block, such as:
-
-[https://man-test.metaid.io/block/2581919](https://man-test.metaid.io/block/2581919)
+[https://man.metaid.io/block/844453](https://man.metaid.io/block/844453)
 
 ### Mempool
 
@@ -145,7 +181,7 @@ Lists MetaID data in the memory pool, which is automatically deleted after being
 # JSON API
 
 ## Basic API
-
+Here is the deployed public API service: https://man.metaid.io
 |Endpoint|Method|Parameter|Description|
 |---|---|---|---|
 |/api/pin/{numberOrId}|GET|PIN number or PIN id|Get PIN details based on PIN number or PIN id|
@@ -165,29 +201,33 @@ General query for protocols data, supports fetching data using get, count, sum m
 Endpoint: /api/generalQuery
 
 **Method:** POST
-```
+```json
 {
-	"collection": "pins", // Name of the collection to query, required
-    "action": "sum", // Query operation, supports get, count, sum 
-    "filterRelation": "or", // Query condition relationship, supports or, and (cannot be mixed) 
-    "field": [ "number" // Field to return in the query, required for sum operation ], 
-     // Query conditions 
-      "filter": [ { 
-              "operator": "=", // Condition operator, supports =, >, >=, <, <= 
-              "key": "number", // Condition field
-              "value": 1 // Query value 
-              },
-			{ "operator": "=", "key": "number", "value": 2 }
-	], "cursor": 0, // Starting point for returned data 
-	"limit": 1, // Number of data records to return
+    "collection": "Name of the collection to query, required, e.g.,: pins",
+    "action": "Query operation, supports get, count, sum , e.g.,: sum",
+    "filterRelation": "Query condition relationship, supports or, and (cannot be mixed), e.g.,: or", 
+    "field": [ "Field to return in the query, required for sum operation, e.g.,: number"], 
+    "filter": [
+	       { 
+	         "operator": " Condition operator, supports =, >, >=, <, <=, e.g.,: =", 
+	         "key": "Condition field,e.g.,:number",
+	         "value": 1 
+	       },
+	       {
+	         "operator": "=", "key": "number", "value": 2
+	        }
+          ],
+	"cursor": 0,
+	"limit": 1, 
 	"sort": [ 
-        "number", // Field to sort by 
-             "desc" // Order, supports asc, desc 
-    ] }
+        	"number", 
+		"desc"
+        ]
+}
 ```
 
 **Successful Response Example**
-```
+```json
 {
 	"collection": "paylike",
 	"action": "get",
@@ -205,7 +245,7 @@ Endpoint: /api/generalQuery
 ```
 
 **Failed Response Example**
-```
+```json
 {
     "code": -1,
     "message": "Data not found",
