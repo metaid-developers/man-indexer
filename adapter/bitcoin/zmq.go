@@ -7,7 +7,6 @@ import (
 	"log"
 	"manindexer/common"
 	"manindexer/pin"
-	"strconv"
 	"strings"
 	"time"
 
@@ -50,13 +49,13 @@ func (indexer *Indexer) ZmqRun(chanMsg chan []*pin.PinInscription) {
 			chanMsg <- pinInscriptions
 		}
 		//PIN transfer check
-		tansferList, err := indexer.transferCheck(&msgTx)
+		tansferList, err := indexer.TransferCheck(&msgTx)
 		if err == nil && len(tansferList) > 0 {
 			chanMsg <- tansferList
 		}
 	}
 }
-func (indexer *Indexer) transferCheck(tx *wire.MsgTx) (transferPinList []*pin.PinInscription, err error) {
+func (indexer *Indexer) TransferCheck(tx *wire.MsgTx) (transferPinList []*pin.PinInscription, err error) {
 	var outputList []string
 	for _, in := range tx.TxIn {
 		output := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
@@ -72,7 +71,7 @@ func (indexer *Indexer) transferCheck(tx *wire.MsgTx) (transferPinList []*pin.Pi
 		if len(arr) < 2 {
 			continue
 		}
-		idx, _ := strconv.Atoi(arr[1])
+		//idx, _ := strconv.Atoi(arr[1])
 		transferPin := pin.PinInscription{
 			Id:                 pinNode.Id,
 			CreateAddress:      pinNode.Address,
@@ -80,7 +79,13 @@ func (indexer *Indexer) transferCheck(tx *wire.MsgTx) (transferPinList []*pin.Pi
 			GenesisTransaction: tx.TxHash().String(),
 			IsTransfered:       true,
 		}
-		transferPin.Address, _, _ = indexer.getPinOwner(tx, idx)
+		fmt.Println(pinNode.Output)
+		info, err := indexer.GetOWnerAddress(pinNode.Output, tx)
+		//transferPin.Address, _, _ = indexer.GetPinOwner(tx, idx)
+		if err != nil {
+			continue
+		}
+		transferPin.Address = info.Address
 		transferPinList = append(transferPinList, &transferPin)
 	}
 	return

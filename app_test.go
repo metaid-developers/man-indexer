@@ -132,3 +132,26 @@ func TestHash(t *testing.T) {
 	fmt.Println(add)
 	fmt.Println(h)
 }
+func TestGetOwner(t *testing.T) {
+	man.InitAdapter("btc", "mongo", "1", "1")
+	//txResult, err := man.ChainAdapter.GetTransaction("d8373e66a6852331c667c94bdccdac94b4908b7ca47b35a00d90a76ae29eb015")
+	//fmt.Println(err)
+	//tx := txResult.(*btcutil.Tx)
+	//inpitId := "8fb1a5154b013f1efaae82a922e03419d6d765006812e6cf32e7b8709971a8c7:0"
+	//man.IndexerAdapter.GetOWnerAddress()
+	// index := bitcoin.Indexer{
+	// 	ChainParams: &chaincfg.TestNet3Params,
+	// 	PopCutNum:   common.Config.Btc.PopCutNum,
+	// 	DbAdapter:   &man.DbAdapter,
+	// }
+	// info, err := index.GetOWnerAddress(inpitId, tx.MsgTx())
+	// fmt.Println(err)
+	// fmt.Printf("%+v", info)
+	// list, err := index.TransferCheck(tx.MsgTx())
+	// fmt.Println(err)
+	// for _, l := range list {
+	// 	fmt.Printf("%+v", l)
+	// }
+	ll, e := man.DbAdapter.GetMempoolTransfer("tb1q3h9twrcz7s5mz7q2eu6pneex446tp3v5yasnp5", "")
+	fmt.Println(e, len(ll))
+}
