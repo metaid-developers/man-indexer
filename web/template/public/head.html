@@ -17,10 +17,9 @@
   <link rel="stylesheet" href="/assets/css/theme.css">
   <script src="/assets/js/iconfont.js"></script>
   <!-- Global Vendor -->
-  <script src="/assets/js/jquery.min.js"></script>
-  <script src="/assets/js/bootstrap.min.js"></script>
+
   <!-- Initialization  -->
-  <script src="/assets/js/sidebar-nav.js"></script>
+
   <link rel="stylesheet" href="/assets/css/fix.css">
   <!-- Custom Charts -->
   <style>
@@ -34,6 +33,12 @@
       const key = document.getElementById("search_key").value.replace(/^s*|s*$/g, '')
       if (key.length > 0) {
         location.href = "/search/" + key;
+      }
+    }
+    function keyup_submit(e) {
+      var evt = window.event || e;
+      if (evt.keyCode == 13) {
+        search()
       }
     }
   </script>

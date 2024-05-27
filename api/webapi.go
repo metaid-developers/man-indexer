@@ -82,6 +82,7 @@ func Start(f embed.FS) {
 	r.GET("/tx/:txid", tx)
 	r.GET("/node/:rootid", node)
 	r.GET("/content/:number", content)
+	r.GET("/stream/:number", stream)
 
 	//btc json api
 	btcJsonApi(r)
@@ -213,9 +214,22 @@ func content(ctx *gin.Context) {
 		ctx.String(200, "fail")
 		return
 	}
-	ctx.String(200, string(p.ContentBody))
+	if p.ContentType == "application/mp4" {
+		//ctx.Data(200, "application/octet-stream", p.ContentBody)
+		ctx.Header("Content-Type", "text/html; charset=utf-8")
+		ctx.String(200, `<video controls autoplay muted src="/stream/`+p.Id+`"></viedo>`)
+	} else {
+		ctx.String(200, string(p.ContentBody))
+	}
 }
-
+func stream(ctx *gin.Context) {
+	p, err := man.DbAdapter.GetPinByNumberOrId(ctx.Param("number"))
+	if err != nil || p == nil {
+		ctx.String(200, "fail")
+		return
+	}
+	ctx.Data(200, "application/octet-stream", p.ContentBody)
+}
 func blocks(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Param("page"), 10, 64)
 	if err != nil {

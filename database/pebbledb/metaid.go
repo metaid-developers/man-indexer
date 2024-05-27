@@ -190,3 +190,6 @@ func findRootTxIdInMempool(address string) (rootTxId string, err error) {
 
 	return
 }
+func (pb *Pebble) BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAdditional) (err error) {
+	return
+}

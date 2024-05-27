@@ -35,19 +35,19 @@
       </a>
 
       <div id="headerSearch" class="u-header-search-form">
-        <form>
-          <div class="input-group">
-            <input class="form-control u-header-search__field" type="text" id="search_key"
-                   placeholder="Type PINID / MetaID">
-            <button class="btn-link input-group-prepend u-header-search__btn" type="button" onclick="search()">
-              <div style="font-size: 20px;margin-top: 5px;">
-                <svg class="icon" aria-hidden="true">
-                  <use xlink:href="#icon-fenxiang"></use>
-                </svg>
-              </div>
-            </button>
-          </div>
-        </form>
+
+        <div class="input-group">
+          <input class="form-control u-header-search__field" type="text" onkeydown="keyup_submit(event);"
+                 id="search_key" placeholder="Type PINID / MetaID / TxHash">
+          <button class="btn-link input-group-prepend u-header-search__btn" type="button" onclick="search()">
+            <div style="font-size: 20px;margin-top: 5px;">
+              <svg class="icon" aria-hidden="true">
+                <use xlink:href="#icon-fenxiang"></use>
+              </svg>
+            </div>
+          </button>
+        </div>
+
       </div>
     </div>
   </div>

@@ -153,3 +153,20 @@ func (mg *Mongodb) GetMetaIdPageList(page int64, size int64) (pins []*pin.MetaId
 	err = result.All(context.TODO(), &pins)
 	return
 }
+func (mg *Mongodb) BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAdditional) (err error) {
+	var models []mongo.WriteModel
+	for _, info := range infoList {
+		filter := bson.D{{Key: "metaid", Value: info.MetaId}, {Key: "infokey", Value: info.InfoKey}}
+		var updateInfo bson.D
+		updateInfo = append(updateInfo, bson.E{Key: "infoValue", Value: info.InfoValue})
+		updateInfo = append(updateInfo, bson.E{Key: "pinid", Value: info.PinId})
+		update := bson.D{{Key: "$set", Value: updateInfo}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(update).SetUpsert(true)
+		models = append(models, m)
+	}
+
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err = mongoClient.Collection(InfoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+	return
+}

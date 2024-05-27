@@ -3,7 +3,7 @@ package common
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -45,7 +45,7 @@ func InitHeightFile(filePath string, height int64) {
 func GetLocalLastHeight(filePath string) (last int64, err error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	s := strings.Replace(string(content), "\n", "", -1)

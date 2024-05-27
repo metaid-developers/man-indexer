@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"manindexer/common"
+	"manindexer/database"
 	"manindexer/pin"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ type Indexer struct {
 	ChainParams *chaincfg.Params
 	Block       interface{}
 	PopCutNum   int
+	DbAdapter   *database.Db
 }
 
 func init() {
@@ -126,7 +128,8 @@ func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (info *p
 				info.Address = hex.EncodeToString(out.PkScript)
 			}
 			info.Output = fmt.Sprintf("%s:%d", tx.TxHash().String(), i)
-			info.Location = fmt.Sprintf("%s:%d", info.Output, outputValue-inputValue)
+			//count offset
+			info.Location = fmt.Sprintf("%s:%d", info.Output, out.Value-(outputValue-inputValue))
 			info.Offset = uint64(i)
 			info.OutputValue = out.Value
 			break
@@ -267,7 +270,7 @@ func (indexer *Indexer) ParsePins(witnessScript []byte) (pins []*pin.PersonalInf
 			if !tokenizer.Next() || tokenizer.Opcode() != txscript.OP_IF {
 				return
 			}
-			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != pin.ProtocolID {
+			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != common.Config.ProtocolID {
 				return
 			}
 			pinode := indexer.parseOnePin(&tokenizer)
@@ -287,7 +290,7 @@ func (indexer *Indexer) ParsePin(witnessScript []byte) (pinode *pin.PersonalInfo
 			if !tokenizer.Next() || tokenizer.Opcode() != txscript.OP_IF {
 				return
 			}
-			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != pin.ProtocolID {
+			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != common.Config.ProtocolID {
 				return
 			}
 			pinode = indexer.parseOnePin(&tokenizer)
@@ -326,7 +329,10 @@ func (indexer *Indexer) parseOnePin(tokenizer *txscript.ScriptTokenizer) *pin.Pe
 		pinode.Path = "/"
 		return &pinode
 	}
-	if len(infoList) < 6 {
+	if len(infoList) < 6 && pinode.Operation != "revoke" {
+		return nil
+	}
+	if pinode.Operation == "revoke" && len(infoList) < 5 {
 		return nil
 	}
 	pinode.Path = strings.ToLower(string(infoList[1]))
