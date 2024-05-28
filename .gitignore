@@ -10,3 +10,4 @@ del_mempool_height.txt
 releases
 .gitignore
 manindex-linux.tar.gz
+manindexer.bak
