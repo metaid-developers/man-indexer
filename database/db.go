@@ -1,6 +1,7 @@
 package database
 
 import (
+	"manindexer/mrc20"
 	"manindexer/pin"
 )
 
@@ -60,4 +61,14 @@ type Db interface {
 	BatchUpsertFollowData(followData []*pin.FollowData) (err error)
 	GetFollowDataByMetaId(metaId string, myFollow bool, followDetail bool, cursor int64, size int64) (metaIdList []interface{}, total int64, err error)
 	GetFollowRecord(metaId string, followMetaid string) (followData pin.FollowData, err error)
+	//mrc20
+	GetMrc20TickInfo(tick string) (info mrc20.Mrc20DeployInfo, err error)
+	SaveMrc20Pin(data []mrc20.Mrc20Pin) (err error)
+	SaveMrc20Tick(data []mrc20.Mrc20DeployInfo) (err error)
+	GetMrc20TickPageList(page int64, size int64) (list []mrc20.Mrc20DeployInfo, err error)
+	AddMrc20Shovel(shovel string, pinId string) (err error)
+	GetMrc20Shovel(shovels []string) (data map[string]mrc20.Mrc20Shovel, err error)
+	UpdateMrc20TickInfo(tickId string, minted int64) (err error)
+	GetMrc20ByAddressAndTick(address string, tickId string) (list []mrc20.Mrc20Pin, err error)
+	GetMrc20HistoryPageList(tickId string, page int64, size int64) (list []mrc20.Mrc20Pin, err error)
 }

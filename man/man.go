@@ -191,7 +191,7 @@ func IndexerRun() (err error) {
 	for i := from + 1; i <= to; i++ {
 		bar.Add(1)
 		MaxHeight = i
-		pinList, protocolsData, metaIdData, pinTreeData, updatedData, _, followData, infoAdditional, _ := GetSaveData(i)
+		pinList, protocolsData, metaIdData, pinTreeData, updatedData, mrc20List, followData, infoAdditional, _ := GetSaveData(i)
 		if len(metaIdData) > 0 {
 			err = DbAdapter.BatchUpsertMetaIdInfo(metaIdData)
 			//metaIdData = metaIdData[0:0]
@@ -214,6 +214,9 @@ func IndexerRun() (err error) {
 		}
 		if len(infoAdditional) > 0 {
 			DbAdapter.BatchUpsertMetaIdInfoAddition(infoAdditional)
+		}
+		if len(mrc20List) > 0 {
+			Mrc20Handle(mrc20List)
 		}
 	}
 	bar.Finish()
@@ -255,9 +258,9 @@ func GetSaveData(blockHeight int64) (
 		}
 		pinList = append(pinList, pinNode)
 		//mrc20 pin
-		// if common.Config.Mrc20 == 1 && len(pinNode.Path) > 7 && pinNode.Path[0:7] == "/mrc20/" {
-		// 	mrc20List = append(mrc20List, pinNode)
-		// }
+		if len(pinNode.Path) > 7 && pinNode.Path[0:7] == "/mrc20/" {
+			mrc20List = append(mrc20List, pinNode)
+		}
 	}
 
 	handlePathAndOperation(&pinList, &metaIdData, &pinTreeData, &updatedData, &followData, &infoAdditional)

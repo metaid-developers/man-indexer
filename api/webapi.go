@@ -83,7 +83,9 @@ func Start(f embed.FS) {
 	r.GET("/node/:rootid", node)
 	r.GET("/content/:number", content)
 	r.GET("/stream/:number", stream)
-
+	//mrc20
+	r.GET("/mrc20/:page", mrc20)
+	r.GET("/mrc20/history/:id/:page", mrc20History)
 	//btc json api
 	btcJsonApi(r)
 	log.Println(common.Config.Web.Port)
@@ -328,4 +330,52 @@ func node(ctx *gin.Context) {
 		return
 	}
 	ctx.HTML(200, "home/node.html", &gin.H{"RootId": rootid, "Total": total, "Pins": list})
+}
+func mrc20(ctx *gin.Context) {
+	page, err := strconv.ParseInt(ctx.Param("page"), 10, 64)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	list, err := man.DbAdapter.GetMrc20TickPageList(page, 100)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	prePage := page - 1
+	nextPage := page + 1
+	if len(list) == 0 {
+		nextPage = 0
+	}
+	if prePage <= 0 {
+		prePage = 0
+	}
+	ctx.HTML(200, "home/mrc20.html", gin.H{"Ticks": list, "Active": "mrc20", "NextPage": nextPage, "PrePage": prePage})
+}
+func mrc20History(ctx *gin.Context) {
+	page, err := strconv.ParseInt(ctx.Param("page"), 10, 64)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+
+	if ctx.Param("id") == "" {
+		ctx.String(200, "fail")
+		return
+	}
+	list, err := man.DbAdapter.GetMrc20HistoryPageList(ctx.Param("id"), page, 20)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	prePage := page - 1
+	nextPage := page + 1
+	if len(list) == 0 {
+		nextPage = 0
+	}
+	if prePage <= 0 {
+		prePage = 0
+	}
+
+	ctx.HTML(200, "home/mrc20history.html", gin.H{"List": list, "Tick": ctx.Param("id"), "Active": "", "NextPage": nextPage, "PrePage": prePage})
 }

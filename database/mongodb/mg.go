@@ -23,9 +23,9 @@ const (
 	PinTreeCatalogCollection      string = "pintree"
 	FollowCollection              string = "follow"
 	InfoCollection                string = "info"
-	// Mrc20PinCollection       string = "mrc20pins"
-	// Mrc20TickCollection      string = "mrc20ticks"
-	// Mrc20MintShovel          string = "mrc20shovel"
+	Mrc20PinCollection            string = "mrc20pins"
+	Mrc20TickCollection           string = "mrc20ticks"
+	Mrc20MintShovel               string = "mrc20shovel"
 )
 
 var (
@@ -80,6 +80,11 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, MempoolTransferPinsCollection, "fromaddress_1", bson.D{{Key: "fromaddress", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, MempoolTransferPinsCollection, "toaddress_1", bson.D{{Key: "toaddress", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, MempoolTransferPinsCollection, "txhash_1", bson.D{{Key: "txhash", Value: 1}}, false)
+
+	//mrc20
+	createIndexIfNotExists(mongoClient, Mrc20TickCollection, "mrc20id_1", bson.D{{Key: "mrc20id", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, Mrc20PinCollection, "mrc20id_toaddress_verify_1", bson.D{{Key: "mrc20id", Value: 1}, {Key: "toaddress", Value: 1}, {Key: "verify", Value: 1}}, false)
+
 }
 
 func (mg *Mongodb) Count() (count pin.PinCount) {
