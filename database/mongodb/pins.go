@@ -290,8 +290,11 @@ func (mg *Mongodb) GetParentNodeById(pinId string) (pinnode *pin.PinInscription,
 	}
 	return
 }
-func (mg *Mongodb) GetAllPinByPath(page, limit int64, path string) (pins []*pin.PinInscription, total int64, err error) {
+func (mg *Mongodb) GetAllPinByPath(page, limit int64, path string, metaidList []string) (pins []*pin.PinInscription, total int64, err error) {
 	filter := bson.M{"path": path}
+	if len(metaidList) > 0 {
+		filter = bson.M{"path": path, "metaid": bson.M{"$in": metaidList}}
+	}
 	cursor := (page - 1) * limit
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(limit)
 	mempoolResult, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), filter, opts)

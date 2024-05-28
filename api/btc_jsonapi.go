@@ -38,8 +38,9 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.POST("/generalQuery", generalQuery)
 	btcGroup.GET("/pin/ByOutput/:output", getPinByOutput)
 	btcGroup.GET("/follow/record", getFollowRecord)
-	btcGroup.GET("/metaid/followList/:metaid", getFollowListByMetaId)
-
+	btcGroup.GET("/metaid/followerList/:metaid", getFollowerListByMetaId)
+	btcGroup.GET("/metaid/followingList/:metaid", getFollowingListByMetaId)
+	btcGroup.POST("/getAllPinByPathAndMetaId", getAllPinByPathAndMetaId)
 }
 
 func metaidList(ctx *gin.Context) {
@@ -390,7 +391,38 @@ func getAllPinByPath(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, respond.ApiError(101, "parentPath parameter error"))
 		return
 	}
-	pinList1, total, err := man.DbAdapter.GetAllPinByPath(page, limit, ctx.Query("path"))
+	pinList1, total, err := man.DbAdapter.GetAllPinByPath(page, limit, ctx.Query("path"), []string{})
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(http.StatusOK, respond.ErrNoPinFound)
+		} else {
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
+		}
+		return
+	}
+	var pinList []*pin.PinInscription
+	for _, pinNode := range pinList1 {
+		pinNode.ContentSummary = string(pinNode.ContentBody)
+		pinList = append(pinList, pinNode)
+	}
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": pinList, "total": total}))
+}
+
+// getAllPinByPathAndMetaId
+type pinQuery struct {
+	Page       int64    `json:"page"`
+	Size       int64    `json:"size"`
+	Path       string   `json:"path"`
+	MetaIdList []string `json:"metaIdList"`
+}
+
+func getAllPinByPathAndMetaId(ctx *gin.Context) {
+	var q pinQuery
+	if err := ctx.BindJSON(&q); err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
+	}
+	pinList1, total, err := man.DbAdapter.GetAllPinByPath(q.Page, q.Size, q.Path, q.MetaIdList)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			ctx.JSON(http.StatusOK, respond.ErrNoPinFound)
@@ -408,15 +440,40 @@ func getAllPinByPath(ctx *gin.Context) {
 }
 
 // getFollowListByMetaId
-func getFollowListByMetaId(ctx *gin.Context) {
+func getFollowerListByMetaId(ctx *gin.Context) {
 	cursorStr := ctx.Query("cursor")
 	sizeStr := ctx.Query("size")
 	cursor := int64(0)
 	size := int64(100)
 	myFollow := false
-	if ctx.Query("myFollow") == "true" {
-		myFollow = true
+	followDetail := false
+	if ctx.Query("followDetail") == "true" {
+		followDetail = true
 	}
+	if cursorStr != "" && sizeStr != "" {
+		cursor, _ = strconv.ParseInt(cursorStr, 10, 64)
+		size, _ = strconv.ParseInt(sizeStr, 10, 64)
+	}
+	list, total, err := man.DbAdapter.GetFollowDataByMetaId(ctx.Param("metaid"), myFollow, followDetail, cursor, size)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)
+		} else {
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
+		}
+		return
+	}
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": list, "total": total}))
+
+}
+
+// getFollowListByMetaId
+func getFollowingListByMetaId(ctx *gin.Context) {
+	cursorStr := ctx.Query("cursor")
+	sizeStr := ctx.Query("size")
+	cursor := int64(0)
+	size := int64(100)
+	myFollow := true
 	followDetail := false
 	if ctx.Query("followDetail") == "true" {
 		followDetail = true
@@ -441,7 +498,7 @@ func getFollowListByMetaId(ctx *gin.Context) {
 // getFollowRecord
 func getFollowRecord(ctx *gin.Context) {
 	metaId := ctx.Query("metaId")
-	followMetaId := ctx.Query("followMetaId")
+	followMetaId := ctx.Query("followerMetaId")
 	if metaId == "" || followMetaId == "" {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 		return

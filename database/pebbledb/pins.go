@@ -317,7 +317,7 @@ func prefixIterOptions(prefix []byte) pebble.IterOptions {
 		UpperBound: keyUpperBound(prefix),
 	}
 }
-func (pb *Pebble) GetAllPinByPath(page, limit int64, path string) (pins []*pin.PinInscription, total int64, err error) {
+func (pb *Pebble) GetAllPinByPath(page, limit int64, path string, metaidList []string) (pins []*pin.PinInscription, total int64, err error) {
 	if path == "" {
 		return
 	}

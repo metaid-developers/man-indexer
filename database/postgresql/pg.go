@@ -93,7 +93,7 @@ func (pg *Postgresql) GetChildNodeById(pinId string) (pins []*pin.PinInscription
 func (pg *Postgresql) GetParentNodeById(pinId string) (pinnode *pin.PinInscription, err error) {
 	return
 }
-func (pg *Postgresql) GetAllPinByPath(page, limit int64, path string) (pins []*pin.PinInscription, total int64, err error) {
+func (pg *Postgresql) GetAllPinByPath(page, limit int64, path string, metaidList []string) (pins []*pin.PinInscription, total int64, err error) {
 	return
 }
 func (pg *Postgresql) AddMempoolPin(pin *pin.PinInscription) (err error) {

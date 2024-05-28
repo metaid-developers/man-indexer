@@ -49,7 +49,7 @@ type Db interface {
 	Count() (count pin.PinCount)
 	GetChildNodeById(pinId string) (pins []*pin.PinInscription, err error)
 	GetParentNodeById(pinId string) (pinnode *pin.PinInscription, err error)
-	GetAllPinByPath(page, limit int64, path string) (pins []*pin.PinInscription, total int64, err error)
+	GetAllPinByPath(page, limit int64, path string, metaidList []string) (pins []*pin.PinInscription, total int64, err error)
 	BatchAddProtocolData(pins []*pin.PinInscription) (err error)
 	GeneratorFind(generator Generator) (data []map[string]interface{}, err error)
 	//mempoolTransfer
