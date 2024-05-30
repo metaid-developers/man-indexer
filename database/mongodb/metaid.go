@@ -25,11 +25,19 @@ func (mg *Mongodb) GetMaxMetaIdNumber() (number int64) {
 	return
 }
 
-func (mg *Mongodb) GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error) {
+func (mg *Mongodb) GetMetaIdInfo(address string, mempool bool, metaid string) (info *pin.MetaIdInfo, unconfirmed string, err error) {
 	filter := bson.D{{Key: "address", Value: address}}
+	if metaid != "" {
+		filter = bson.D{{Key: "metaid", Value: metaid}}
+	}
 	var mempoolInfo pin.MetaIdInfo
 	if mempool {
-		mempoolInfo, _ = findMetaIdInfoInMempool(address)
+		if metaid != "" {
+			mempoolInfo, _ = findMetaIdInfoInMempool("metaid", metaid)
+		}
+		if address != "" {
+			mempoolInfo, _ = findMetaIdInfoInMempool("address", address)
+		}
 	}
 	var unconfirmedList []string
 	err = mongoClient.Collection(MetaIdInfoCollection).FindOne(context.TODO(), filter).Decode(&info)
@@ -62,8 +70,8 @@ func (mg *Mongodb) GetMetaIdInfo(address string, mempool bool) (info *pin.MetaId
 	}
 	return
 }
-func findMetaIdInfoInMempool(address string) (info pin.MetaIdInfo, err error) {
-	result, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), bson.M{"address": address})
+func findMetaIdInfoInMempool(key string, value string) (info pin.MetaIdInfo, err error) {
+	result, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), bson.M{key: value})
 	if err != nil {
 		return
 	}
