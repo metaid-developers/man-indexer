@@ -29,7 +29,7 @@ type Db interface {
 	BatchUpdatePins(pins []*pin.PinInscription) (err error)
 	UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error)
 	AddMempoolPin(pin *pin.PinInscription) (err error)
-	GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error)
+	GetMetaIdInfo(address string, mempool bool, metaid string) (info *pin.MetaIdInfo, unconfirmed string, err error)
 	BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (err error)
 	BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAdditional) (err error)
 	BatchAddPinTree(data []interface{}) (err error)

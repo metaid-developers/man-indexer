@@ -181,10 +181,12 @@ func getSyncHeight() (from, to int64) {
 	to = bestHeight
 	return
 }
-func IndexerRun() (err error) {
-	from, to := getSyncHeight()
-	if from >= to {
-		return
+func IndexerRun(from, to int64) (err error) {
+	if from == 0 && to == 0 {
+		from, to = getSyncHeight()
+		if from >= to {
+			return
+		}
 	}
 	log.Println("from:", from, ",to:", to)
 	bar := progressbar.Default(to - from)
@@ -501,7 +503,7 @@ func metaIdInfoParse(pinNode *pin.PinInscription, path string, metaIdData *map[s
 	var err error
 	metaIdInfo, ok = (*metaIdData)[pinNode.Address]
 	if !ok {
-		metaIdInfo, _, err = DbAdapter.GetMetaIdInfo(pinNode.Address, false)
+		metaIdInfo, _, err = DbAdapter.GetMetaIdInfo(pinNode.Address, false, "")
 		if err != nil {
 			return
 		}

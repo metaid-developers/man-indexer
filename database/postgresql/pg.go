@@ -35,7 +35,7 @@ func (pg *Postgresql) UpdateTransferPin(trasferMap map[string]*pin.PinTransferIn
 	return
 }
 
-func (pg *Postgresql) GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error) {
+func (pg *Postgresql) GetMetaIdInfo(address string, mempool bool, metaid string) (info *pin.MetaIdInfo, unconfirmed string, err error) {
 	return
 }
 func (pg *Postgresql) BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (err error) {

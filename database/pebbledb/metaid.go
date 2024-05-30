@@ -26,7 +26,7 @@ func (pb *Pebble) GetMaxMetaIdNumber() (number int64) {
 	return
 }
 
-func (pb *Pebble) GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error) {
+func (pb *Pebble) GetMetaIdInfo(address string, mempool bool, metaid string) (info *pin.MetaIdInfo, unconfirmed string, err error) {
 
 	mempoolInfo, _ := findMetaIdInfoInMempool(address)
 	var unconfirmedList []string
@@ -101,7 +101,7 @@ func (pb *Pebble) BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (er
 		batchNumber.Close()
 	}()
 	for _, info := range infoList {
-		metaId, _, _ := pb.GetMetaIdInfo(info.Address, false)
+		metaId, _, _ := pb.GetMetaIdInfo(info.Address, false, "")
 		if metaId == nil {
 			metaId = info
 		}

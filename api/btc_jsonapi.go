@@ -34,6 +34,7 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.GET("/node/child/:pinId", getChildNodeById)
 	btcGroup.GET("/node/parent/:pinId", getParentNodeById)
 	btcGroup.GET("/info/address/:address", getInfoByAddress)
+	btcGroup.GET("/info/metaid/:metaId", getInfoByMetaId)
 	btcGroup.GET("/getAllPinByPath", getAllPinByPath)
 	btcGroup.POST("/generalQuery", generalQuery)
 	btcGroup.GET("/pin/ByOutput/:output", getPinByOutput)
@@ -339,7 +340,7 @@ type metaInfo struct {
 }
 
 func getInfoByAddress(ctx *gin.Context) {
-	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo(ctx.Param("address"), true)
+	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo(ctx.Param("address"), true, "")
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		return
@@ -359,6 +360,24 @@ func getInfoByAddress(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", metaInfo{metaid, unconfirmed}))
 }
 
+func getInfoByMetaId(ctx *gin.Context) {
+	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo("", true, ctx.Param("metaId"))
+	if err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrServiceError)
+		return
+	}
+	if metaid == nil {
+		metaid = &pin.MetaIdInfo{MetaId: ctx.Param("metaId"), Address: ""}
+		//ctx.JSON(200, apiError(100, "no metaid found."))
+		ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", metaInfo{metaid, ""}))
+		return
+	}
+
+	if metaid.MetaId == "" {
+		metaid.MetaId = ctx.Param("metaId")
+	}
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", metaInfo{metaid, unconfirmed}))
+}
 func generalQuery(ctx *gin.Context) {
 	var g database.Generator
 	if err := ctx.BindJSON(&g); err != nil {
