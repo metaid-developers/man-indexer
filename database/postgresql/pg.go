@@ -11,7 +11,7 @@ type Postgresql struct{}
 func (pg *Postgresql) InitDatabase() {
 
 }
-func (pg *Postgresql) GetMaxHeight() (height int64, err error) {
+func (pg *Postgresql) GetMaxHeight(chainName string) (height int64, err error) {
 	log.Println("Postgresql TODO")
 	return
 }

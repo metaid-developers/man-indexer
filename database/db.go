@@ -22,7 +22,7 @@ type GeneratorFilter struct {
 }
 type Db interface {
 	InitDatabase()
-	GetMaxHeight() (height int64, err error)
+	GetMaxHeight(chainName string) (height int64, err error)
 	GetMaxNumber() (number int64)
 	GetMaxMetaIdNumber() (number int64)
 	BatchAddPins(pins []interface{}) (err error)

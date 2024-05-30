@@ -1,4 +1,4 @@
-package bitcoin
+package microvisionchain
 
 import (
 	"encoding/hex"
@@ -26,7 +26,7 @@ type Indexer struct {
 }
 
 func init() {
-	PopCutNum = common.Config.Btc.PopCutNum
+	PopCutNum = common.Config.Mvc.PopCutNum
 }
 func (indexer *Indexer) GetCurHeight() (height int64) {
 	return
@@ -39,7 +39,7 @@ func (indexer *Indexer) GetAddress(pkScript []byte) (address string) {
 	return
 }
 func (indexer *Indexer) CatchPins(blockHeight int64) (pinInscriptions []*pin.PinInscription, txInList []string) {
-	chain := BitcoinChain{}
+	chain := MicroVisionChain{}
 	blockMsg, err := chain.GetBlock(blockHeight)
 	if err != nil {
 		return
@@ -54,9 +54,6 @@ func (indexer *Indexer) CatchPins(blockHeight int64) (pinInscriptions []*pin.Pin
 		for _, in := range tx.TxIn {
 			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			txInList = append(txInList, id)
-		}
-		if !tx.HasWitness() {
-			continue
 		}
 		txPins := indexer.CatchPinsByTx(tx, blockHeight, timestamp, blockHash, merkleRoot, i)
 		if len(txPins) > 0 {
@@ -140,72 +137,61 @@ func (indexer *Indexer) GetOWnerAddress(inputId string, tx *wire.MsgTx) (info *p
 	return
 }
 func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, timestamp int64, blockHash string, merkleRoot string, txIndex int) (pinInscriptions []*pin.PinInscription) {
-	//No witness data
-	if !msgTx.HasWitness() {
-		return nil
-	}
-	for i, v := range msgTx.TxIn {
-		index, input := i, v
-		//Witness length error
-		if len(input.Witness) <= 1 {
-			continue
-		}
-		//Witness length error,Taproot
-		if len(input.Witness) == 2 && input.Witness[len(input.Witness)-1][0] == txscript.TaprootAnnexTag {
-			continue
-		}
-		// If Taproot Annex data exists, take the last element of the witness as the script data, otherwise,
-		// take the penultimate element of the witness as the script data
-		var witnessScript []byte
-		if input.Witness[len(input.Witness)-1][0] == txscript.TaprootAnnexTag {
-			witnessScript = input.Witness[len(input.Witness)-1]
-		} else {
-			witnessScript = input.Witness[len(input.Witness)-2]
-		}
-		// Parse script and get pin content
-		pinInscription := indexer.ParsePin(witnessScript)
-		if pinInscription == nil {
-			continue
-		}
-		address, outIdx, locationIdx := indexer.GetPinOwner(msgTx, index)
-		id := fmt.Sprintf("%si%d", msgTx.TxHash().String(), outIdx)
-		metaId := common.GetMetaIdByAddress(address)
-		contentTypeDetect := common.DetectContentType(&pinInscription.ContentBody)
-		pop := ""
-		if merkleRoot != "" && blockHash != "" {
-			pop, _ = common.GenPop(id, merkleRoot, blockHash)
-		}
+	//check OpReturn data
+	haveOpReturn := false
+	for i, out := range msgTx.TxOut {
+		class, _, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
+		//fmt.Println(class.String())
+		if class.String() == "nonstandard" {
+			pinInscription := indexer.ParsePin(out.PkScript)
+			if pinInscription == nil {
+				continue
+			}
+			address, outIdx, locationIdx := indexer.GetPinOwner(msgTx, i-1)
+			id := fmt.Sprintf("%si%d", msgTx.TxHash().String(), outIdx)
+			metaId := common.GetMetaIdByAddress(address)
+			contentTypeDetect := common.DetectContentType(&pinInscription.ContentBody)
+			pop := ""
+			if merkleRoot != "" && blockHash != "" {
+				pop, _ = common.GenPop(id, merkleRoot, blockHash)
+			}
 
-		pinInscriptions = append(pinInscriptions, &pin.PinInscription{
-			//Pin:                pinInscription,
-			ChainName:          indexer.ChainName,
-			Id:                 id,
-			MetaId:             metaId,
-			Number:             0,
-			Address:            address,
-			CreateAddress:      address,
-			Timestamp:          timestamp,
-			GenesisHeight:      blockHeight,
-			GenesisTransaction: msgTx.TxHash().String(),
-			Output:             fmt.Sprintf("%s:%d", msgTx.TxHash().String(), outIdx),
-			OutputValue:        msgTx.TxOut[outIdx].Value,
-			TxInIndex:          uint32(index),
-			Offset:             uint64(outIdx),
-			TxIndex:            txIndex,
-			Operation:          pinInscription.Operation,
-			Location:           fmt.Sprintf("%s:%d:%d", msgTx.TxHash().String(), outIdx, locationIdx),
-			Path:               pinInscription.Path,
-			OriginalPath:       pinInscription.Path,
-			ParentPath:         pinInscription.ParentPath,
-			Encryption:         pinInscription.Encryption,
-			Version:            pinInscription.Version,
-			ContentType:        pinInscription.ContentType,
-			ContentTypeDetect:  contentTypeDetect,
-			ContentBody:        pinInscription.ContentBody,
-			ContentLength:      pinInscription.ContentLength,
-			ContentSummary:     getContentSummary(pinInscription, id, contentTypeDetect),
-			Pop:                pop,
-		})
+			pinInscriptions = append(pinInscriptions, &pin.PinInscription{
+				//Pin:                pinInscription,
+				ChainName:          indexer.ChainName,
+				Id:                 id,
+				MetaId:             metaId,
+				Number:             0,
+				Address:            address,
+				CreateAddress:      address,
+				Timestamp:          timestamp,
+				GenesisHeight:      blockHeight,
+				GenesisTransaction: msgTx.TxHash().String(),
+				Output:             fmt.Sprintf("%s:%d", msgTx.TxHash().String(), outIdx),
+				OutputValue:        msgTx.TxOut[outIdx].Value,
+				TxInIndex:          uint32(i - 1),
+				Offset:             uint64(outIdx),
+				TxIndex:            txIndex,
+				Operation:          pinInscription.Operation,
+				Location:           fmt.Sprintf("%s:%d:%d", msgTx.TxHash().String(), outIdx, locationIdx),
+				Path:               pinInscription.Path,
+				OriginalPath:       pinInscription.Path,
+				ParentPath:         pinInscription.ParentPath,
+				Encryption:         pinInscription.Encryption,
+				Version:            pinInscription.Version,
+				ContentType:        pinInscription.ContentType,
+				ContentTypeDetect:  contentTypeDetect,
+				ContentBody:        pinInscription.ContentBody,
+				ContentLength:      pinInscription.ContentLength,
+				ContentSummary:     getContentSummary(pinInscription, id, contentTypeDetect),
+				Pop:                pop,
+			})
+			haveOpReturn = true
+			break
+		}
+	}
+	if !haveOpReturn {
+		return nil
 	}
 	return
 }
@@ -263,9 +249,9 @@ func (indexer *Indexer) GetPinOwner(tx *wire.MsgTx, inIdx int) (address string, 
 	}
 	return
 }
-func (indexer *Indexer) ParsePins(witnessScript []byte) (pins []*pin.PersonalInformationNode) {
+func (indexer *Indexer) ParsePins(pkScript []byte) (pins []*pin.PersonalInformationNode) {
 	// Parse pins content from witness script
-	tokenizer := txscript.MakeScriptTokenizer(0, witnessScript)
+	tokenizer := txscript.MakeScriptTokenizer(0, pkScript)
 	for tokenizer.Next() {
 		// Check inscription envelop header: OP_FALSE(0x00), OP_IF(0x63), PROTOCOL_ID
 		if tokenizer.Opcode() == txscript.OP_FALSE {
@@ -283,15 +269,12 @@ func (indexer *Indexer) ParsePins(witnessScript []byte) (pins []*pin.PersonalInf
 	}
 	return
 }
-func (indexer *Indexer) ParsePin(witnessScript []byte) (pinode *pin.PersonalInformationNode) {
+func (indexer *Indexer) ParsePin(pkScript []byte) (pinode *pin.PersonalInformationNode) {
 	// Parse pins content from witness script
-	tokenizer := txscript.MakeScriptTokenizer(0, witnessScript)
+	tokenizer := txscript.MakeScriptTokenizer(0, pkScript)
 	for tokenizer.Next() {
 		// Check inscription envelop header: OP_FALSE(0x00), OP_IF(0x63), PROTOCOL_ID
-		if tokenizer.Opcode() == txscript.OP_FALSE {
-			if !tokenizer.Next() || tokenizer.Opcode() != txscript.OP_IF {
-				return
-			}
+		if tokenizer.Opcode() == txscript.OP_RETURN {
 			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != common.Config.ProtocolID {
 				return
 			}
@@ -304,18 +287,7 @@ func (indexer *Indexer) parseOnePin(tokenizer *txscript.ScriptTokenizer) *pin.Pe
 	// Find any pushed data in the script. This includes OP_0, but not OP_1 - OP_16.
 	var infoList [][]byte
 	for tokenizer.Next() {
-		if tokenizer.Opcode() == txscript.OP_ENDIF {
-			break
-		}
 		infoList = append(infoList, tokenizer.Data())
-		if len(tokenizer.Data()) > 520 {
-			//log.Errorf("data is longer than 520")
-			return nil
-		}
-	}
-	// No OP_ENDIF
-	if tokenizer.Opcode() != txscript.OP_ENDIF {
-		return nil
 	}
 	// Error occurred
 	if err := tokenizer.Err(); err != nil {
@@ -363,7 +335,7 @@ func (indexer *Indexer) parseOnePin(tokenizer *txscript.ScriptTokenizer) *pin.Pe
 	return &pinode
 }
 func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) {
-	chain := BitcoinChain{}
+	chain := MicroVisionChain{}
 	blockMsg, err := chain.GetBlock(blockHeight)
 	if err != nil {
 		return

@@ -40,6 +40,7 @@ type PinInscription struct {
 	Content            string `json:"content"`
 	Pop                string `json:"pop"`
 	PopLv              int    `json:"popLv"`
+	ChainName          string `json:"chainName"`
 }
 type PinTransferInfo struct {
 	Address     string `json:"address"`
@@ -68,6 +69,7 @@ type FollowData struct {
 	Status        bool   `json:"status"`
 }
 type MetaIdInfo struct {
+	ChainName     string `json:"chainName"`
 	Number        int64  `json:"number"`
 	MetaId        string `json:"metaid"`
 	Name          string `json:"name"`
@@ -101,6 +103,7 @@ type PinMsg struct {
 	Path      string `json:"path"`
 	MetaId    string `json:"metaid"`
 	Pop       string `json:"pop"`
+	ChainName string `json:"chainName"`
 }
 
 type BlockMsg struct {

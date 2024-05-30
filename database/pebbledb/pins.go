@@ -11,7 +11,7 @@ import (
 	"github.com/cockroachdb/pebble"
 )
 
-func (pb *Pebble) GetMaxHeight() (height int64, err error) {
+func (pb *Pebble) GetMaxHeight(chainName string) (height int64, err error) {
 	value, closer, err := Pb[NumberLog].Get([]byte("maxBlockHeight"))
 	if err != nil {
 		if err == pebble.ErrNotFound {

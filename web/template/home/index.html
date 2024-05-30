@@ -90,13 +90,15 @@
         <div class="row">
           {{ range $i, $v := .Pins }}
           <div class="col-md-4 col-lg-3 col-xl-3 mb-4 ">
-            <a href="/pin/{{$v.Number}}" class="link">
+            <a href="/pin/{{$v.Id}}" class="link">
               <div class="pin-card height-200 blur shadow-blur">
                 <div class="pin-card-body">
-                  <div class="number">#{{ $v.Number }} <span class="type">{{ $v.Operation }} | {{ $v.MetaId |
-                      formatRootId }}</span></div>
+                  <div class="number"><span class="tag">{{ $v.ChainName }}</span> <span class="type">{{ $v.Operation }}
+                      | {{ $v.MetaId | formatRootId }}</span></div>
                   <div class="type">[{{ $v.Type }}]&nbsp;&nbsp;{{ $v.Path }}</div>
-                  <div class="type" style="color:#333">PoP : {{$v.Pop | popLevelCount}} ({{ $v.Pop | popStrShow }})
+                  <div class="type" style="color:#333">PoP : {{popLevelCount $v.ChainName $v.Pop }} ({{ popStrShow
+                    $v.ChainName $v.Pop
+                    }})
                   </div>
                   {{if eq $v.Type "image/jpeg"}}
                   <div class="img"><img src="{{ $v.Content }}" /></div>

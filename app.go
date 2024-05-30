@@ -46,10 +46,7 @@ func main() {
 	}
 	for {
 		man.CheckNewBlock()
-		err := man.IndexerRun(0, 0)
-		if err != nil {
-			log.Println(err)
-		}
+		man.IndexerRun(0, 0)
 		time.Sleep(time.Second * 10)
 	}
 }
