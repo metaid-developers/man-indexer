@@ -139,6 +139,7 @@ func (indexer *Indexer) GetOWnerAddress(inputId string, tx *wire.MsgTx) (info *p
 func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, timestamp int64, blockHash string, merkleRoot string, txIndex int) (pinInscriptions []*pin.PinInscription) {
 	//check OpReturn data
 	haveOpReturn := false
+	chain := MicroVisionChain{}
 	for i, out := range msgTx.TxOut {
 		class, _, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
 		//fmt.Println(class.String())
@@ -163,7 +164,8 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				MetaId:             metaId,
 				Number:             0,
 				Address:            address,
-				CreateAddress:      address,
+				InitialOwner:       address,
+				CreateAddress:      chain.GetCreatorAddress(msgTx.TxIn[0].PreviousOutPoint.Hash.String(), msgTx.TxIn[0].PreviousOutPoint.Index, indexer.ChainParams),
 				Timestamp:          timestamp,
 				GenesisHeight:      blockHeight,
 				GenesisTransaction: msgTx.TxHash().String(),

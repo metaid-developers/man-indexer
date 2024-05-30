@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/txscript"
 )
 
 var (
@@ -93,5 +95,30 @@ func (chain *BitcoinChain) GetBlockMsg(height int64) (blockMsg *pin.BlockMsg) {
 	blockMsg.Size = int64(block.Size)
 	blockMsg.Transaction = block.Tx
 	blockMsg.TransactionNum = len(block.Tx)
+	return
+}
+func (chain *BitcoinChain) GetCreatorAddress(txHashStr string, idx uint32, netParams *chaincfg.Params) (address string) {
+	txHash, err := chainhash.NewHashFromStr(txHashStr)
+	if err != nil {
+		return "errorAddr"
+	}
+	//get commit tx
+	tx, err := client.GetRawTransaction(txHash)
+	if err != nil {
+		return "errorAddr"
+	}
+	//get commit tx first input
+	inputHash := tx.MsgTx().TxIn[0].PreviousOutPoint.Hash
+	inputIdx := tx.MsgTx().TxIn[0].PreviousOutPoint.Index
+	inputTx, err := client.GetRawTransaction(&inputHash)
+	if err != nil {
+		return "errorAddr"
+	}
+	_, addresses, _, _ := txscript.ExtractPkScriptAddrs(inputTx.MsgTx().TxOut[inputIdx].PkScript, netParams)
+	if len(addresses) > 0 {
+		address = addresses[0].String()
+	} else {
+		address = "errorAddr"
+	}
 	return
 }

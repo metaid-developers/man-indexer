@@ -84,7 +84,12 @@ func pinList(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, MetaId: p.MetaId, Pop: p.Pop, ChainName: p.ChainName}
+		pmsg := &pin.PinMsg{
+			Content: p.ContentSummary, Number: p.Number, Operation: p.Operation,
+			Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, MetaId: p.MetaId,
+			Pop: p.Pop, ChainName: p.ChainName,
+			InitialOwner: p.InitialOwner, Address: p.Address, CreateAddress: p.CreateAddress,
+		}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()

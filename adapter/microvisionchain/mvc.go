@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/txscript"
 )
 
 var (
@@ -96,5 +98,22 @@ func (chain *MicroVisionChain) GetBlockMsg(height int64) (blockMsg *pin.BlockMsg
 	blockMsg.Size = int64(block.Size)
 	blockMsg.Transaction = block.Tx
 	blockMsg.TransactionNum = len(block.Tx)
+	return
+}
+func (chain *MicroVisionChain) GetCreatorAddress(txHashStr string, idx uint32, netParams *chaincfg.Params) (address string) {
+	txHash, err := chainhash.NewHashFromStr(txHashStr)
+	if err != nil {
+		return "errorAddr"
+	}
+	tx, err := client.GetRawTransaction(txHash)
+	if err != nil {
+		return "errorAddr"
+	}
+	_, addresses, _, _ := txscript.ExtractPkScriptAddrs(tx.MsgTx().TxOut[idx].PkScript, netParams)
+	if len(addresses) > 0 {
+		address = addresses[0].String()
+	} else {
+		address = "errorAddr"
+	}
 	return
 }

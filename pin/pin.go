@@ -11,7 +11,8 @@ type PinInscription struct {
 	Number             int64  `json:"number"`
 	MetaId             string `json:"metaid"`
 	Address            string `json:"address"`
-	CreateAddress      string `json:"createAddress"`
+	CreateAddress      string `json:"creator"`
+	InitialOwner       string `json:"initialOwner"`
 	Output             string `json:"output"`
 	OutputValue        int64  `json:"outputValue"`
 	Timestamp          int64  `json:"timestamp"`
@@ -94,16 +95,19 @@ type PinTreeCatalog struct {
 }
 
 type PinMsg struct {
-	Content   string `json:"content"`
-	Number    int64  `json:"number"`
-	Operation string `json:"operation"`
-	Height    int64  `json:"height"`
-	Id        string `json:"id"`
-	Type      string `json:"type"`
-	Path      string `json:"path"`
-	MetaId    string `json:"metaid"`
-	Pop       string `json:"pop"`
-	ChainName string `json:"chainName"`
+	Content       string `json:"content"`
+	Number        int64  `json:"number"`
+	Operation     string `json:"operation"`
+	Height        int64  `json:"height"`
+	Id            string `json:"id"`
+	Type          string `json:"type"`
+	Path          string `json:"path"`
+	MetaId        string `json:"metaid"`
+	Pop           string `json:"pop"`
+	ChainName     string `json:"chainName"`
+	Address       string `json:"address"`
+	CreateAddress string `json:"creator"`
+	InitialOwner  string `json:"initialOwner"`
 }
 
 type BlockMsg struct {

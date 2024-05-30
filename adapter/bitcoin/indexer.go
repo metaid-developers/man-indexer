@@ -144,6 +144,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 	if !msgTx.HasWitness() {
 		return nil
 	}
+	chain := BitcoinChain{}
 	for i, v := range msgTx.TxIn {
 		index, input := i, v
 		//Witness length error
@@ -183,7 +184,8 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 			MetaId:             metaId,
 			Number:             0,
 			Address:            address,
-			CreateAddress:      address,
+			InitialOwner:       address,
+			CreateAddress:      chain.GetCreatorAddress(v.PreviousOutPoint.Hash.String(), v.PreviousOutPoint.Index, indexer.ChainParams),
 			Timestamp:          timestamp,
 			GenesisHeight:      blockHeight,
 			GenesisTransaction: msgTx.TxHash().String(),
