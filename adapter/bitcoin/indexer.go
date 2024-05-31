@@ -379,6 +379,11 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) 
 	return
 }
 func (indexer *Indexer) PopLevelCount(pop string) (lv int, lastStr string) {
+	if len(pop) < PopCutNum {
+		lv = -1
+		lastStr = pop
+		return
+	}
 	cnt := len(pop) - len(strings.TrimLeft(pop, "0"))
 	if cnt <= PopCutNum {
 		lv = -1
