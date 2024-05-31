@@ -297,37 +297,16 @@ func (mg *Mongodb) GetAllPinByPath(page, limit int64, path string, metaidList []
 	}
 	cursor := (page - 1) * limit
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(limit)
-	mempoolResult, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), filter, opts)
+	//mempoolResult, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), filter, opts)
+	result, err := mongoClient.Collection(PinsView).Find(context.TODO(), filter, opts)
 	if err != nil && err != mongo.ErrNoDocuments {
 		return
 	}
-	var memPins []*pin.PinInscription
-	var blockPins []*pin.PinInscription
-	if mempoolResult != nil {
-		err = mempoolResult.All(context.TODO(), &memPins)
-		if err != nil {
-			return
-		}
+	err = result.All(context.TODO(), &pins)
+	if err != nil {
+		return
 	}
-	newLimit := limit - int64(len(memPins))
-	if newLimit > 0 {
-		opts = options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(newLimit)
-		result, err1 := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter, opts)
-		if err1 != nil {
-			return
-		}
-		err = result.All(context.TODO(), &blockPins)
-		if err != nil {
-			return
-		}
-	}
-	var blockTotal int64
-	var memTotal int64
-	blockTotal, err = mongoClient.Collection(PinsCollection).CountDocuments(context.TODO(), filter)
-	memTotal, err = mongoClient.Collection(MempoolPinsCollection).CountDocuments(context.TODO(), filter)
-	total = blockTotal + memTotal
-	pins = append(pins, memPins...)
-	pins = append(pins, blockPins...)
+	total, err = mongoClient.Collection(PinsView).CountDocuments(context.TODO(), filter)
 	return
 }
 func (mg *Mongodb) BatchAddProtocolData(pins []*pin.PinInscription) (err error) {
