@@ -286,7 +286,7 @@ func GetSaveData(chainName string, blockHeight int64) (
 	//check mrc20 transfer
 	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
 	if err == nil && len(mrc20transferCheck) > 0 {
-		mrc20TrasferList := IndexerAdapter.CatchNativMrc20Transfer(blockHeight, mrc20transferCheck)
+		mrc20TrasferList := IndexerAdapter[chainName].CatchNativMrc20Transfer(blockHeight, mrc20transferCheck)
 		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
 	}
 	//pin validator

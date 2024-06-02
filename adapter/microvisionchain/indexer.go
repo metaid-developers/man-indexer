@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"manindexer/common"
 	"manindexer/database"
+	"manindexer/mrc20"
 	"manindexer/pin"
 	"strconv"
 	"strings"
@@ -352,5 +353,8 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) 
 			txhashList = append(txhashList, pinId.String())
 		}
 	}
+	return
+}
+func (indexer *Indexer) CatchNativMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
 	return
 }
