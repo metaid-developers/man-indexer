@@ -11,7 +11,7 @@ type Postgresql struct{}
 func (pg *Postgresql) InitDatabase() {
 
 }
-func (pg *Postgresql) GetMaxHeight() (height int64, err error) {
+func (pg *Postgresql) GetMaxHeight(chainName string) (height int64, err error) {
 	log.Println("Postgresql TODO")
 	return
 }
@@ -35,7 +35,7 @@ func (pg *Postgresql) UpdateTransferPin(trasferMap map[string]*pin.PinTransferIn
 	return
 }
 
-func (pg *Postgresql) GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error) {
+func (pg *Postgresql) GetMetaIdInfo(address string, mempool bool, metaid string) (info *pin.MetaIdInfo, unconfirmed string, err error) {
 	return
 }
 func (pg *Postgresql) BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (err error) {

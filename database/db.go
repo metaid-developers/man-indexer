@@ -23,14 +23,14 @@ type GeneratorFilter struct {
 }
 type Db interface {
 	InitDatabase()
-	GetMaxHeight() (height int64, err error)
+	GetMaxHeight(chainName string) (height int64, err error)
 	GetMaxNumber() (number int64)
 	GetMaxMetaIdNumber() (number int64)
 	BatchAddPins(pins []interface{}) (err error)
 	BatchUpdatePins(pins []*pin.PinInscription) (err error)
 	UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error)
 	AddMempoolPin(pin *pin.PinInscription) (err error)
-	GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error)
+	GetMetaIdInfo(address string, mempool bool, metaid string) (info *pin.MetaIdInfo, unconfirmed string, err error)
 	BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (err error)
 	BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAdditional) (err error)
 	BatchAddPinTree(data []interface{}) (err error)

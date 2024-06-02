@@ -21,9 +21,9 @@ func (mg *Mongodb) BatchUpsertFollowData(followData []*pin.FollowData) (err erro
 	}
 	var followModels []mongo.WriteModel
 	for _, info := range followList {
-		filter := bson.D{{Key: "metaid", Value: info.MetaId}}
+		filter := bson.D{{Key: "metaid", Value: info.MetaId}, {Key: "followmetaid", Value: info.FollowMetaId}}
 		var updateInfo bson.D
-		updateInfo = append(updateInfo, bson.E{Key: "followmetaid", Value: info.FollowMetaId})
+		//updateInfo = append(updateInfo, bson.E{Key: "followmetaid", Value: info.FollowMetaId})
 		updateInfo = append(updateInfo, bson.E{Key: "followpinid", Value: info.FollowPinId})
 		updateInfo = append(updateInfo, bson.E{Key: "followtime", Value: info.FollowTime})
 		updateInfo = append(updateInfo, bson.E{Key: "status", Value: info.Status})

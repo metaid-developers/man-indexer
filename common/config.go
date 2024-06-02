@@ -16,6 +16,7 @@ type AllConfig struct {
 	Sync       syncConfig
 	Protocols  map[string]protocols
 	Btc        btcConfig
+	Mvc        mvcConfig
 	MongoDb    mongoConfig
 	Pebble     pebble
 	Web        webConfig
@@ -41,6 +42,16 @@ type protocolIndex struct {
 	Unique bool     `toml:"unique"`
 }
 type btcConfig struct {
+	InitialHeight   int64  `toml:"initialHeight"`
+	RpcHost         string `toml:"rpcHost"`
+	RpcUser         string `toml:"rpcUser"`
+	RpcPass         string `toml:"rpcPass"`
+	RpcHTTPPostMode bool   `toml:"rpcHttpPostMode"`
+	RpcDisableTLS   bool   `toml:"rpcDisableTLS"`
+	ZmqHost         string `toml:"zmqHost"`
+	PopCutNum       int    `toml:"popCutNum"`
+}
+type mvcConfig struct {
 	InitialHeight   int64  `toml:"initialHeight"`
 	RpcHost         string `toml:"rpcHost"`
 	RpcUser         string `toml:"rpcUser"`

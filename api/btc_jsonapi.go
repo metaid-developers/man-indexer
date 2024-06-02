@@ -34,6 +34,7 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.GET("/node/child/:pinId", getChildNodeById)
 	btcGroup.GET("/node/parent/:pinId", getParentNodeById)
 	btcGroup.GET("/info/address/:address", getInfoByAddress)
+	btcGroup.GET("/info/metaid/:metaId", getInfoByMetaId)
 	btcGroup.GET("/getAllPinByPath", getAllPinByPath)
 	btcGroup.POST("/generalQuery", generalQuery)
 	btcGroup.GET("/pin/ByOutput/:output", getPinByOutput)
@@ -83,7 +84,12 @@ func pinList(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, MetaId: p.MetaId, Pop: p.Pop}
+		pmsg := &pin.PinMsg{
+			Content: p.ContentSummary, Number: p.Number, Operation: p.Operation,
+			Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, MetaId: p.MetaId,
+			Pop: p.Pop, ChainName: p.ChainName,
+			InitialOwner: p.InitialOwner, Address: p.Address, CreateAddress: p.CreateAddress,
+		}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -150,7 +156,7 @@ func getPinById(ctx *gin.Context) {
 	}
 	//pinMsg.ContentBody = []byte{}
 	pinMsg.ContentSummary = string(pinMsg.ContentBody)
-	pinMsg.PopLv, _ = man.IndexerAdapter.PopLevelCount(pinMsg.Pop)
+	pinMsg.PopLv, _ = pin.PopLevelCount(pinMsg.ChainName, pinMsg.Pop)
 	pinMsg.Preview = common.Config.Web.Host + "/pin/" + pinMsg.Id
 	pinMsg.Content = common.Config.Web.Host + "/content/" + pinMsg.Id
 	check, err := man.DbAdapter.GetMempoolTransferById(pinMsg.Id)
@@ -173,7 +179,7 @@ func getPinByOutput(ctx *gin.Context) {
 	pinMsg.ContentSummary = string(pinMsg.ContentBody)
 	pinMsg.Preview = common.Config.Web.Host + "/pin/" + pinMsg.Id
 	pinMsg.Content = common.Config.Web.Host + "/content/" + pinMsg.Id
-	pinMsg.PopLv, _ = man.IndexerAdapter.PopLevelCount(pinMsg.Pop)
+	pinMsg.PopLv, _ = pin.PopLevelCount(pinMsg.ChainName, pinMsg.Pop)
 	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", pinMsg))
 }
 
@@ -274,23 +280,23 @@ func getPinListByAddress(ctx *gin.Context) {
 				p.ContentBody = []byte{}
 				p.Preview = common.Config.Web.Host + "/pin/" + p.Id
 				p.Content = common.Config.Web.Host + "/content/" + p.Id
-				p.PopLv, _ = man.IndexerAdapter.PopLevelCount(p.Pop)
+				p.PopLv, _ = pin.PopLevelCount(p.ChainName, p.Pop)
 				result = append(result, p)
 			}
 		}
 		total += int64(len(list))
 	}
 	var fixPinList []*pin.PinInscription
-	for _, pin := range pinList {
-		_, ok := memTransSend[pin.Id]
+	for _, pinNode := range pinList {
+		_, ok := memTransSend[pinNode.Id]
 		if ok {
 			continue
 		}
-		pin.ContentBody = []byte{}
-		pin.Preview = common.Config.Web.Host + "/pin/" + pin.Id
-		pin.Content = common.Config.Web.Host + "/content/" + pin.Id
-		pin.PopLv, _ = man.IndexerAdapter.PopLevelCount(pin.Pop)
-		fixPinList = append(fixPinList, pin)
+		pinNode.ContentBody = []byte{}
+		pinNode.Preview = common.Config.Web.Host + "/pin/" + pinNode.Id
+		pinNode.Content = common.Config.Web.Host + "/content/" + pinNode.Id
+		pinNode.PopLv, _ = pin.PopLevelCount(pinNode.ChainName, pinNode.Pop)
+		fixPinList = append(fixPinList, pinNode)
 	}
 	result = append(result, fixPinList...)
 	if cnt == "true" {
@@ -339,7 +345,7 @@ type metaInfo struct {
 }
 
 func getInfoByAddress(ctx *gin.Context) {
-	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo(ctx.Param("address"), true)
+	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo(ctx.Param("address"), true, "")
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrServiceError)
 		return
@@ -359,6 +365,24 @@ func getInfoByAddress(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", metaInfo{metaid, unconfirmed}))
 }
 
+func getInfoByMetaId(ctx *gin.Context) {
+	metaid, unconfirmed, err := man.DbAdapter.GetMetaIdInfo("", true, ctx.Param("metaId"))
+	if err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrServiceError)
+		return
+	}
+	if metaid == nil {
+		metaid = &pin.MetaIdInfo{MetaId: ctx.Param("metaId"), Address: ""}
+		//ctx.JSON(200, apiError(100, "no metaid found."))
+		ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", metaInfo{metaid, ""}))
+		return
+	}
+
+	if metaid.MetaId == "" {
+		metaid.MetaId = ctx.Param("metaId")
+	}
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", metaInfo{metaid, unconfirmed}))
+}
 func generalQuery(ctx *gin.Context) {
 	var g database.Generator
 	if err := ctx.BindJSON(&g); err != nil {

@@ -67,7 +67,7 @@ func TestAddMempoolPin(t *testing.T) {
 }
 func TestDelMempoolPin(t *testing.T) {
 	man.InitAdapter("btc", "mongo", "1", "1")
-	man.DeleteMempoolData(2572919)
+	man.DeleteMempoolData(2572919, "btc")
 }
 func TestConfig(t *testing.T) {
 	config := common.Config
@@ -108,23 +108,8 @@ func TestMongoGeneratorFind(t *testing.T) {
 }
 func TestGetSaveData(t *testing.T) {
 	man.InitAdapter("btc", "mongo", "1", "1")
-	man.GetSaveData(2816534)
-	// chain := &bitcoin.BitcoinChain{}
-
-	// b, _ := chain.GetBlock(2816534)
-	// block := b.(*wire.MsgBlock)
-	// for _, tx := range block.Transactions {
-	// 	if tx.TxHash().String() == "1aa8b3f358fcd4931c1a59d0c1eab6476909b92f02d2c215471cbdd03bb910da" {
-	// 		for _, in := range tx.TxIn {
-	// 			id := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
-	// 			if id == "fa387e936bd347b1f22a3d5f9989ae3b5d1a7726da00a4c5462a624387467014i0" {
-	// 				fmt.Println("find")
-	// 			}
-	// 		}
-	// 		break
-	// 	}
-	// }
-	//fmt.Println(block.Header.BlockHash().String())
+	pinList, _, _, _, _, _, _, _, err := man.GetSaveData("btc", 2818306)
+	fmt.Println(err, len(pinList))
 }
 func TestHash(t *testing.T) {
 	add := "tb1pss8ce6tgupnhmfj8u9h4saue48upucu04c7549tzal6n67v8njyst7e0fx"

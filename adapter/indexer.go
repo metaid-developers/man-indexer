@@ -11,7 +11,6 @@ type Indexer interface {
 	GetAddress(pkScript []byte) (address string)
 	ZmqRun(chanMsg chan []*pin.PinInscription)
 	GetBlockTxHash(blockHeight int64) (txhashList []string)
-	PopLevelCount(pop string) (lv int, lastStr string)
 	ZmqHashblock()
 	CatchNativMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo)
 }

@@ -25,15 +25,15 @@ func formatRootId(rootId string) string {
 	//return fmt.Sprintf("%s...%s", rootId[0:3], rootId[len(rootId)-3:])
 	return rootId[0:6]
 }
-func popLevelCount(pop string) string {
-	lv, _ := man.IndexerAdapter.PopLevelCount(pop)
+func popLevelCount(chainName, pop string) string {
+	lv, _ := pin.PopLevelCount(chainName, pop)
 	if lv == -1 {
 		return "--"
 	}
 	return fmt.Sprintf("Lv%d", lv)
 }
-func popStrShow(pop string) string {
-	_, lastStr := man.IndexerAdapter.PopLevelCount(pop)
+func popStrShow(chainName, pop string) string {
+	_, lastStr := pin.PopLevelCount(chainName, pop)
 	return lastStr[0:8] + "..."
 }
 func CorsMiddleware() gin.HandlerFunc {
@@ -105,7 +105,7 @@ func home(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop, MetaId: p.MetaId}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop, MetaId: p.MetaId, ChainName: p.ChainName}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -123,7 +123,7 @@ func pinPageList(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop, ChainName: p.ChainName}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -281,7 +281,7 @@ func block(ctx *gin.Context) {
 		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Id: p.Id, Type: p.ContentTypeDetect}
 		pins = append(pins, pmsg)
 	}
-	block := man.ChainAdapter.GetBlockMsg(height)
+	block := man.ChainAdapter["btc"].GetBlockMsg(height)
 	msg := gin.H{
 		"Pins":   pins,
 		"PinNum": total,
@@ -300,7 +300,8 @@ type txMsgOutput struct {
 
 func tx(ctx *gin.Context) {
 	txid := ctx.Param("txid")
-	trst, err := man.ChainAdapter.GetTransaction(txid)
+	chain := ctx.Param("chain")
+	trst, err := man.ChainAdapter[chain].GetTransaction(txid)
 	if err != nil {
 		ctx.String(200, "fail")
 		return
@@ -309,7 +310,7 @@ func tx(ctx *gin.Context) {
 	var outList []*txMsgOutput
 	for i, out := range tx.MsgTx().TxOut {
 		id := fmt.Sprintf("%s:%d", tx.Hash().String(), i)
-		address := man.IndexerAdapter.GetAddress(out.PkScript)
+		address := man.IndexerAdapter[chain].GetAddress(out.PkScript)
 		outList = append(outList, &txMsgOutput{Id: id, Value: out.Value, Script: string(out.PkScript), Address: address})
 	}
 	msg := gin.H{

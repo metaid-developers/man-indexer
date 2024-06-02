@@ -13,11 +13,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (mg *Mongodb) GetMaxHeight() (height int64, err error) {
+func (mg *Mongodb) GetMaxHeight(chainName string) (height int64, err error) {
+	filter := bson.M{"chainname": chainName}
 	findOp := options.FindOne()
 	findOp.SetSort(bson.D{{Key: "number", Value: -1}})
 	var pinInscription pin.PinInscription
-	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.D{}, findOp).Decode(&pinInscription)
+	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), filter, findOp).Decode(&pinInscription)
 	if err != nil && err == mongo.ErrNoDocuments {
 		err = nil
 		return
@@ -95,7 +96,7 @@ func (mg *Mongodb) AddMempoolPin(pin *pin.PinInscription) (err error) {
 }
 func (mg *Mongodb) GetPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error) {
 	cursor := (page - 1) * size
-	opts := options.Find().SetSort(bson.D{{Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetSkip(cursor).SetLimit(size)
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), bson.M{}, opts)
 	if err != nil {
 		return
