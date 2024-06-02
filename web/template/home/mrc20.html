@@ -20,11 +20,11 @@
         <div class="row">
           {{ range $i, $v := .Ticks }}
           <div class="col-md-4 col-lg-3 col-xl-3 mb-4 ">
-            <a href="/mrc20/history/{{$v.TickId}}/1" class="link">
+            <a href="/mrc20/history/{{$v.Mrc20Id}}/1" class="link">
               <div class="pin-card height-200 blur shadow-blur">
                 <div class="pin-card-body">
                   <div class="number">#{{ $v.Tick }}</div>
-                  TickId: {{ $v.TickId }}<br />
+                  TickId: {{ $v.Mrc20Id }}<br />
                   TokenName: {{ $v.TokenName }}<br />
                   AmtPerMint: {{ $v.AmtPerMint }}<br />
                   MintCount: {{ $v.MintCount }}<br />

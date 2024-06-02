@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"manindexer/common"
 	"manindexer/database"
+	"manindexer/mrc20"
 	"manindexer/pin"
 	"strconv"
 	"strings"
@@ -77,6 +78,41 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 				}
 			}
 		}
+	}
+	return
+}
+func (indexer *Indexer) CatchNativMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
+	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
+	keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
+	for _, u := range utxoList {
+		pointMap[u.TxPoint] = append(pointMap[u.TxPoint], u)
+	}
+	block := indexer.Block.(*wire.MsgBlock)
+	for _, tx := range block.Transactions {
+		for _, in := range tx.TxIn {
+			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+			if v, ok := pointMap[id]; ok {
+				for _, utxo := range v {
+					send := mrc20.Mrc20Utxo{TxPoint: id, Mrc20Id: utxo.Mrc20Id, Status: -1}
+					savelist = append(savelist, &send)
+					key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
+					_, find := keyMap[key]
+					if find {
+						keyMap[key].AmtChange += send.AmtChange
+					} else {
+						recive := *utxo
+						recive.MrcOption = "transfer"
+						recive.ToAddress = indexer.GetAddress(tx.TxOut[0].PkScript)
+						recive.BlockHeight = blockHeight
+						recive.TxPoint = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
+						keyMap[key] = &recive
+					}
+				}
+			}
+		}
+	}
+	for _, u := range keyMap {
+		savelist = append(savelist, u)
 	}
 	return
 }

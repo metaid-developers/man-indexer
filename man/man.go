@@ -25,7 +25,7 @@ var (
 	//Number          int64    = 0
 	MaxHeight       int64    = 0
 	CurBlockHeight  int64    = 0
-	BaseFilter      []string = []string{"/info", "/file", "/flow"}
+	BaseFilter      []string = []string{"/info", "/file", "/flow", "ft"}
 	SyncBaseFilter  map[string]struct{}
 	ProtocolsFilter map[string]struct{}
 	OptionLimit     []string = []string{"create", "modify", "revoke"}
@@ -244,6 +244,13 @@ func GetSaveData(blockHeight int64) (
 		trasferMap := IndexerAdapter.CatchTransfer(idMap)
 		DbAdapter.UpdateTransferPin(trasferMap)
 	}
+	//check mrc20 transfer
+	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
+	if err == nil && len(mrc20transferCheck) > 0 {
+		mrc20TrasferList := IndexerAdapter.CatchNativMrc20Transfer(blockHeight, mrc20transferCheck)
+		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
+	}
+	//pin validator
 	for _, pinNode := range pins {
 		err := validator(pinNode)
 		if err != nil {
@@ -258,7 +265,7 @@ func GetSaveData(blockHeight int64) (
 		}
 		pinList = append(pinList, pinNode)
 		//mrc20 pin
-		if len(pinNode.Path) > 7 && pinNode.Path[0:7] == "/mrc20/" {
+		if len(pinNode.Path) > 10 && pinNode.Path[0:10] == "/ft/mrc20/" {
 			mrc20List = append(mrc20List, pinNode)
 		}
 	}

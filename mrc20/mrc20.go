@@ -8,7 +8,7 @@ const (
 	ErrMintLimit         = "minting capacity reached"
 	ErrMintHeight        = "current block height is too low"
 	ErrMintPopNull       = "shovel is none"
-	ErrMintPopDiff       = "pop difficulty check failed"
+	ErrMintPopDiff       = "pop level check failed"
 	ErrMintTickIdNull    = "tickId is null"
 	ErrMintPinIdNull     = "pin is null"
 	ErrMintPinOwner      = "not have the right to use this PIN"
@@ -17,20 +17,20 @@ const (
 	ErrTranferBalnceLess = "insufficient balance for transfer"
 )
 
-type Mrc20Pin struct {
+type Mrc20Utxo struct {
 	Tick        string `json:"tick"`
 	Mrc20Id     string `json:"mrc20Id"`
-	PinNum      int64  `json:"pinNum"`
+	TxPoint     string `json:"txPoint"`
 	PinId       string `json:"pinId"`
+	PinContent  string `json:"pinContent"`
 	Verify      bool   `json:"verify"`
 	BlockHeight int64  `json:"blockHeight"`
 	MrcOption   string `json:"mrcOption"`
 	FromAddress string `json:"fromAddress"`
 	ToAddress   string `json:"toAddress"`
-	PinTxHash   string `json:"pinTxHash"`
-	Content     string `json:"content"`
 	ErrorMsg    string `json:"errorMsg"`
 	AmtChange   int64  `json:"amtChange"`
+	Status      int    `json:"status"`
 }
 type Mrc20DeployQual struct {
 	Lv string `json:"lvl"`
