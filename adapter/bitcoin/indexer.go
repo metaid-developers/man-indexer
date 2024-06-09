@@ -82,7 +82,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 	}
 	return
 }
-func (indexer *Indexer) CatchNativMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
+func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
 	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
 	keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
 	for _, u := range utxoList {
@@ -102,10 +102,11 @@ func (indexer *Indexer) CatchNativMrc20Transfer(blockHeight int64, utxoList []*m
 						keyMap[key].AmtChange += send.AmtChange
 					} else {
 						recive := *utxo
-						recive.MrcOption = "transfer"
+						recive.MrcOption = "native-transfer"
 						recive.ToAddress = indexer.GetAddress(tx.TxOut[0].PkScript)
 						recive.BlockHeight = blockHeight
 						recive.TxPoint = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
+						recive.Chain = "btc"
 						keyMap[key] = &recive
 					}
 				}
@@ -243,6 +244,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 			ContentLength:      pinInscription.ContentLength,
 			ContentSummary:     getContentSummary(pinInscription, id, contentTypeDetect),
 			Pop:                pop,
+			DataValue:          pin.RarityScoreBinary(indexer.ChainName, pop),
 		})
 	}
 	return

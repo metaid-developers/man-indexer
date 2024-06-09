@@ -123,6 +123,7 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo) (err error) {
 			updateInfo = append(updateInfo, bson.E{Key: "toaddress", Value: info.ToAddress})
 			updateInfo = append(updateInfo, bson.E{Key: "txpoint", Value: info.TxPoint})
 			updateInfo = append(updateInfo, bson.E{Key: "verify", Value: info.Verify})
+			updateInfo = append(updateInfo, bson.E{Key: "chain", Value: info.Chain})
 		}
 		update := bson.D{{Key: "$set", Value: updateInfo}}
 		m := mongo.NewUpdateOneModel()

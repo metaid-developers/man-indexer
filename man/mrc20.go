@@ -16,12 +16,14 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 		case "/ft/mrc20/deploy":
 			mrc20Pin, info, err := CreateMrc20DeployPin(pinNode, &validator)
 			if err == nil {
+				mrc20Pin.Chain = pinNode.ChainName
 				mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
 				deployList = append(deployList, info)
 			}
 		case "/ft/mrc20/mint":
 			mrc20Pin, err := CreateMrc20MintPin(pinNode, &validator)
 			if err == nil {
+				mrc20Pin.Chain = pinNode.ChainName
 				mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
 			}
 		case "/ft/mrc20/transfer":

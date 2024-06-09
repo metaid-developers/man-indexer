@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 )
 
 var (
@@ -43,6 +44,15 @@ func (chain *BitcoinChain) GetBlock(blockHeight int64) (block interface{}, err e
 		return
 	}
 	block, err = client.GetBlock(blockhash)
+	return
+}
+func (chain *BitcoinChain) GetBlockTime(blockHeight int64) (timestamp int64, err error) {
+	block, err := chain.GetBlock(blockHeight)
+	if err != nil {
+		return
+	}
+	b := block.(*wire.MsgBlock)
+	timestamp = b.Header.Timestamp.Unix()
 	return
 }
 func (chain *BitcoinChain) GetBlockByHash(hash string) (block *btcjson.GetBlockVerboseResult, err error) {

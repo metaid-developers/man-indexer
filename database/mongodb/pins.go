@@ -16,7 +16,7 @@ import (
 func (mg *Mongodb) GetMaxHeight(chainName string) (height int64, err error) {
 	filter := bson.M{"chainname": chainName}
 	findOp := options.FindOne()
-	findOp.SetSort(bson.D{{Key: "number", Value: -1}})
+	findOp.SetSort(bson.D{{Key: "genesisheight", Value: -1}})
 	var pinInscription pin.PinInscription
 	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), filter, findOp).Decode(&pinInscription)
 	if err != nil && err == mongo.ErrNoDocuments {
@@ -46,8 +46,15 @@ func (mg *Mongodb) BatchAddPins(pins []interface{}) (err error) {
 	ordered := false
 	option := options.InsertManyOptions{Ordered: &ordered}
 	_, err = mongoClient.Collection(PinsCollection).InsertMany(context.TODO(), pins, &option)
+	if err != nil {
+		return
+	}
+	//add PDV & FDV
+	addPDV(pins)
+	addFDV(pins)
 	return
 }
+
 func (mg *Mongodb) UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error) {
 	var models []mongo.WriteModel
 	for id, info := range trasferMap {

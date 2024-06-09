@@ -150,7 +150,70 @@ func (mg *Mongodb) BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (e
 	//fmt.Println("BatchUpsertMetaIdInfo time: ", eT)
 	return
 }
-
+func addPDV(pins []interface{}) error {
+	var models []mongo.WriteModel
+	for _, p := range pins {
+		pinNode := p.(*pin.PinInscription)
+		filter := bson.D{{Key: "metaid", Value: pinNode.MetaId}}
+		updateInfo := bson.M{"$inc": bson.M{"pdv": pinNode.DataValue}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(updateInfo).SetUpsert(true)
+		models = append(models, m)
+	}
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err := mongoClient.Collection(MetaIdInfoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+	return err
+}
+func addFDV(pins []interface{}) (err error) {
+	for _, p := range pins {
+		pinNode := p.(*pin.PinInscription)
+		addSingleFDV(pinNode.MetaId, pinNode.DataValue)
+	}
+	return
+}
+func addSingleFDV(metaId string, value int) (err error) {
+	//get follow
+	filter := bson.M{"followmetaid": metaId, "status": true}
+	result, err := mongoClient.Collection(FollowCollection).Find(context.TODO(), filter)
+	if err != nil {
+		return
+	}
+	var followData []*pin.FollowData //pin.FollowData
+	err = result.All(context.TODO(), &followData)
+	if err != nil {
+		return
+	}
+	if len(followData) <= 0 {
+		return
+	}
+	var models []mongo.WriteModel
+	for _, f := range followData {
+		filter := bson.D{{Key: "metaid", Value: f.MetaId}}
+		updateInfo := bson.M{"$inc": bson.M{"fdv": value}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(updateInfo).SetUpsert(true)
+		models = append(models, m)
+	}
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err = mongoClient.Collection(MetaIdInfoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+	return err
+}
+func addFollowFDV(metaId string, follower string, action string) (err error) {
+	var info pin.MetaIdInfo
+	filter := bson.M{"metaid": follower}
+	err = mongoClient.Collection(MetaIdInfoCollection).FindOne(context.TODO(), filter).Decode(&info)
+	if err != nil {
+		return
+	}
+	filter = bson.M{"metaid": metaId}
+	value := info.Pdv
+	if action == "unfollow" {
+		value = value * -1
+	}
+	update := bson.M{"$inc": bson.M{"fdv": value}}
+	_, err = mongoClient.Collection(MetaIdInfoCollection).UpdateOne(context.TODO(), filter, update)
+	return
+}
 func (mg *Mongodb) GetMetaIdPageList(page int64, size int64) (pins []*pin.MetaIdInfo, err error) {
 	cursor := (page - 1) * size
 	opts := options.Find().SetSort(bson.D{{Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)

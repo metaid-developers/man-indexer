@@ -63,6 +63,7 @@ func (indexer *Indexer) CatchPins(blockHeight int64) (pinInscriptions []*pin.Pin
 	}
 	return
 }
+
 func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map[string]*pin.PinTransferInfo) {
 	trasferMap = make(map[string]*pin.PinTransferInfo)
 	block := indexer.Block.(*wire.MsgBlock)
@@ -150,7 +151,12 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				continue
 			}
 			address, outIdx, locationIdx := indexer.GetPinOwner(msgTx, i-1)
-			id := fmt.Sprintf("%si%d", msgTx.TxHash().String(), outIdx)
+			//recalculate txhash
+			txHash, err := GetNewHash(msgTx)
+			if err != nil {
+				continue
+			}
+			id := fmt.Sprintf("%si%d", txHash, outIdx)
 			metaId := common.GetMetaIdByAddress(address)
 			contentTypeDetect := common.DetectContentType(&pinInscription.ContentBody)
 			pop := ""
@@ -169,14 +175,14 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				CreateAddress:      chain.GetCreatorAddress(msgTx.TxIn[0].PreviousOutPoint.Hash.String(), msgTx.TxIn[0].PreviousOutPoint.Index, indexer.ChainParams),
 				Timestamp:          timestamp,
 				GenesisHeight:      blockHeight,
-				GenesisTransaction: msgTx.TxHash().String(),
-				Output:             fmt.Sprintf("%s:%d", msgTx.TxHash().String(), outIdx),
+				GenesisTransaction: txHash,
+				Output:             fmt.Sprintf("%s:%d", txHash, outIdx),
 				OutputValue:        msgTx.TxOut[outIdx].Value,
 				TxInIndex:          uint32(i - 1),
 				Offset:             uint64(outIdx),
 				TxIndex:            txIndex,
 				Operation:          pinInscription.Operation,
-				Location:           fmt.Sprintf("%s:%d:%d", msgTx.TxHash().String(), outIdx, locationIdx),
+				Location:           fmt.Sprintf("%s:%d:%d", txHash, outIdx, locationIdx),
 				Path:               pinInscription.Path,
 				OriginalPath:       pinInscription.Path,
 				ParentPath:         pinInscription.ParentPath,
@@ -188,6 +194,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				ContentLength:      pinInscription.ContentLength,
 				ContentSummary:     getContentSummary(pinInscription, id, contentTypeDetect),
 				Pop:                pop,
+				DataValue:          pin.RarityScoreBinary(indexer.ChainName, pop),
 			})
 			haveOpReturn = true
 			break
@@ -355,6 +362,39 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) 
 	}
 	return
 }
-func (indexer *Indexer) CatchNativMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
+func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
+	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
+	keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
+	for _, u := range utxoList {
+		pointMap[u.TxPoint] = append(pointMap[u.TxPoint], u)
+	}
+	block := indexer.Block.(*wire.MsgBlock)
+	for _, tx := range block.Transactions {
+		for _, in := range tx.TxIn {
+			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+			if v, ok := pointMap[id]; ok {
+				for _, utxo := range v {
+					send := mrc20.Mrc20Utxo{TxPoint: id, Mrc20Id: utxo.Mrc20Id, Status: -1}
+					savelist = append(savelist, &send)
+					key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
+					_, find := keyMap[key]
+					if find {
+						keyMap[key].AmtChange += send.AmtChange
+					} else {
+						recive := *utxo
+						recive.MrcOption = "native-transfer"
+						recive.ToAddress = indexer.GetAddress(tx.TxOut[0].PkScript)
+						recive.BlockHeight = blockHeight
+						recive.TxPoint = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
+						recive.Chain = "mvc"
+						keyMap[key] = &recive
+					}
+				}
+			}
+		}
+	}
+	for _, u := range keyMap {
+		savelist = append(savelist, u)
+	}
 	return
 }

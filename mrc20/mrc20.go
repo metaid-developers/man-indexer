@@ -31,6 +31,7 @@ type Mrc20Utxo struct {
 	ErrorMsg    string `json:"errorMsg"`
 	AmtChange   int64  `json:"amtChange"`
 	Status      int    `json:"status"`
+	Chain       string `json:"chain"`
 }
 type Mrc20DeployQual struct {
 	Lv string `json:"lvl"`

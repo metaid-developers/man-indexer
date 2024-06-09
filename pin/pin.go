@@ -42,6 +42,7 @@ type PinInscription struct {
 	Pop                string `json:"pop"`
 	PopLv              int    `json:"popLv"`
 	ChainName          string `json:"chainName"`
+	DataValue          int    `json:"dataValue"`
 }
 type PinTransferInfo struct {
 	Address     string `json:"address"`
@@ -82,6 +83,8 @@ type MetaIdInfo struct {
 	BioId         string `json:"bioId"`
 	SoulbondToken string `json:"soulbondToken"`
 	IsInit        bool   `json:"isInit"`
+	Pdv           int64  `json:"pdv"`
+	Fdv           int64  `json:"fdv"`
 }
 type MetaIdInfoAdditional struct {
 	MetaId    string `json:"metaId"`

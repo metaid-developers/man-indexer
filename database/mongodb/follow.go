@@ -15,8 +15,10 @@ func (mg *Mongodb) BatchUpsertFollowData(followData []*pin.FollowData) (err erro
 	for _, follow := range followData {
 		if follow.Status {
 			followList = append(followList, follow)
+			addFollowFDV(follow.MetaId, follow.FollowMetaId, "follow")
 		} else {
 			unFollowList = append(unFollowList, follow)
+			addFollowFDV(follow.MetaId, follow.FollowMetaId, "unfollow")
 		}
 	}
 	var followModels []mongo.WriteModel

@@ -9,6 +9,7 @@ import (
 	"manindexer/database"
 	"manindexer/database/mongodb"
 	"manindexer/man"
+	"manindexer/pin"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcutil"
@@ -139,4 +140,10 @@ func TestGetOwner(t *testing.T) {
 	// }
 	ll, e := man.DbAdapter.GetMempoolTransfer("tb1q3h9twrcz7s5mz7q2eu6pneex446tp3v5yasnp5", "")
 	fmt.Println(e, len(ll))
+}
+func TestRarityScoreBinary(t *testing.T) {
+	str := "00000000000000000000000000354712732267161417502043436707557310655121055015573522441662265776662610002362543123510570022146525640016535265733565315137521366643101110550222"
+	//fmt.Println(pin.RarityScoreBinary("000001010101"))
+	fmt.Println(pin.RarityScoreBinary("btc", str))
+
 }
