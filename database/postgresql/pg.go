@@ -71,7 +71,7 @@ func (pg *Postgresql) GetPinListByIdList(idList []string) (pinList []*pin.PinIns
 func (pg *Postgresql) GetPinListByOutPutList(outputList []string) (pinList []*pin.PinInscription, err error) {
 	return
 }
-func (pg *Postgresql) GetMetaIdPageList(page int64, size int64) (pins []*pin.MetaIdInfo, err error) {
+func (pg *Postgresql) GetMetaIdPageList(page int64, size int64, order string) (pins []*pin.MetaIdInfo, err error) {
 	return
 }
 func (pg *Postgresql) GetBlockPin(height int64, size int64) (pins []*pin.PinInscription, total int64, err error) {
@@ -124,5 +124,8 @@ func (pg *Postgresql) GetMempoolTransfer(address string, act string) (list []*pi
 	return
 }
 func (pg *Postgresql) GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasferPin, err error) {
+	return
+}
+func (pg *Postgresql) GetDataValueByMetaIdList(list []string) (result []*pin.MetaIdDataValue, err error) {
 	return
 }

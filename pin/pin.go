@@ -83,8 +83,16 @@ type MetaIdInfo struct {
 	BioId         string `json:"bioId"`
 	SoulbondToken string `json:"soulbondToken"`
 	IsInit        bool   `json:"isInit"`
+	FollowCount   int64  `json:"followCount"`
 	Pdv           int64  `json:"pdv"`
 	Fdv           int64  `json:"fdv"`
+}
+type MetaIdDataValue struct {
+	ChainName string `json:"chainName"`
+	MetaId    string `json:"metaid"`
+	Address   string `json:"address"`
+	Pdv       int64  `json:"pdv"`
+	Fdv       int64  `json:"fdv"`
 }
 type MetaIdInfoAdditional struct {
 	MetaId    string `json:"metaId"`

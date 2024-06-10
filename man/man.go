@@ -410,7 +410,6 @@ func handlePathAndOperation(
 	var modifyPinIdList []string
 	newPinMap := make(map[string]*pin.PinInscription)
 	for _, p := range *pinList {
-
 		pinNode := p.(*pin.PinInscription)
 		if pinNode.MetaId == "" {
 			pinNode.MetaId = common.GetMetaIdByAddress(pinNode.Address)

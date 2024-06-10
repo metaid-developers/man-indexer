@@ -173,7 +173,7 @@ func metaid(ctx *gin.Context) {
 		ctx.String(200, "fail")
 		return
 	}
-	list, err := man.DbAdapter.GetMetaIdPageList(page, 100)
+	list, err := man.DbAdapter.GetMetaIdPageList(page, 100, "")
 	if err != nil {
 		ctx.String(200, "fail")
 		return

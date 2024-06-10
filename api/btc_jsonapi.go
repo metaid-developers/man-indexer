@@ -42,6 +42,7 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.GET("/metaid/followerList/:metaid", getFollowerListByMetaId)
 	btcGroup.GET("/metaid/followingList/:metaid", getFollowingListByMetaId)
 	btcGroup.POST("/getAllPinByPathAndMetaId", getAllPinByPathAndMetaId)
+	btcGroup.POST("/metaid/dataValue", getDataValueByMetaIdList)
 }
 
 func metaidList(ctx *gin.Context) {
@@ -53,7 +54,8 @@ func metaidList(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
 	}
-	list, err := man.DbAdapter.GetMetaIdPageList(page, size)
+	order := ctx.Query("order")
+	list, err := man.DbAdapter.GetMetaIdPageList(page, size, order)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
@@ -461,6 +463,30 @@ func getAllPinByPathAndMetaId(ctx *gin.Context) {
 		pinList = append(pinList, pinNode)
 	}
 	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": pinList, "total": total}))
+}
+
+// getDataValueByMetaIdList
+type stringListQuery struct {
+	List []string `json:"list"`
+}
+
+func getDataValueByMetaIdList(ctx *gin.Context) {
+	var q stringListQuery
+	if err := ctx.BindJSON(&q); err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
+	}
+	result, err := man.DbAdapter.GetDataValueByMetaIdList(q.List)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)
+		} else {
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
+		}
+		return
+	}
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", result))
+
 }
 
 // getFollowListByMetaId
