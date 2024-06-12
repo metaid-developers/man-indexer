@@ -32,6 +32,7 @@ type Mrc20Utxo struct {
 	AmtChange   int64  `json:"amtChange"`
 	Status      int    `json:"status"`
 	Chain       string `json:"chain"`
+	Index       int    `json:"index"`
 }
 type Mrc20DeployQual struct {
 	Lv string `json:"lvl"`
@@ -67,11 +68,11 @@ type Mrc20Shovel struct {
 	UsePinId string `json:"usePinId"`
 }
 type Mrc20MintData struct {
-	Id  string `json:"id"`
-	Pin string `json:"pin"`
+	Id string `json:"id"`
+	//Pin string `json:"pin"`
 }
 type Mrc20TranferData struct {
-	Amount string `json:"amount"`
-	Addr   string `json:"addr"`
+	Amount int64  `json:"amount"`
+	Vout   int    `json:"vout"`
 	Id     string `json:"id"`
 }

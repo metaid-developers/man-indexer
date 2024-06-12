@@ -107,7 +107,7 @@ func (mg *Mongodb) GetMrc20UtxoByOutPutList(outputList []string) (list []*mrc20.
 func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo) (err error) {
 	var models []mongo.WriteModel
 	for _, info := range list {
-		filter := bson.D{{Key: "txpoint", Value: info.TxPoint}, {Key: "mrc20id", Value: info.Mrc20Id}}
+		filter := bson.D{{Key: "txpoint", Value: info.TxPoint}, {Key: "index", Value: info.Index}, {Key: "mrc20id", Value: info.Mrc20Id}, {Key: "verify", Value: info.Verify}}
 		var updateInfo bson.D
 		if info.Status == -1 {
 			updateInfo = append(updateInfo, bson.E{Key: "status", Value: -1})
@@ -124,6 +124,7 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo) (err error) {
 			updateInfo = append(updateInfo, bson.E{Key: "txpoint", Value: info.TxPoint})
 			updateInfo = append(updateInfo, bson.E{Key: "verify", Value: info.Verify})
 			updateInfo = append(updateInfo, bson.E{Key: "chain", Value: info.Chain})
+			updateInfo = append(updateInfo, bson.E{Key: "index", Value: info.Index})
 		}
 		update := bson.D{{Key: "$set", Value: updateInfo}}
 		m := mongo.NewUpdateOneModel()

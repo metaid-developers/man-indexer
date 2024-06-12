@@ -3,10 +3,14 @@ package man
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"manindexer/mrc20"
 	"manindexer/pin"
 	"strconv"
+
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/txscript"
 )
 
 type Mrc20Validator struct {
@@ -41,10 +45,10 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		err = errors.New(mrc20.ErrMintTickIdNull)
 		return
 	}
-	if content.Pin == "" {
-		err = errors.New(mrc20.ErrMintPinIdNull)
-		return
-	}
+	// if content.Pin == "" {
+	// 	err = errors.New(mrc20.ErrMintPinIdNull)
+	// 	return
+	// }
 	info, err = DbAdapter.GetMrc20TickInfo(content.Id)
 	if err != nil {
 		log.Println("GetMrc20TickInfo:", err)
@@ -67,21 +71,22 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	if info.Qual.Lv == "0" {
 		return
 	}
-	// tx, err := ChainAdapter.GetTransaction(pinNode.GenesisTransaction)
-	// if err != nil {
-	// 	log.Println("GetTransaction:", err)
-	// 	return
-	// }
-	// txb := tx.(*btcutil.Tx)
-	// var inputList []string
-	// for _, in := range txb.MsgTx().TxIn {
-	// 	s := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
-	// 	inputList = append(inputList, s)
-	// }
+	tx, err := ChainAdapter[pinNode.ChainName].GetTransaction(pinNode.GenesisTransaction)
+	if err != nil {
+		log.Println("GetTransaction:", err)
+		return
+	}
+	txb := tx.(*btcutil.Tx)
+	var inputList []string
+	for _, in := range txb.MsgTx().TxIn {
+		s := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+		inputList = append(inputList, s)
+	}
 	// fmt.Println(inputList)
-	// pins, err := DbAdapter.GetPinListByIdList(inputList)
-	inputList := []string{content.Pin}
 	pins, err := DbAdapter.GetPinListByIdList(inputList)
+
+	//inputList := []string{content.Pin}
+	//pins, err := DbAdapter.GetPinListByIdList(inputList)
 	if err != nil {
 		log.Println("GetPinListByIdList:", err)
 		return
@@ -90,10 +95,10 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		err = errors.New(mrc20.ErrMintPopNull)
 		return
 	}
-	if pinNode.Address != pins[0].Address {
-		err = errors.New(mrc20.ErrMintPinOwner)
-		return
-	}
+	// if pinNode.Address != pins[0].Address {
+	// 	err = errors.New(mrc20.ErrMintPinOwner)
+	// 	return
+	// }
 	var pinIds []string
 	for _, pinNode := range pins {
 		pinIds = append(pinIds, pinNode.Id)
@@ -129,41 +134,76 @@ func countLeadingZeros(str string) int {
 	}
 	return count
 }
-func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinNode *pin.PinInscription) (tickNameMap map[string]string, err error) {
+func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinNode *pin.PinInscription) (toAddress map[int]string, utxoList []*mrc20.Mrc20Utxo, err error) {
 	if len(content) <= 0 {
 		err = errors.New(mrc20.ErrTranferReqData)
 		return
 	}
-	sendMap := make(map[string]int64)
+	outMap := make(map[string]int64)
+	maxVout := 0
 	for _, item := range content {
-		if item.Addr == "" || item.Id == "" || item.Amount == "" {
+		if item.Id == "" || item.Amount == 0 {
 			err = errors.New(mrc20.ErrTranferReqData)
 			return
 		}
-		amt, err1 := strconv.ParseInt(item.Amount, 10, 64)
-		if err1 != nil {
-			err = errors.New(mrc20.ErrTranferReqData)
-			return
+		if maxVout < item.Vout {
+			maxVout = item.Vout
 		}
-		if v, ok := sendMap[item.Id]; ok {
-			sendMap[item.Id] = v + amt
-		} else {
-			sendMap[item.Id] = amt
+		outMap[item.Id] += item.Amount
+	}
+
+	//get  mrc20 list in tx input
+	tx, err := ChainAdapter[pinNode.ChainName].GetTransaction(pinNode.GenesisTransaction)
+	if err != nil {
+		log.Println("GetTransaction:", err)
+		return
+	}
+	txb := tx.(*btcutil.Tx)
+	//check output
+	if maxVout > len(txb.MsgTx().TxOut) {
+		err = errors.New("valueErr")
+		return
+	}
+	for _, item := range content {
+		class, _, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[item.Vout].PkScript, ChainParams)
+		if class.String() == "nulldata" || class.String() == "nonstandard" {
+			err = errors.New("valueErr")
+			return
 		}
 	}
-	tickNameMap = make(map[string]string)
-	for k, v := range sendMap {
-		blance, tick, err1 := getBalanceByaddressAndTick(pinNode.Address, k)
-		tickNameMap[k] = tick
-		if err1 != nil {
-			err = errors.New(mrc20.ErrTranferBalnceErr)
+	var inputList []string
+	for _, in := range txb.MsgTx().TxIn {
+		s := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+		inputList = append(inputList, s)
+	}
+	list, err := DbAdapter.GetMrc20UtxoByOutPutList(inputList)
+	if err != nil {
+		log.Println("GetMrc20UtxoByOutPutList:", err)
+		return
+	}
+	inMap := make(map[string]int64)
+	for _, item := range list {
+		inMap[item.Mrc20Id] += item.AmtChange
+		utxoList = append(utxoList, item)
+	}
+	//if out list value error
+	for k, v := range outMap {
+		if in, ok := inMap[k]; ok {
+			if in != v {
+				err = errors.New("valueErr")
+				return
+			}
+		} else {
+			err = errors.New("valueErr")
 			return
 		}
-		if v > blance {
-			err = errors.New(mrc20.ErrTranferBalnceLess)
-			return
+	}
+	toAddress = make(map[int]string)
+	for i, out := range txb.MsgTx().TxOut {
+		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams)
+		if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
+			toAddress[i] = addresses[0].String()
 		}
-
 	}
 	return
 }

@@ -226,38 +226,48 @@ func getContentSummary(pinode *pin.PersonalInformationNode, id string, contentTy
 	}
 }
 func (indexer *Indexer) GetPinOwner(tx *wire.MsgTx, inIdx int) (address string, outIdx int, locationIdx int64) {
-	if len(tx.TxIn) == 1 || len(tx.TxOut) == 1 || inIdx == 0 {
-		_, addresses, _, _ := txscript.ExtractPkScriptAddrs(tx.TxOut[0].PkScript, indexer.ChainParams)
-		if len(addresses) > 0 {
+	for i, out := range tx.TxOut {
+		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
+		if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
 			address = addresses[0].String()
-		}
-		return
-	}
-	inputValue := int64(0)
-	for i, in := range tx.TxIn {
-		if i == inIdx {
-			break
-		}
-		value, err := GetValueByTx(in.PreviousOutPoint.Hash.String(), int(in.PreviousOutPoint.Index))
-		if err != nil {
-			return
-		}
-		inputValue += value
-	}
-	outputValue := int64(0)
-	for x, out := range tx.TxOut {
-		outputValue += out.Value
-		if outputValue > inputValue {
-			locationIdx = outputValue - inputValue
-			_, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
-			if len(addresses) > 0 {
-				address = addresses[0].String()
-				outIdx = x
-			}
+			outIdx = i
+			locationIdx = 0
 			break
 		}
 	}
 	return
+	// if len(tx.TxIn) == 1 || len(tx.TxOut) == 1 || inIdx == 0 {
+	// 	_, addresses, _, _ := txscript.ExtractPkScriptAddrs(tx.TxOut[0].PkScript, indexer.ChainParams)
+	// 	if len(addresses) > 0 {
+	// 		address = addresses[0].String()
+	// 	}
+	// 	return
+	// }
+	// inputValue := int64(0)
+	// for i, in := range tx.TxIn {
+	// 	if i == inIdx {
+	// 		break
+	// 	}
+	// 	value, err := GetValueByTx(in.PreviousOutPoint.Hash.String(), int(in.PreviousOutPoint.Index))
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	inputValue += value
+	// }
+	// outputValue := int64(0)
+	// for x, out := range tx.TxOut {
+	// 	outputValue += out.Value
+	// 	if outputValue > inputValue {
+	// 		locationIdx = outputValue - inputValue
+	// 		_, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
+	// 		if len(addresses) > 0 {
+	// 			address = addresses[0].String()
+	// 			outIdx = x
+	// 		}
+	// 		break
+	// 	}
+	// }
+	// return
 }
 func (indexer *Indexer) ParsePins(pkScript []byte) (pins []*pin.PersonalInformationNode) {
 	// Parse pins content from witness script
@@ -366,15 +376,30 @@ func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*
 	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
 	keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
 	for _, u := range utxoList {
+		if u.MrcOption == "deploy" {
+			continue
+		}
 		pointMap[u.TxPoint] = append(pointMap[u.TxPoint], u)
 	}
 	block := indexer.Block.(*wire.MsgBlock)
 	for _, tx := range block.Transactions {
+		//if have data transfer
+		haveOpReturn := false
+		for _, out := range tx.TxOut {
+			class, _, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
+			if class.String() == "nulldata" || class.String() == "nonstandard" {
+				haveOpReturn = true
+				break
+			}
+		}
+		if haveOpReturn {
+			continue
+		}
 		for _, in := range tx.TxIn {
 			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			if v, ok := pointMap[id]; ok {
 				for _, utxo := range v {
-					send := mrc20.Mrc20Utxo{TxPoint: id, Mrc20Id: utxo.Mrc20Id, Status: -1}
+					send := mrc20.Mrc20Utxo{TxPoint: id, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1}
 					savelist = append(savelist, &send)
 					key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
 					_, find := keyMap[key]

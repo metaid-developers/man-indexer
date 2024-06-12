@@ -25,13 +25,14 @@ var (
 	ChainAdapter   map[string]adapter.Chain
 	IndexerAdapter map[string]adapter.Indexer
 	DbAdapter      database.Db
+	ChainParams    *chaincfg.Params
 	//Number          int64    = 0
 	MaxHeight       map[string]int64
 	CurBlockHeight  map[string]int64
 	BaseFilter      []string = []string{"/info", "/file", "/flow", "ft"}
 	SyncBaseFilter  map[string]struct{}
 	ProtocolsFilter map[string]struct{}
-	OptionLimit     []string = []string{"create", "modify", "revoke"}
+	OptionLimit     []string = []string{"create", "modify", "revoke", "hide"}
 	BarMap          map[string]*progressbar.ProgressBar
 )
 
@@ -80,19 +81,19 @@ func InitAdapter(chainType, dbType, test, server string) {
 	}
 	DbAdapter.InitDatabase()
 	chainList := strings.Split(chainType, ",")
-	chainParams := &chaincfg.MainNetParams
+	ChainParams = &chaincfg.MainNetParams
 	if test == "1" {
-		chainParams = &chaincfg.TestNet3Params
+		ChainParams = &chaincfg.TestNet3Params
 	}
 	if test == "2" {
-		chainParams = &chaincfg.RegressionNetParams
+		ChainParams = &chaincfg.RegressionNetParams
 	}
 	for _, chain := range chainList {
 		switch chain {
 		case "btc":
 			ChainAdapter[chain] = &bitcoin.BitcoinChain{}
 			IndexerAdapter[chain] = &bitcoin.Indexer{
-				ChainParams: chainParams,
+				ChainParams: ChainParams,
 				PopCutNum:   common.Config.Btc.PopCutNum,
 				DbAdapter:   &DbAdapter,
 				ChainName:   chain,
@@ -103,7 +104,7 @@ func InitAdapter(chainType, dbType, test, server string) {
 		case "mvc":
 			ChainAdapter[chain] = &microvisionchain.MicroVisionChain{}
 			IndexerAdapter[chain] = &microvisionchain.Indexer{
-				ChainParams: chainParams,
+				ChainParams: ChainParams,
 				PopCutNum:   common.Config.Mvc.PopCutNum,
 				DbAdapter:   &DbAdapter,
 				ChainName:   chain,
@@ -328,7 +329,9 @@ func GetSaveData(chainName string, blockHeight int64) (
 	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
 	if err == nil && len(mrc20transferCheck) > 0 {
 		mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(blockHeight, mrc20transferCheck)
-		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
+		if len(mrc20TrasferList) > 0 {
+			DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
+		}
 	}
 	//pin validator
 	for _, pinNode := range pins {

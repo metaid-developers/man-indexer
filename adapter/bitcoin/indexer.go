@@ -86,15 +86,20 @@ func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*
 	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
 	keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
 	for _, u := range utxoList {
+		if u.MrcOption == "deploy" {
+			continue
+		}
 		pointMap[u.TxPoint] = append(pointMap[u.TxPoint], u)
 	}
 	block := indexer.Block.(*wire.MsgBlock)
 	for _, tx := range block.Transactions {
+		//if have data transfer
+		//TODO
 		for _, in := range tx.TxIn {
 			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			if v, ok := pointMap[id]; ok {
 				for _, utxo := range v {
-					send := mrc20.Mrc20Utxo{TxPoint: id, Mrc20Id: utxo.Mrc20Id, Status: -1}
+					send := mrc20.Mrc20Utxo{TxPoint: id, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1}
 					savelist = append(savelist, &send)
 					key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
 					_, find := keyMap[key]
