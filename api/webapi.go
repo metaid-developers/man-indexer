@@ -25,6 +25,12 @@ func formatRootId(rootId string) string {
 	//return fmt.Sprintf("%s...%s", rootId[0:3], rootId[len(rootId)-3:])
 	return rootId[0:6]
 }
+func formatAddress(address string) string {
+	if len(address) < 6 {
+		return ""
+	}
+	return fmt.Sprintf("%s...%s", address[0:6], address[len(address)-3:])
+}
 func popLevelCount(chainName, pop string) string {
 	lv, _ := pin.PopLevelCount(chainName, pop)
 	if lv == -1 {
@@ -60,6 +66,7 @@ func Start(f embed.FS) {
 		"formatRootId":  formatRootId,
 		"popLevelCount": popLevelCount,
 		"popStrShow":    popStrShow,
+		"formatAddress": formatAddress,
 	}
 	//use embed.FS
 	fp, _ := fs.Sub(f, "web/static")
@@ -221,7 +228,14 @@ func content(ctx *gin.Context) {
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
 		ctx.String(200, `<video controls autoplay muted src="/stream/`+p.Id+`"></viedo>`)
 	} else {
-		ctx.String(200, string(p.ContentBody))
+		baseStr, isImage := common.IsBase64Image(string(p.ContentBody))
+		if isImage {
+			ctx.Header("Content-Type", "text/html; charset=utf-8")
+			ctx.String(200, `<img src="`+baseStr+string(p.ContentBody)+`"/>`)
+		} else {
+			ctx.String(200, string(p.ContentBody))
+		}
+
 	}
 }
 func stream(ctx *gin.Context) {

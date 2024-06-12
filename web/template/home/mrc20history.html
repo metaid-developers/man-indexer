@@ -37,8 +37,8 @@
                 {{ range $i, $v := .List }}
                 <tr>
                   <td>{{$v.Tick}}</td>
-                  <td> {{$v.FromAddress | formatRootId }}</td>
-                  <td>{{ $v.ToAddress | formatRootId }}</td>
+                  <td> {{$v.FromAddress | formatAddress }}</td>
+                  <td>{{ $v.ToAddress | formatAddress }}</td>
                   <td>
                     {{ $v.AmtChange }}
                   </td>

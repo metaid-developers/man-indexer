@@ -64,7 +64,8 @@ func metaidList(ctx *gin.Context) {
 		}
 		return
 	}
-	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", list))
+	count := man.DbAdapter.Count()
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": list, "count": &count}))
 }
 func pinList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)

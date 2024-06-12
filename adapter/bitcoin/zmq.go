@@ -79,7 +79,7 @@ func (indexer *Indexer) TransferCheck(tx *wire.MsgTx) (transferPinList []*pin.Pi
 			GenesisTransaction: tx.TxHash().String(),
 			IsTransfered:       true,
 		}
-		fmt.Println(pinNode.Output)
+		//fmt.Println(pinNode.Output)
 		info, err := indexer.GetOWnerAddress(pinNode.Output, tx)
 		//transferPin.Address, _, _ = indexer.GetPinOwner(tx, idx)
 		if err != nil {

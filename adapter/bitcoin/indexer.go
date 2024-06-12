@@ -178,10 +178,71 @@ func (indexer *Indexer) GetOWnerAddress(inputId string, tx *wire.MsgTx) (info *p
 }
 func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, timestamp int64, blockHash string, merkleRoot string, txIndex int) (pinInscriptions []*pin.PinInscription) {
 	//No witness data
-	if !msgTx.HasWitness() {
-		return nil
-	}
+	// if !msgTx.HasWitness() {
+	// 	return nil
+	// }
 	chain := BitcoinChain{}
+	haveOpReturn := false
+	for i, out := range msgTx.TxOut {
+		class, _, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
+		//fmt.Println(class.String())
+		if class.String() == "nonstandard" {
+			pinInscription := indexer.ParseOpReturnPin(out.PkScript)
+			if pinInscription == nil {
+				continue
+			}
+			address, outIdx, locationIdx := indexer.GetOpReturnPinOwner(msgTx)
+			if address == "" {
+				continue
+			}
+			txHash := msgTx.TxHash().String()
+			id := fmt.Sprintf("%si%d", txHash, outIdx)
+			metaId := common.GetMetaIdByAddress(address)
+			contentTypeDetect := common.DetectContentType(&pinInscription.ContentBody)
+			pop := ""
+			if merkleRoot != "" && blockHash != "" {
+				pop, _ = common.GenPop(id, merkleRoot, blockHash)
+			}
+
+			pinInscriptions = append(pinInscriptions, &pin.PinInscription{
+				//Pin:                pinInscription,
+				ChainName:          indexer.ChainName,
+				Id:                 id,
+				MetaId:             metaId,
+				Number:             0,
+				Address:            address,
+				InitialOwner:       address,
+				CreateAddress:      chain.GetCreatorAddress(msgTx.TxIn[0].PreviousOutPoint.Hash.String(), msgTx.TxIn[0].PreviousOutPoint.Index, indexer.ChainParams),
+				Timestamp:          timestamp,
+				GenesisHeight:      blockHeight,
+				GenesisTransaction: txHash,
+				Output:             fmt.Sprintf("%s:%d", txHash, outIdx),
+				OutputValue:        msgTx.TxOut[outIdx].Value,
+				TxInIndex:          uint32(i - 1),
+				Offset:             uint64(outIdx),
+				TxIndex:            txIndex,
+				Operation:          pinInscription.Operation,
+				Location:           fmt.Sprintf("%s:%d:%d", txHash, outIdx, locationIdx),
+				Path:               pinInscription.Path,
+				OriginalPath:       pinInscription.Path,
+				ParentPath:         pinInscription.ParentPath,
+				Encryption:         pinInscription.Encryption,
+				Version:            pinInscription.Version,
+				ContentType:        pinInscription.ContentType,
+				ContentTypeDetect:  contentTypeDetect,
+				ContentBody:        pinInscription.ContentBody,
+				ContentLength:      pinInscription.ContentLength,
+				ContentSummary:     getContentSummary(pinInscription, id, contentTypeDetect),
+				Pop:                pop,
+				DataValue:          pin.RarityScoreBinary(indexer.ChainName, pop),
+			})
+			haveOpReturn = true
+			break
+		}
+	}
+	if haveOpReturn {
+		return
+	}
 	for i, v := range msgTx.TxIn {
 		index, input := i, v
 		//Witness length error
@@ -268,6 +329,83 @@ func getContentSummary(pinode *pin.PersonalInformationNode, id string, contentTy
 			return string(pinode.ContentBody)
 		}
 	}
+}
+
+func (indexer *Indexer) ParseOpReturnPin(pkScript []byte) (pinode *pin.PersonalInformationNode) {
+	// Parse pins content from witness script
+	tokenizer := txscript.MakeScriptTokenizer(0, pkScript)
+	for tokenizer.Next() {
+		// Check inscription envelop header: OP_FALSE(0x00), OP_IF(0x63), PROTOCOL_ID
+		if tokenizer.Opcode() == txscript.OP_RETURN {
+			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != common.Config.ProtocolID {
+				return
+			}
+			pinode = indexer.parseOpReturnOnePin(&tokenizer)
+		}
+	}
+	return
+}
+func (indexer *Indexer) parseOpReturnOnePin(tokenizer *txscript.ScriptTokenizer) *pin.PersonalInformationNode {
+	// Find any pushed data in the script. This includes OP_0, but not OP_1 - OP_16.
+	var infoList [][]byte
+	for tokenizer.Next() {
+		infoList = append(infoList, tokenizer.Data())
+	}
+	// Error occurred
+	if err := tokenizer.Err(); err != nil {
+		return nil
+	}
+	if len(infoList) < 1 {
+		return nil
+	}
+
+	pinode := pin.PersonalInformationNode{}
+	pinode.Operation = strings.ToLower(string(infoList[0]))
+	if pinode.Operation == "init" {
+		pinode.Path = "/"
+		return &pinode
+	}
+	if len(infoList) < 6 && pinode.Operation != "revoke" {
+		return nil
+	}
+	if pinode.Operation == "revoke" && len(infoList) < 5 {
+		return nil
+	}
+	pinode.Path = strings.ToLower(string(infoList[1]))
+	pinode.ParentPath = getParentPath(pinode.Path)
+	encryption := "0"
+	if infoList[2] != nil {
+		encryption = string(infoList[2])
+	}
+	pinode.Encryption = encryption
+	version := "0"
+	if infoList[3] != nil {
+		version = string(infoList[3])
+	}
+	pinode.Version = version
+	contentType := "application/json"
+	if infoList[4] != nil {
+		contentType = strings.ToLower(string(infoList[4]))
+	}
+	pinode.ContentType = contentType
+	var body []byte
+	for i := 5; i < len(infoList); i++ {
+		body = append(body, infoList[i]...)
+	}
+	pinode.ContentBody = body
+	pinode.ContentLength = uint64(len(body))
+	return &pinode
+}
+func (indexer *Indexer) GetOpReturnPinOwner(tx *wire.MsgTx) (address string, outIdx int, locationIdx int64) {
+	for i, out := range tx.TxOut {
+		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, indexer.ChainParams)
+		if class.String() != "nonstandard" && len(addresses) > 0 {
+			outIdx = i
+			address = addresses[0].String()
+			locationIdx = 0
+		}
+	}
+	return
 }
 func (indexer *Indexer) GetPinOwner(tx *wire.MsgTx, inIdx int) (address string, outIdx int, locationIdx int64) {
 	if len(tx.TxIn) == 1 || len(tx.TxOut) == 1 || inIdx == 0 {

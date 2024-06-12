@@ -2,7 +2,13 @@ package common
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
+	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"log"
 	"net/http"
 	"os"
@@ -63,4 +69,42 @@ func UpdateLocalLastHeight(filePath string, newHeight int64) (err error) {
 		return
 	}
 	return os.WriteFile(filePath, []byte(strconv.FormatInt(newHeight, 10)), 0644)
+}
+
+// isBase64 checks if a given string is a valid base64 encoded string
+func isBase64(s string) bool {
+	if len(s)%4 != 0 {
+		return false
+	}
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
+}
+
+// isBase64Image checks if a given string is a valid base64 encoded image
+func IsBase64Image(base64Str string) (baseStr string, isImage bool) {
+	if len(base64Str) < 23 {
+		return
+	}
+	if base64Str[0:22] == "data:image/gif;base64," || base64Str[0:22] == "data:image/png;base64," || base64Str[0:23] == "data:image/jpeg;base64," {
+		return
+	}
+
+	// Check if the string is a valid base64 encoded string
+	if !isBase64(base64Str) {
+		return
+	}
+
+	// Decode the base64 string
+	data, err := base64.StdEncoding.DecodeString(base64Str)
+	if err != nil {
+		return
+	}
+	// Check if the decoded data is a valid image
+	_, imgType, err := image.DecodeConfig(strings.NewReader(string(data)))
+	if err != nil {
+		return
+	}
+	isImage = true
+	baseStr = fmt.Sprintf("data:image/%s;base64,", imgType)
+	return
 }
