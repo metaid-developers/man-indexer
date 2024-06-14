@@ -86,7 +86,7 @@ func Start(f embed.FS) {
 	r.GET("/block/:height", block)
 	r.GET("/pin/:number", pinshow)
 	r.GET("/search/:key", searchshow)
-	r.GET("/tx/:txid", tx)
+	r.GET("/tx/:chain/:txid", tx)
 	r.GET("/node/:rootid", node)
 	r.GET("/content/:number", content)
 	r.GET("/stream/:number", stream)
@@ -95,6 +95,7 @@ func Start(f embed.FS) {
 	r.GET("/mrc20/history/:id/:page", mrc20History)
 	//btc json api
 	btcJsonApi(r)
+	mrc20JsonApi(r)
 	log.Println(common.Config.Web.Port)
 	if common.Config.Web.KeyFile != "" && common.Config.Web.PemFile != "" {
 		r.RunTLS(common.Config.Web.Port, common.Config.Web.PemFile, common.Config.Web.KeyFile)
@@ -311,6 +312,10 @@ type txMsgOutput struct {
 	Script  string
 	Address string
 }
+type txMsgInput struct {
+	Point   string
+	Witness [][]string
+}
 
 func tx(ctx *gin.Context) {
 	txid := ctx.Param("txid")
@@ -327,11 +332,28 @@ func tx(ctx *gin.Context) {
 		address := man.IndexerAdapter[chain].GetAddress(out.PkScript)
 		outList = append(outList, &txMsgOutput{Id: id, Value: out.Value, Script: string(out.PkScript), Address: address})
 	}
+	var inList []*txMsgInput
+	for _, in := range tx.MsgTx().TxIn {
+		point := in.PreviousOutPoint
+		witness := [][]string{}
+		if chain == "btc" && tx.MsgTx().HasWitness() {
+			for _, in := range tx.MsgTx().TxIn {
+				if len(in.Witness) > 0 {
+					w, err := common.BtcParseWitnessScript(in.Witness)
+					if err == nil {
+						witness = w
+					}
+				}
+			}
+		}
+		inList = append(inList, &txMsgInput{Point: point.String(), Witness: witness})
+	}
+
 	msg := gin.H{
 		"TxHash":    tx.Hash().String(),
 		"InputNum":  len(tx.MsgTx().TxIn),
 		"OutPutNum": len(tx.MsgTx().TxOut),
-		"TxIn":      tx.MsgTx().TxIn,
+		"TxIn":      inList,
 		"TxOut":     outList,
 	}
 	ctx.HTML(200, "home/tx.html", msg)
@@ -352,7 +374,7 @@ func mrc20(ctx *gin.Context) {
 		ctx.String(200, "fail")
 		return
 	}
-	list, err := man.DbAdapter.GetMrc20TickPageList(page, 100)
+	_, list, err := man.DbAdapter.GetMrc20TickPageList(page, 100, "")
 	if err != nil {
 		ctx.String(200, "fail")
 		return

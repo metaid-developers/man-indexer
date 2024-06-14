@@ -14,7 +14,7 @@ func (pg *Postgresql) SaveMrc20Pin(data []mrc20.Mrc20Utxo) (err error) {
 func (pg *Postgresql) SaveMrc20Tick(data []mrc20.Mrc20DeployInfo) (err error) {
 	return
 }
-func (pg *Postgresql) GetMrc20TickPageList(page int64, size int64) (list []mrc20.Mrc20DeployInfo, err error) {
+func (pg *Postgresql) GetMrc20TickPageList(page int64, size int64, order string) (total int64, list []mrc20.Mrc20DeployInfo, err error) {
 	return
 }
 func (pg *Postgresql) AddMrc20Shovel(shovel string, pinId string) (err error) {

@@ -58,6 +58,9 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		err = errors.New(mrc20.ErrMintTickNotExists)
 		return
 	}
+	if info.Qual.Count == "" {
+		info.Qual.Count = "1"
+	}
 	count, _ := strconv.ParseInt(info.MintCount, 10, 64)
 	height, _ := strconv.ParseInt(info.Blockheight, 10, 64)
 	if info.TotalMinted >= count {
@@ -68,9 +71,9 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		err = errors.New(mrc20.ErrMintHeight)
 		return
 	}
-	if info.Qual.Lv == "0" {
-		return
-	}
+	// if info.Qual.Lv == "0" {
+	// 	return
+	// }
 	tx, err := ChainAdapter[pinNode.ChainName].GetTransaction(pinNode.GenesisTransaction)
 	if err != nil {
 		log.Println("GetTransaction:", err)
@@ -104,23 +107,46 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		pinIds = append(pinIds, pinNode.Id)
 	}
 	usedShovels, err := DbAdapter.GetMrc20Shovel(pinIds)
-	popChcek := false
-	popLimit, _ := strconv.Atoi(info.Qual.Lv)
+	shovelsCount, _ := strconv.Atoi(info.Qual.Count)
+	shovelChcek := true
+	if info.Qual.Lv != "" {
+		popLimit, _ := strconv.Atoi(info.Qual.Lv)
+		shovelChcek = lvCheck(usedShovels, pins, shovelsCount, popLimit)
+		if !shovelChcek {
+			err = errors.New(mrc20.ErrMintPopDiff)
+			return
+		}
+	}
+	if info.Qual.Path != "" {
+		shovelChcek = pathCheck(usedShovels, pins, shovelsCount, info.Qual.Path)
+		if !shovelChcek {
+			err = errors.New(mrc20.ErrMintPathCheck)
+			return
+		}
+	}
+	return
+}
+func lvCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, popLimit int) (verified bool) {
+	x := 0
 	for _, pinNode := range pins {
 		if _, ok := usedShovels[pinNode.Id]; ok {
 			continue
 		}
 		find := countLeadingZeros(pinNode.Pop)
 		if find >= popLimit {
-			popChcek = true
-			shovel = pinNode.Id
+			x += 1
+		}
+		if x == shovelsCount {
 			break
 		}
 	}
-	if !popChcek {
-		err = errors.New(mrc20.ErrMintPopDiff)
-		return
+	if x >= shovelsCount {
+		verified = true
 	}
+	return
+}
+func pathCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, path string) (verified bool) {
+
 	return
 }
 func countLeadingZeros(str string) int {

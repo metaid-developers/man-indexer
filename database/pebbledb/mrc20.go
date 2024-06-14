@@ -14,7 +14,7 @@ func (pb *Pebble) SaveMrc20Pin(data []mrc20.Mrc20Utxo) (err error) {
 func (pb *Pebble) SaveMrc20Tick(data []mrc20.Mrc20DeployInfo) (err error) {
 	return
 }
-func (pb *Pebble) GetMrc20TickPageList(page int64, size int64) (list []mrc20.Mrc20DeployInfo, err error) {
+func (pb *Pebble) GetMrc20TickPageList(page int64, size int64, order string) (total int64, list []mrc20.Mrc20DeployInfo, err error) {
 	return
 }
 func (pb *Pebble) AddMrc20Shovel(shovel string, pinId string) (err error) {

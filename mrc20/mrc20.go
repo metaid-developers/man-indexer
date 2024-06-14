@@ -9,6 +9,8 @@ const (
 	ErrMintHeight        = "current block height is too low"
 	ErrMintPopNull       = "shovel is none"
 	ErrMintPopDiff       = "pop level check failed"
+	ErrMintPathCheck     = "shovel path check failed"
+	ErrMintCountCheck    = "shovel count check failed"
 	ErrMintTickIdNull    = "tickId is null"
 	ErrMintPinIdNull     = "pin is null"
 	ErrMintPinOwner      = "not have the right to use this PIN"
@@ -35,7 +37,9 @@ type Mrc20Utxo struct {
 	Index       int    `json:"index"`
 }
 type Mrc20DeployQual struct {
-	Lv string `json:"lvl"`
+	Lv    string `json:"lvl"`
+	Path  string `json:"path"`
+	Count string `json:"count"`
 }
 type Mrc20Deploy struct {
 	Tick        string          `json:"tick"`

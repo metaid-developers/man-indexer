@@ -4,6 +4,7 @@
 <!-- Head -->
 {{ template "public/head.html"}}
 <!-- End Head -->
+
 <body>
   <!-- Header (Topbar) -->
   {{ template "public/header.html"}}
@@ -21,27 +22,39 @@
           <div>
             <ul>
               {{ range $i1, $v1 := .TxIn }}
-              <li style="padding-left: 30px;">{{ $v1.PreviousOutPoint}} </li>
-              {{ end }}
-            </ul>
+              <li style="padding-left: 30px;">
+                {{ $v1.Point}}
+                <div class="script">
+                  {{ range $wn := $v1.Witness }}
+                  <div>
+                    {{ range $info := $wn }}
+                    {{ $info }}
+                    {{ end }}
+                  </div>
+                  {{end}}
+                </div>
           </div>
-          <div class="row row-title">{{ .OutPutNum }} Outputs</div>
-          <div>
-            <ul>
-              {{ range $i2, $v2 := .TxOut }}
-              <li style="padding-left: 30px;">{{ $v2.Id}} </li>
-              <div><span class="blod">value</span>&nbsp;&nbsp;{{ $v2.Value }}</div>
-              <div><span class="blod">address</span>&nbsp;&nbsp;{{ $v2.Address }}</div>
-              {{ end }}
-            </ul>
-          </div>
+          </li>
+          {{ end }}
+          </ul>
+        </div>
+        <div class="row row-title">{{ .OutPutNum }} Outputs</div>
+        <div>
+          <ul>
+            {{ range $i2, $v2 := .TxOut }}
+            <li style="padding-left: 30px;">{{ $v2.Id}} </li>
+            <div><span class="blod">value</span>&nbsp;&nbsp;{{ $v2.Value }}</div>
+            <div><span class="blod">address</span>&nbsp;&nbsp;{{ $v2.Address }}</div>
+            {{ end }}
+          </ul>
         </div>
       </div>
-      <div>
-      </div>
-      <!-- Footer -->
-      {{ template "public/footer.html"}}
-      <!-- End Footer -->
+    </div>
+    <div>
+    </div>
+    <!-- Footer -->
+    {{ template "public/footer.html"}}
+    <!-- End Footer -->
     </div>
   </main>
 </body>

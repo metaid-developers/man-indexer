@@ -37,14 +37,21 @@ func (mg *Mongodb) SaveMrc20Tick(data []mrc20.Mrc20DeployInfo) (err error) {
 	_, err = mongoClient.Collection(Mrc20TickCollection).InsertMany(context.TODO(), list, &option)
 	return
 }
-func (mg *Mongodb) GetMrc20TickPageList(page int64, size int64) (list []mrc20.Mrc20DeployInfo, err error) {
+func (mg *Mongodb) GetMrc20TickPageList(page int64, size int64, order string) (total int64, list []mrc20.Mrc20DeployInfo, err error) {
 	cursor := (page - 1) * size
-	opts := options.Find().SetSort(bson.D{{Key: "pinnumber", Value: -1}}).SetSkip(cursor).SetLimit(size)
+	if order == "" {
+		order = "pinnumber"
+	}
+	opts := options.Find().SetSort(bson.D{{Key: order, Value: -1}}).SetSkip(cursor).SetLimit(size)
 	result, err := mongoClient.Collection(Mrc20TickCollection).Find(context.TODO(), bson.M{}, opts)
 	if err != nil {
 		return
 	}
 	err = result.All(context.TODO(), &list)
+	if err != nil {
+		return
+	}
+	total, err = mongoClient.Collection(Mrc20TickCollection).CountDocuments(context.TODO(), bson.M{})
 	return
 }
 func (mg *Mongodb) AddMrc20Shovel(shovel string, pinId string) (err error) {

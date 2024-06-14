@@ -68,7 +68,7 @@ type Db interface {
 	GetMrc20TickInfo(tick string) (info mrc20.Mrc20DeployInfo, err error)
 	SaveMrc20Pin(data []mrc20.Mrc20Utxo) (err error)
 	SaveMrc20Tick(data []mrc20.Mrc20DeployInfo) (err error)
-	GetMrc20TickPageList(page int64, size int64) (list []mrc20.Mrc20DeployInfo, err error)
+	GetMrc20TickPageList(page int64, size int64, order string) (total int64, list []mrc20.Mrc20DeployInfo, err error)
 	AddMrc20Shovel(shovel string, pinId string) (err error)
 	GetMrc20Shovel(shovels []string) (data map[string]mrc20.Mrc20Shovel, err error)
 	UpdateMrc20TickInfo(tickId string, minted int64) (err error)

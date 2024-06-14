@@ -4,16 +4,20 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
+	"manindexer/common/btc_util"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/btcsuite/btcd/txscript"
 )
 
 func DetectContentType(content *[]byte) (contentType string) {
@@ -106,5 +110,34 @@ func IsBase64Image(base64Str string) (baseStr string, isImage bool) {
 	}
 	isImage = true
 	baseStr = fmt.Sprintf("data:image/%s;base64,", imgType)
+	return
+}
+func BtcParseWitnessScript(witness [][]byte) (data [][]string, err error) {
+	if len(witness) == 0 {
+		err = errors.New("no witness data found")
+		return
+	}
+	var witnessScript []byte
+	if witness[len(witness)-1][0] == txscript.TaprootAnnexTag {
+		witnessScript = witness[len(witness)-1]
+	} else {
+		witnessScript = witness[len(witness)-2]
+	}
+
+	tokenizer := txscript.MakeScriptTokenizer(0, witnessScript)
+	i := 0
+	for tokenizer.Next() {
+		codeName := "Unkonw"
+		if v, ok := btc_util.OpcodeMap[tokenizer.Opcode()]; ok {
+			codeName = v
+		}
+		codeName = fmt.Sprintf("%s(%d)", codeName, tokenizer.Opcode())
+		if i == 0 {
+			data = append(data, []string{codeName, hex.EncodeToString(tokenizer.Data())})
+		} else {
+			data = append(data, []string{codeName, string(tokenizer.Data())})
+		}
+		i += 1
+	}
 	return
 }
