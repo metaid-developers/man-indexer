@@ -92,9 +92,12 @@ func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*
 		pointMap[u.TxPoint] = append(pointMap[u.TxPoint], u)
 	}
 	block := indexer.Block.(*wire.MsgBlock)
+	t := block.Header.Timestamp.Unix()
 	for _, tx := range block.Transactions {
 		//if have data transfer
-		//TODO
+		if tx.HasWitness() {
+			continue
+		}
 		for _, in := range tx.TxIn {
 			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			if v, ok := pointMap[id]; ok {
@@ -111,6 +114,7 @@ func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*
 						recive.ToAddress = indexer.GetAddress(tx.TxOut[0].PkScript)
 						recive.BlockHeight = blockHeight
 						recive.TxPoint = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
+						recive.Timestamp = t
 						recive.Chain = "btc"
 						keyMap[key] = &recive
 					}

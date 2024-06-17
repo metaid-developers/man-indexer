@@ -121,6 +121,9 @@ func BtcParseWitnessScript(witness [][]byte) (data [][]string, err error) {
 	if witness[len(witness)-1][0] == txscript.TaprootAnnexTag {
 		witnessScript = witness[len(witness)-1]
 	} else {
+		if len(witness) < 2 {
+			return
+		}
 		witnessScript = witness[len(witness)-2]
 	}
 

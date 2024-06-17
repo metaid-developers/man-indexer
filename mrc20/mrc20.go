@@ -35,6 +35,7 @@ type Mrc20Utxo struct {
 	Status      int    `json:"status"`
 	Chain       string `json:"chain"`
 	Index       int    `json:"index"`
+	Timestamp   int64  `json:"timestamp"`
 }
 type Mrc20DeployQual struct {
 	Lv    string `json:"lvl"`
@@ -79,4 +80,9 @@ type Mrc20TranferData struct {
 	Amount int64  `json:"amount"`
 	Vout   int    `json:"vout"`
 	Id     string `json:"id"`
+}
+type Mrc20Balance struct {
+	Id      string `json:"id"`
+	Name    string `json:"name"`
+	Balance int64  `json:"balance"`
 }

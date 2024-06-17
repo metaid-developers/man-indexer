@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"manindexer/mrc20"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -91,15 +92,19 @@ func (mg *Mongodb) GetMrc20ByAddressAndTick(address string, mrc20Id string) (lis
 	err = result.All(context.TODO(), &list)
 	return
 }
-func (mg *Mongodb) GetMrc20HistoryPageList(mrc20Id string, page int64, size int64) (list []mrc20.Mrc20Utxo, err error) {
+func (mg *Mongodb) GetMrc20HistoryPageList(tickId string, page int64, size int64) (list []mrc20.Mrc20Utxo, total int64, err error) {
 	cursor := (page - 1) * size
-	opts := options.Find().SetSort(bson.D{{Key: "blockheight", Value: -1}}).SetSkip(cursor).SetLimit(size)
-	filter := bson.M{"mrc20id": mrc20Id}
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetSkip(cursor).SetLimit(size)
+	filter := bson.M{"mrc20id": tickId}
 	result, err := mongoClient.Collection(Mrc20UtxoCollection).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return
 	}
 	err = result.All(context.TODO(), &list)
+	if err != nil {
+		return
+	}
+	total, err = mongoClient.Collection(Mrc20UtxoCollection).CountDocuments(context.TODO(), filter)
 	return
 }
 func (mg *Mongodb) GetMrc20UtxoByOutPutList(outputList []string) (list []*mrc20.Mrc20Utxo, err error) {
@@ -132,6 +137,7 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo) (err error) {
 			updateInfo = append(updateInfo, bson.E{Key: "verify", Value: info.Verify})
 			updateInfo = append(updateInfo, bson.E{Key: "chain", Value: info.Chain})
 			updateInfo = append(updateInfo, bson.E{Key: "index", Value: info.Index})
+			updateInfo = append(updateInfo, bson.E{Key: "timestamp", Value: info.Timestamp})
 		}
 		update := bson.D{{Key: "$set", Value: updateInfo}}
 		m := mongo.NewUpdateOneModel()
@@ -140,5 +146,65 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo) (err error) {
 	}
 	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
 	_, err = mongoClient.Collection(Mrc20UtxoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+	return
+}
+func (mg *Mongodb) GetHistoryByAddress(tickId string, address string, page int64, size int64) (list []mrc20.Mrc20Utxo, total int64, err error) {
+	cursor := (page - 1) * size
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetSkip(cursor).SetLimit(size)
+	filter := bson.M{"mrc20id": tickId, "toaddress": address}
+	result, err := mongoClient.Collection(Mrc20UtxoCollection).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return
+	}
+	err = result.All(context.TODO(), &list)
+	if err != nil {
+		return
+	}
+	total, err = mongoClient.Collection(Mrc20UtxoCollection).CountDocuments(context.TODO(), filter)
+	return
+}
+func (mg *Mongodb) GetMrc20BalanceByAddress(address string) (list []mrc20.Mrc20Balance, err error) {
+	filter := bson.D{{Key: "toaddress", Value: address}}
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: filter}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$mrc20id"},
+			{Key: "total", Value: bson.D{{Key: "$sum", Value: "$amtchange"}}},
+		}}},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cursor, err := mongoClient.Collection(Mrc20UtxoCollection).Aggregate(ctx, pipeline)
+	if err != nil {
+		return
+	}
+	defer cursor.Close(ctx)
+	var results []bson.M
+	if err = cursor.All(ctx, &results); err != nil {
+		return
+	}
+	var idList []string
+	for _, result := range results {
+		idList = append(idList, result["_id"].(string))
+		b := mrc20.Mrc20Balance{Id: result["_id"].(string), Balance: result["total"].(int64)}
+		//fmt.Printf("Category: %v, Total: %v\n", result["_id"], result["total"])
+		list = append(list, b)
+	}
+	tickFilter := bson.M{"mrc20id": bson.M{"$in": idList}}
+	ret, err := mongoClient.Collection(Mrc20TickCollection).Find(context.TODO(), tickFilter)
+	var tickList []mrc20.Mrc20DeployInfo
+	if err = ret.All(ctx, &tickList); err != nil {
+		return
+	}
+	m := make(map[string]string)
+	for _, tick := range tickList {
+		m[tick.Mrc20Id] = tick.Tick
+	}
+	for i := range list {
+		if v, ok := m[list[i].Id]; ok {
+			list[i].Name = v
+		}
+	}
 	return
 }

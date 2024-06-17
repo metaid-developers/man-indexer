@@ -109,8 +109,9 @@ func TestMongoGeneratorFind(t *testing.T) {
 }
 func TestGetSaveData(t *testing.T) {
 	man.InitAdapter("btc", "mongo", "1", "1")
-	pinList, _, _, _, _, _, _, _, err := man.GetSaveData("btc", 2818306)
-	fmt.Println(err, len(pinList))
+	pinList, _, _, _, _, mrc20List, _, _, err := man.GetSaveData("btc", 652)
+	fmt.Println(err, len(pinList), len(mrc20List))
+	man.Mrc20Handle(mrc20List)
 }
 func TestHash(t *testing.T) {
 	add := "tb1pss8ce6tgupnhmfj8u9h4saue48upucu04c7549tzal6n67v8njyst7e0fx"

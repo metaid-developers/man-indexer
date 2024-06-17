@@ -8,6 +8,7 @@ import (
 	"manindexer/mrc20"
 	"manindexer/pin"
 	"strconv"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/txscript"
@@ -81,17 +82,24 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	}
 	txb := tx.(*btcutil.Tx)
 	var inputList []string
-	for _, in := range txb.MsgTx().TxIn {
-		s := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
-		inputList = append(inputList, s)
+	//Because the PIN has been transferred,
+	//use the output to find the PIN attributes.
+	for i := range txb.MsgTx().TxOut {
+		s := fmt.Sprintf("%s:%d", txb.Hash().String(), i)
+		tmpId := fmt.Sprintf("%si%d", txb.Hash().String(), i)
+		if tmpId != pinNode.Id {
+			fmt.Println(s)
+			inputList = append(inputList, s)
+		}
+
 	}
 	// fmt.Println(inputList)
-	pins, err := DbAdapter.GetPinListByIdList(inputList)
+	pins, err := DbAdapter.GetPinListByOutPutList(inputList)
 
 	//inputList := []string{content.Pin}
 	//pins, err := DbAdapter.GetPinListByIdList(inputList)
 	if err != nil {
-		log.Println("GetPinListByIdList:", err)
+		log.Println("GetPinListByOutPutList:", err)
 		return
 	}
 	if len(pins) <= 0 {
@@ -104,6 +112,7 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	// }
 	var pinIds []string
 	for _, pinNode := range pins {
+		fmt.Println("id:", pinNode.Id)
 		pinIds = append(pinIds, pinNode.Id)
 	}
 	usedShovels, err := DbAdapter.GetMrc20Shovel(pinIds)
@@ -145,8 +154,128 @@ func lvCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscriptio
 	}
 	return
 }
-func pathCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, path string) (verified bool) {
+func pathCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, pathStr string) (verified bool) {
+	path, query, key, operator, value := mrc20.PathParse(pathStr)
+	if path == "" && query == "" {
+		verified = onlyPathCheck(usedShovels, pins, shovelsCount, pathStr)
+		return
+	}
+	if path != "" && query != "" {
+		if key == "" && operator == "" && value == "" {
+			query = query[2 : len(query)-2]
+			verified = followPathCheck(usedShovels, pins, shovelsCount, path, query)
+		} else if key != "" && operator != "" && value != "" {
+			if operator == "=" {
+				equalPathCheck(usedShovels, pins, shovelsCount, path, key, value)
+			} else if operator == "#=" {
+				contentPathCheck(usedShovels, pins, shovelsCount, path, key, value)
+			}
+		}
+	}
+	return
+}
+func onlyPathCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, pathStr string) (verified bool) {
+	x := 0
+	for _, pinNode := range pins {
+		if _, ok := usedShovels[pinNode.Id]; ok {
+			continue
+		}
+		if pinNode.Path == pathStr {
+			x += 1
+		}
+		if x == shovelsCount {
+			break
+		}
+	}
+	if x >= shovelsCount {
+		verified = true
+	}
+	return
+}
+func followPathCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, pathStr string, queryStr string) (verified bool) {
+	x := 0
+	if pathStr != "/follow" {
+		return
+	}
+	for _, pinNode := range pins {
+		if _, ok := usedShovels[pinNode.Id]; ok {
+			continue
+		}
+		if string(pinNode.ContentBody) != queryStr {
+			continue
+		}
+		x += 1
+		if x == shovelsCount {
+			break
+		}
+	}
+	if x >= shovelsCount {
+		verified = true
+	}
+	return
+}
 
+func equalPathCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, pathStr string, key string, value string) (verified bool) {
+	x := 0
+	for _, pinNode := range pins {
+		if _, ok := usedShovels[pinNode.Id]; ok {
+			continue
+		}
+		if pinNode.Path != pathStr {
+			continue
+		}
+		m := make(map[string]interface{})
+		err := json.Unmarshal(pinNode.ContentBody, &m)
+		if err != nil {
+			continue
+		}
+		if _, ok := m[key]; !ok {
+			continue
+		}
+		c := fmt.Sprintf("%s", m[key])
+		if c != value {
+			continue
+		}
+		x += 1
+		if x == shovelsCount {
+			break
+		}
+	}
+	if x >= shovelsCount {
+		verified = true
+	}
+	return
+}
+func contentPathCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, pathStr string, key string, value string) (verified bool) {
+	x := 0
+	for _, pinNode := range pins {
+		if _, ok := usedShovels[pinNode.Id]; ok {
+			continue
+		}
+		if pinNode.Path != pathStr {
+			continue
+		}
+
+		m := make(map[string]interface{})
+		err := json.Unmarshal(pinNode.ContentBody, &m)
+		if err != nil {
+			continue
+		}
+		if _, ok := m[key]; !ok {
+			continue
+		}
+		c := fmt.Sprintf("%s", m[key])
+		if !strings.Contains(c, value) {
+			continue
+		}
+		x += 1
+		if x == shovelsCount {
+			break
+		}
+	}
+	if x >= shovelsCount {
+		verified = true
+	}
 	return
 }
 func countLeadingZeros(str string) int {

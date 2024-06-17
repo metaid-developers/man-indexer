@@ -73,7 +73,9 @@ type Db interface {
 	GetMrc20Shovel(shovels []string) (data map[string]mrc20.Mrc20Shovel, err error)
 	UpdateMrc20TickInfo(tickId string, minted int64) (err error)
 	GetMrc20ByAddressAndTick(address string, tickId string) (list []mrc20.Mrc20Utxo, err error)
-	GetMrc20HistoryPageList(tickId string, page int64, size int64) (list []mrc20.Mrc20Utxo, err error)
+	GetMrc20HistoryPageList(tickId string, page int64, size int64) (list []mrc20.Mrc20Utxo, total int64, err error)
 	GetMrc20UtxoByOutPutList(outputList []string) (list []*mrc20.Mrc20Utxo, err error)
 	UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo) (err error)
+	GetHistoryByAddress(tickId string, address string, page int64, size int64) (list []mrc20.Mrc20Utxo, total int64, err error)
+	GetMrc20BalanceByAddress(address string) (list []mrc20.Mrc20Balance, err error)
 }

@@ -12,6 +12,8 @@ import (
 	"manindexer/pin"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/gin-contrib/cors"
@@ -24,6 +26,10 @@ func formatRootId(rootId string) string {
 	}
 	//return fmt.Sprintf("%s...%s", rootId[0:3], rootId[len(rootId)-3:])
 	return rootId[0:6]
+}
+func formatTime(t int64) string {
+	tm := time.Unix(t, 0)
+	return tm.Format("2006-01-02 15:04:05")
 }
 func formatAddress(address string) string {
 	if len(address) < 6 {
@@ -41,6 +47,14 @@ func popLevelCount(chainName, pop string) string {
 func popStrShow(chainName, pop string) string {
 	_, lastStr := pin.PopLevelCount(chainName, pop)
 	return lastStr[0:8] + "..."
+}
+func outpointToTxId(outpoint string) string {
+	arr := strings.Split(outpoint, ":")
+	if len(arr) == 2 {
+		return arr[0]
+	} else {
+		return "erro"
+	}
 }
 func CorsMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
@@ -63,10 +77,12 @@ func Start(f embed.FS) {
 	gin.DefaultWriter = io.Discard
 	r := gin.Default()
 	funcMap := template.FuncMap{
-		"formatRootId":  formatRootId,
-		"popLevelCount": popLevelCount,
-		"popStrShow":    popStrShow,
-		"formatAddress": formatAddress,
+		"formatRootId":   formatRootId,
+		"popLevelCount":  popLevelCount,
+		"popStrShow":     popStrShow,
+		"formatAddress":  formatAddress,
+		"formatTime":     formatTime,
+		"outpointToTxId": outpointToTxId,
 	}
 	//use embed.FS
 	fp, _ := fs.Sub(f, "web/static")
@@ -231,8 +247,7 @@ func content(ctx *gin.Context) {
 	} else {
 		baseStr, isImage := common.IsBase64Image(string(p.ContentBody))
 		if isImage {
-			ctx.Header("Content-Type", "text/html; charset=utf-8")
-			ctx.String(200, `<img src="`+baseStr+string(p.ContentBody)+`"/>`)
+			ctx.String(200, baseStr+string(p.ContentBody))
 		} else {
 			ctx.String(200, string(p.ContentBody))
 		}
@@ -337,14 +352,14 @@ func tx(ctx *gin.Context) {
 		point := in.PreviousOutPoint
 		witness := [][]string{}
 		if chain == "btc" && tx.MsgTx().HasWitness() {
-			for _, in := range tx.MsgTx().TxIn {
-				if len(in.Witness) > 0 {
-					w, err := common.BtcParseWitnessScript(in.Witness)
-					if err == nil {
-						witness = w
-					}
+			//for _, in := range tx.MsgTx().TxIn {
+			if len(in.Witness) > 0 {
+				w, err := common.BtcParseWitnessScript(in.Witness)
+				if err == nil {
+					witness = w
 				}
 			}
+			//}
 		}
 		inList = append(inList, &txMsgInput{Point: point.String(), Witness: witness})
 	}
@@ -355,6 +370,7 @@ func tx(ctx *gin.Context) {
 		"OutPutNum": len(tx.MsgTx().TxOut),
 		"TxIn":      inList,
 		"TxOut":     outList,
+		"Chain":     ctx.Param("chain"),
 	}
 	ctx.HTML(200, "home/tx.html", msg)
 }
@@ -400,7 +416,7 @@ func mrc20History(ctx *gin.Context) {
 		ctx.String(200, "fail")
 		return
 	}
-	list, err := man.DbAdapter.GetMrc20HistoryPageList(ctx.Param("id"), page, 20)
+	list, _, err := man.DbAdapter.GetMrc20HistoryPageList(ctx.Param("id"), page, 20)
 	if err != nil {
 		ctx.String(200, "fail")
 		return

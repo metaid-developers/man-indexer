@@ -23,6 +23,7 @@
               <thead>
                 <tr>
                   <th scope="col">TickName</th>
+                  <th scope="col">Time</th>
                   <th scope="col">From</th>
                   <th scope="col">To</th>
                   <th scope="col">Amt</th>
@@ -37,12 +38,18 @@
                 {{ range $i, $v := .List }}
                 <tr>
                   <td>{{$v.Tick}}</td>
+                  <td>{{$v.Timestamp | formatTime }}</td>
                   <td> {{$v.FromAddress | formatAddress }}</td>
                   <td>{{ $v.ToAddress | formatAddress }}</td>
                   <td>
                     {{ $v.AmtChange }}
                   </td>
-                  <td>{{ $v.MrcOption }}</td>
+                  <td>
+                    <a style="text-decoration: underline;" href="/tx/{{ $v.Chain}}/{{$v.TxPoint | outpointToTxId}}"
+                       target="_blank">
+                      {{ $v.MrcOption }}
+                    </a>
+                  </td>
                   <td>
                     {{ $v.Status }}
                   </td>

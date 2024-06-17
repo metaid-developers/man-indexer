@@ -296,6 +296,7 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	if len(infoAdditional) > 0 {
 		DbAdapter.BatchUpsertMetaIdInfoAddition(infoAdditional)
 	}
+	//Handle MRC20 last.
 	if len(mrc20List) > 0 {
 		Mrc20Handle(mrc20List)
 	}

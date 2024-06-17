@@ -63,6 +63,7 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 	mrc20Utxo.ToAddress = pinNode.Address
 	mrc20Utxo.TxPoint = pinNode.Output
 	mrc20Utxo.PinContent = string(pinNode.ContentBody)
+	mrc20Utxo.Timestamp = pinNode.Timestamp
 	err1 := validator.Deploy(pinNode.ContentBody)
 	if err1 != nil {
 		mrc20Utxo.Verify = false
@@ -87,6 +88,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 	mrc20Utxo.ToAddress = pinNode.Address
 	mrc20Utxo.TxPoint = pinNode.Output
 	mrc20Utxo.PinContent = string(pinNode.ContentBody)
+	mrc20Utxo.Timestamp = pinNode.Timestamp
 	info, shovel, err1 := validator.Mint(content, pinNode)
 	if info != (mrc20.Mrc20DeployInfo{}) {
 		mrc20Utxo.Mrc20Id = info.Mrc20Id
@@ -127,6 +129,7 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 			mrc20Utxo.FromAddress = utxo.ToAddress
 			mrc20Utxo.ToAddress = pinNode.Address
 			mrc20Utxo.Chain = pinNode.ChainName
+			mrc20Utxo.Timestamp = pinNode.Timestamp
 			mrc20Utxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, pinNode.Offset)
 			mrc20Utxo.PinContent = string(pinNode.ContentBody)
 			mrc20Utxo.Index = i
@@ -158,6 +161,7 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 		mrc20Utxo.PinContent = string(pinNode.ContentBody)
 		mrc20Utxo.Index = item.Vout
 		mrc20Utxo.AmtChange = item.Amount
+		mrc20Utxo.Timestamp = pinNode.Timestamp
 		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
 	}
 	return
