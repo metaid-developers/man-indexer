@@ -163,7 +163,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 			if merkleRoot != "" && blockHash != "" {
 				pop, _ = common.GenPop(id, merkleRoot, blockHash)
 			}
-
+			popLv, _ := pin.PopLevelCount(indexer.ChainName, pop)
 			pinInscriptions = append(pinInscriptions, &pin.PinInscription{
 				//Pin:                pinInscription,
 				ChainName:          indexer.ChainName,
@@ -194,6 +194,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				ContentLength:      pinInscription.ContentLength,
 				ContentSummary:     getContentSummary(pinInscription, id, contentTypeDetect),
 				Pop:                pop,
+				PopLv:              popLv,
 				DataValue:          pin.RarityScoreBinary(indexer.ChainName, pop),
 			})
 			haveOpReturn = true

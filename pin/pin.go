@@ -43,6 +43,8 @@ type PinInscription struct {
 	PopLv              int    `json:"popLv"`
 	ChainName          string `json:"chainName"`
 	DataValue          int    `json:"dataValue"`
+	Mrc20Minted        bool   `json:"mrc20Minted"`  //true Consumed
+	Mrc20MintPin       string `json:"mrc20MintPin"` //mrc20 mint pin id
 }
 type PinTransferInfo struct {
 	Address     string `json:"address"`

@@ -107,7 +107,7 @@ func Start(f embed.FS) {
 	r.GET("/content/:number", content)
 	r.GET("/stream/:number", stream)
 	//mrc20
-	r.GET("/mrc20/:page", mrc20)
+	r.GET("/mrc20/:page", mrc20List)
 	r.GET("/mrc20/history/:id/:page", mrc20History)
 	//btc json api
 	btcJsonApi(r)
@@ -384,13 +384,14 @@ func node(ctx *gin.Context) {
 	}
 	ctx.HTML(200, "home/node.html", &gin.H{"RootId": rootid, "Total": total, "Pins": list})
 }
-func mrc20(ctx *gin.Context) {
+func mrc20List(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Param("page"), 10, 64)
 	if err != nil {
 		ctx.String(200, "fail")
 		return
 	}
-	_, list, err := man.DbAdapter.GetMrc20TickPageList(page, 100, "")
+	cousor := (page - 1) * 100
+	_, list, err := man.DbAdapter.GetMrc20TickPageList(cousor, 100, "")
 	if err != nil {
 		ctx.String(200, "fail")
 		return
@@ -416,7 +417,7 @@ func mrc20History(ctx *gin.Context) {
 		ctx.String(200, "fail")
 		return
 	}
-	list, _, err := man.DbAdapter.GetMrc20HistoryPageList(ctx.Param("id"), page, 20)
+	list, _, err := man.DbAdapter.GetMrc20HistoryPageList(ctx.Param("id"), true, page, 20)
 	if err != nil {
 		ctx.String(200, "fail")
 		return

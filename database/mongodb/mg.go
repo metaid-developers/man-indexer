@@ -25,7 +25,7 @@ const (
 	InfoCollection                string = "info"
 	Mrc20UtxoCollection           string = "mrc20utxos"
 	Mrc20TickCollection           string = "mrc20ticks"
-	Mrc20MintShovel               string = "mrc20shovel"
+	//Mrc20MintShovel               string = "mrc20shovel"
 )
 
 var (
@@ -180,9 +180,9 @@ func getCondition(filter database.GeneratorFilter) bson.D {
 	case ">":
 		return bson.D{{Key: "$gt", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
 	case ">=":
-		return bson.D{{Key: "$lt", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
-	case "<":
 		return bson.D{{Key: "$gte", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
+	case "<":
+		return bson.D{{Key: "$lt", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
 	case "<=":
 		return bson.D{{Key: "$lte", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
 	default:

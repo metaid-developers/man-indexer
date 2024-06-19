@@ -54,6 +54,7 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 	}
 	info.Mrc20Id = pinNode.Id
 	info.PinNumber = pinNode.Number
+	info.Chain = pinNode.ChainName
 	mrc20Utxo.Tick = info.Tick
 	mrc20Utxo.Mrc20Id = pinNode.Id
 	mrc20Utxo.PinId = pinNode.Id
@@ -89,7 +90,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 	mrc20Utxo.TxPoint = pinNode.Output
 	mrc20Utxo.PinContent = string(pinNode.ContentBody)
 	mrc20Utxo.Timestamp = pinNode.Timestamp
-	info, shovel, err1 := validator.Mint(content, pinNode)
+	info, shovelList, err1 := validator.Mint(content, pinNode)
 	if info != (mrc20.Mrc20DeployInfo{}) {
 		mrc20Utxo.Mrc20Id = info.Mrc20Id
 		mrc20Utxo.Tick = info.Tick
@@ -99,7 +100,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 		mrc20Utxo.Verify = false
 		mrc20Utxo.ErrorMsg = err1.Error()
 	} else {
-		DbAdapter.AddMrc20Shovel(shovel, pinNode.Id)
+		DbAdapter.AddMrc20Shovel(shovelList, pinNode.Id)
 		DbAdapter.UpdateMrc20TickInfo(info.Mrc20Id, info.TotalMinted+1)
 		mrc20Utxo.AmtChange, _ = strconv.ParseInt(info.AmtPerMint, 10, 64)
 	}

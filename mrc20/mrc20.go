@@ -2,8 +2,9 @@ package mrc20
 
 const (
 	ErrDeployContent     = "deploy content format error, it needs to be a JSON string"
-	ErrDeployTickLength  = "no less than 4 characters"
+	ErrDeployTickLength  = "the length must be between 2 and 24."
 	ErrDeployTickExists  = "tick already exists"
+	ErrCrossChain        = "cross-chain operations are currently not allowed"
 	ErrMintTickNotExists = "tick not exists"
 	ErrMintLimit         = "minting capacity reached"
 	ErrMintHeight        = "current block height is too low"
@@ -67,10 +68,11 @@ type Mrc20DeployInfo struct {
 	TotalMinted int64           `json:"totalMinted"`
 	Mrc20Id     string          `json:"mrc20Id"`
 	PinNumber   int64           `json:"pinNumber"`
+	Chain       string          `json:"chain"`
 }
 type Mrc20Shovel struct {
-	Shovel   string `json:"Shovel"`
-	UsePinId string `json:"usePinId"`
+	Id           string `json:"id"`
+	Mrc20MintPin string `json:"mrc20MintPin"`
 }
 type Mrc20MintData struct {
 	Id string `json:"id"`

@@ -49,10 +49,12 @@ func metaidList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	order := ctx.Query("order")
 	list, err := man.DbAdapter.GetMetaIdPageList(page, size, order)
@@ -71,10 +73,12 @@ func pinList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	list, err := man.DbAdapter.GetPinPageList(page, size)
 	if err != nil || list == nil {
@@ -102,10 +106,12 @@ func mempoolList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	list, err := man.DbAdapter.GetMempoolPinPageList(page, size)
 	if err != nil || list == nil {
@@ -128,10 +134,12 @@ func nodeList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	rootid := ctx.Query("rootid")
 	list, total, err := man.DbAdapter.GetMetaIdPin(rootid, page, size)
@@ -190,10 +198,12 @@ func blockList(ctx *gin.Context) {
 	page, err := strconv.ParseInt(ctx.Query("page"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
 	}
 	list, err := man.DbAdapter.GetPinPageList(page, size)
 	if err != nil || list == nil {
