@@ -326,15 +326,9 @@ func GetSaveData(chainName string, blockHeight int64) (
 		trasferMap := IndexerAdapter[chainName].CatchTransfer(idMap)
 		DbAdapter.UpdateTransferPin(trasferMap)
 	}
-	//check mrc20 transfer
-	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
-	if err == nil && len(mrc20transferCheck) > 0 {
-		mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(blockHeight, mrc20transferCheck)
-		if len(mrc20TrasferList) > 0 {
-			DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
-		}
-	}
+
 	//pin validator
+	mrc20TransferPinTx := make(map[string]struct{})
 	for _, pinNode := range pins {
 		err := validator(pinNode)
 		if err != nil {
@@ -351,6 +345,17 @@ func GetSaveData(chainName string, blockHeight int64) (
 		//mrc20 pin
 		if len(pinNode.Path) > 10 && pinNode.Path[0:10] == "/ft/mrc20/" {
 			mrc20List = append(mrc20List, pinNode)
+			if pinNode.Path == "/ft/mrc20/transfer" {
+				mrc20TransferPinTx[pinNode.GenesisTransaction] = struct{}{}
+			}
+		}
+	}
+	//check mrc20 transfer
+	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
+	if err == nil && len(mrc20transferCheck) > 0 {
+		mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(blockHeight, mrc20transferCheck, mrc20TransferPinTx)
+		if len(mrc20TrasferList) > 0 {
+			DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"manindexer/common"
 	"manindexer/mrc20"
 	"manindexer/pin"
 	"strconv"
@@ -46,6 +47,8 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		err = errors.New(mrc20.ErrMintTickIdNull)
 		return
 	}
+	//check if indexed
+
 	// if content.Pin == "" {
 	// 	err = errors.New(mrc20.ErrMintPinIdNull)
 	// 	return
@@ -66,9 +69,9 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	if info.Qual.Count == "" {
 		info.Qual.Count = "1"
 	}
-	count, _ := strconv.ParseInt(info.MintCount, 10, 64)
+	//count, _ := strconv.ParseInt(info.MintCount, 10, 64)
 	height, _ := strconv.ParseInt(info.Blockheight, 10, 64)
-	if info.TotalMinted >= count {
+	if info.TotalMinted >= (info.MintCount - info.PremineCount) {
 		err = errors.New(mrc20.ErrMintLimit)
 		return
 	}
@@ -100,16 +103,23 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		return
 	}
 	// fmt.Println(inputList)
-	pins, err := DbAdapter.GetPinListByOutPutList(inputList)
+	pinsTmp, err := DbAdapter.GetPinListByOutPutList(inputList)
 	//inputList := []string{content.Pin}
 	//pins, err := DbAdapter.GetPinListByIdList(inputList)
 	if err != nil {
 		log.Println("GetPinListByOutPutList:", err, inputList)
 		return
 	}
-	if len(pins) <= 0 {
+	if len(pinsTmp) <= 0 {
 		err = errors.New(mrc20.ErrMintPopNull)
 		return
+	}
+	var pins []*pin.PinInscription
+	for _, pinNode := range pinsTmp {
+		if pinNode.Operation == "hide" {
+			continue
+		}
+		pins = append(pins, pinNode)
 	}
 	// if pinNode.Address != pins[0].Address {
 	// 	err = errors.New(mrc20.ErrMintPinOwner)
@@ -123,11 +133,20 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	shovelsCount, _ := strconv.Atoi(info.Qual.Count)
 	shovelChcek := true
 	var lvShovelList []string
+	var creatorShovelList []string
 	if info.Qual.Lv != "" {
 		popLimit, _ := strconv.Atoi(info.Qual.Lv)
 		shovelChcek, lvShovelList = lvCheck(usedShovels, pins, shovelsCount, popLimit)
 		if !shovelChcek {
 			err = errors.New(mrc20.ErrMintPopDiff)
+			return
+		}
+	}
+	//creator check
+	if info.Qual.Creator != "" {
+		shovelChcek, creatorShovelList = creatorCheck(usedShovels, pins, shovelsCount, info.Qual.Creator)
+		if !shovelChcek {
+			err = errors.New(mrc20.ErrMintCreator)
 			return
 		}
 	}
@@ -142,6 +161,9 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	if len(lvShovelList) > 0 {
 		shovelList = append(shovelList, lvShovelList...)
 	}
+	if len(creatorShovelList) > 0 {
+		shovelList = append(shovelList, creatorShovelList...)
+	}
 	if len(pathShovelList) > 0 {
 		shovelList = append(shovelList, pathShovelList...)
 	}
@@ -155,6 +177,25 @@ func lvCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscriptio
 		}
 		find := countLeadingZeros(pinNode.Pop)
 		if find >= popLimit {
+			x += 1
+			shovelList = append(shovelList, pinNode.Id)
+		}
+		if x == shovelsCount {
+			break
+		}
+	}
+	if x >= shovelsCount {
+		verified = true
+	}
+	return
+}
+func creatorCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, creator string) (verified bool, shovelList []string) {
+	x := 0
+	for _, pinNode := range pins {
+		if _, ok := usedShovels[pinNode.Id]; ok {
+			continue
+		}
+		if common.GetMetaIdByAddress(pinNode.CreateAddress) == creator {
 			x += 1
 			shovelList = append(shovelList, pinNode.Id)
 		}
@@ -315,22 +356,25 @@ func countLeadingZeros(str string) int {
 	}
 	return count
 }
-func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinNode *pin.PinInscription) (toAddress map[int]string, utxoList []*mrc20.Mrc20Utxo, err error) {
+func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinNode *pin.PinInscription) (toAddress map[int]string, utxoList []*mrc20.Mrc20Utxo, outputValueList []int64, msg string, firstIdx int, err error) {
 	if len(content) <= 0 {
 		err = errors.New(mrc20.ErrTranferReqData)
+		msg = mrc20.ErrTranferReqData
 		return
 	}
 	outMap := make(map[string]int64)
 	maxVout := 0
 	for _, item := range content {
-		if item.Id == "" || item.Amount == 0 {
+		if item.Id == "" || item.Amount == "" {
 			err = errors.New(mrc20.ErrTranferReqData)
+			msg = mrc20.ErrTranferReqData
 			return
 		}
 		if maxVout < item.Vout {
 			maxVout = item.Vout
 		}
-		outMap[item.Id] += item.Amount
+		amt, _ := strconv.ParseInt(item.Amount, 10, 64)
+		outMap[item.Id] += amt
 	}
 
 	//get  mrc20 list in tx input
@@ -342,12 +386,14 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 	txb := tx.(*btcutil.Tx)
 	//check output
 	if maxVout > len(txb.MsgTx().TxOut) {
+		msg = "Incorrect number of outputs in the transfer transaction"
 		err = errors.New("valueErr")
 		return
 	}
 	for _, item := range content {
 		class, _, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[item.Vout].PkScript, ChainParams)
 		if class.String() == "nulldata" || class.String() == "nonstandard" {
+			msg = "Incorrect vout target for the transfer"
 			err = errors.New("valueErr")
 			return
 		}
@@ -359,7 +405,7 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 	}
 	list, err := DbAdapter.GetMrc20UtxoByOutPutList(inputList)
 	if err != nil {
-		log.Println("GetMrc20UtxoByOutPutList:", err)
+		//log.Println("GetMrc20UtxoByOutPutList:", err)
 		return
 	}
 	inMap := make(map[string]int64)
@@ -370,21 +416,28 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 	//if out list value error
 	for k, v := range outMap {
 		if in, ok := inMap[k]; ok {
-			if in != v {
+			if in < v {
+				msg = "The total input amount is less than the output"
 				err = errors.New("valueErr")
 				return
 			}
 		} else {
+			msg = "No available tick in the input"
 			err = errors.New("valueErr")
 			return
 		}
 	}
 	toAddress = make(map[int]string)
+	firstIdx = -1
 	for i, out := range txb.MsgTx().TxOut {
 		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams)
 		if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
 			toAddress[i] = addresses[0].String()
+			if firstIdx < 0 {
+				firstIdx = i
+			}
 		}
+		outputValueList = append(outputValueList, out.Value)
 	}
 	return
 }

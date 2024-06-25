@@ -28,6 +28,7 @@
                   <th scope="col">To</th>
                   <th scope="col">Amt</th>
                   <th scope="col">Option</th>
+                  <th scope="col">TxPoint</th>
                   <th scope="col">Status</th>
                   <th scope="col">Verify</th>
                   <th scope="col">Msg</th>
@@ -45,9 +46,12 @@
                     {{ $v.AmtChange }}
                   </td>
                   <td>
+                    {{ $v.MrcOption }}
+                  </td>
+                  <td>
                     <a style="text-decoration: underline;" href="/tx/{{ $v.Chain}}/{{$v.TxPoint | outpointToTxId}}"
                        target="_blank">
-                      {{ $v.MrcOption }}
+                      {{ $v.TxPoint | formatAddress }}
                     </a>
                   </td>
                   <td>
@@ -57,7 +61,7 @@
                     {{ $v.Verify }}
                   </td>
                   <td>
-                    {{ $v.ErrorMsg }}
+                    {{ $v.Msg }}
                   </td>
                 </tr>
                 {{ end }}

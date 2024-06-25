@@ -4,7 +4,7 @@ package respond
 var (
 	ErrParameterError = ApiError(404, "Parameter error.")
 	ErrServiceError   = ApiError(404, "service exception.")
-	ErrNoDataFound    = ApiError(100, "no data found.")
+	ErrNoDataFound    = ApiNullData(100, "no data found.")
 	ErrNoPinFound     = ApiError(100, "no pin found.")
 	ErrNoChildFound   = ApiError(100, "no child found.")
 	ErrNoNodeFound    = ApiError(100, "no node found.")
@@ -20,6 +20,9 @@ type ApiResponse struct {
 
 func ApiError(code int, msg string) (res *ApiResponse) {
 	return &ApiResponse{Code: code, Msg: msg}
+}
+func ApiNullData(code int, msg string) (res *ApiResponse) {
+	return &ApiResponse{Code: code, Msg: msg, Data: []string{}}
 }
 func ApiSuccess(code int, msg string, data interface{}) (res *ApiResponse) {
 	return &ApiResponse{Code: code, Msg: msg, Data: data}

@@ -12,5 +12,5 @@ type Indexer interface {
 	ZmqRun(chanMsg chan []*pin.PinInscription)
 	GetBlockTxHash(blockHeight int64) (txhashList []string)
 	ZmqHashblock()
-	CatchNativeMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo)
+	CatchNativeMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo, mrc20TransferPinTx map[string]struct{}) (savelist []*mrc20.Mrc20Utxo)
 }

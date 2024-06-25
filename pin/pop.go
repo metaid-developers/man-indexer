@@ -15,6 +15,11 @@ func PopLevelCount(chainName, pop string) (lv int, lastStr string) {
 	case "mvc":
 		PopCutNum = common.Config.Mvc.PopCutNum
 	}
+	if len(pop) < PopCutNum {
+		lv = -1
+		lastStr = pop
+		return
+	}
 	cnt := len(pop) - len(strings.TrimLeft(pop, "0"))
 	if cnt <= PopCutNum {
 		lv = -1

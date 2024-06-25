@@ -24,13 +24,18 @@
               <div class="pin-card height-200 blur shadow-blur">
                 <div class="pin-card-body">
                   <div class="number">#{{ $v.Tick }}</div>
-                  TickId: {{ $v.Mrc20Id }}<br />
-                  TokenName: {{ $v.TokenName }}<br />
-                  AmtPerMint: {{ $v.AmtPerMint }}<br />
-                  MintCount: {{ $v.MintCount }}<br />
-                  Blockheight: {{ $v.Blockheight }}<br />
-                  Qual: {{ $v.Qual }}<br />
-                  TotalMinted: {{ $v.TotalMinted }}
+                  <b>TickId: </b>{{ $v.Mrc20Id | formatAddress }}<br />
+                  <b>TokenName:</b> {{ $v.TokenName }}<br />
+                  <b>AmtPerMint:</b> {{ $v.AmtPerMint }}<br />
+                  <b>MintCount:</b> {{ $v.MintCount }}<br />
+                  <b>Blockheight:</b> {{ $v.Blockheight }}<br />
+                  <b>Qual:</b> {
+                  creator:"{{ $v.Qual.Creator }}",
+                  lvl:"{{ $v.Qual.Lv }}",
+                  count:"{{ $v.Qual.Count }}",
+                  path:"{{ $v.Qual.Path }}"
+                  }<br />
+                  <b>TotalMinted:</b> {{ $v.TotalMinted }}
                 </div>
               </div>
             </a>

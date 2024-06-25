@@ -1,14 +1,12 @@
 package mrc20
 
 import (
-	"fmt"
 	"regexp"
 )
 
 func PathParse(pathStr string) (path, query, key, operator, value string) {
 	regex := regexp.MustCompile(`^([^[]+)(\['.*'\])$`)
-	matches := regex.FindStringSubmatch(path)
-
+	matches := regex.FindStringSubmatch(pathStr)
 	if len(matches) != 3 {
 		return
 	}
@@ -16,7 +14,6 @@ func PathParse(pathStr string) (path, query, key, operator, value string) {
 	query = matches[2]
 	queryRegex := regexp.MustCompile(`\['([^']+)'(?:\s*(=|#=)\s*)'([^']+)'\]`)
 	queryMatches := queryRegex.FindStringSubmatch(query)
-	fmt.Println(queryMatches)
 	if len(queryMatches) != 4 {
 		return
 	}

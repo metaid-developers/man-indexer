@@ -35,9 +35,10 @@ func allTick(ctx *gin.Context) {
 		return
 	}
 	order := ctx.Query("order")
-	total, list, err := man.DbAdapter.GetMrc20TickPageList(cursor, size, order)
+	completed := ctx.Query("completed")
+	total, list, err := man.DbAdapter.GetMrc20TickPageList(cursor, size, order, completed)
 	if err != nil || list == nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
 			ctx.JSON(http.StatusOK, respond.ErrServiceError)
@@ -71,9 +72,12 @@ func getHistoryByAddress(ctx *gin.Context) {
 	}
 	tickId := ctx.Query("tickId")
 	address := ctx.Query("address")
-	list, total, err := man.DbAdapter.GetHistoryByAddress(tickId, address, cursor, size)
+	status := ctx.Query("status")
+	verify := ctx.Query("verify")
+
+	list, total, err := man.DbAdapter.GetHistoryByAddress(tickId, address, cursor, size, status, verify)
 	if err != nil || list == nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
 			ctx.JSON(http.StatusOK, respond.ErrServiceError)
@@ -96,7 +100,7 @@ func getHistoryById(ctx *gin.Context) {
 	tickId := ctx.Query("tickId")
 	list, total, err := man.DbAdapter.GetMrc20HistoryPageList(tickId, false, cursor, size)
 	if err != nil || list == nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
 			ctx.JSON(http.StatusOK, respond.ErrServiceError)
@@ -108,9 +112,19 @@ func getHistoryById(ctx *gin.Context) {
 
 func getBalanceByAddress(ctx *gin.Context) {
 	address := ctx.Param("address")
-	list, total, err := man.DbAdapter.GetMrc20BalanceByAddress(address)
+	cursor, err := strconv.ParseInt(ctx.Query("cursor"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
+	}
+	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
+	}
+	list, total, err := man.DbAdapter.GetMrc20BalanceByAddress(address, cursor, size)
 	if err != nil || list == nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
 			ctx.JSON(http.StatusOK, respond.ErrServiceError)
@@ -138,7 +152,7 @@ func getHistoryByTx(ctx *gin.Context) {
 	txId := ctx.Query("txId")
 	list, total, err := man.DbAdapter.GetHistoryByTx(txId, index, cursor, size)
 	if err != nil || list == nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
 			ctx.JSON(http.StatusOK, respond.ErrServiceError)
@@ -183,9 +197,9 @@ func getShovelListByAddress(ctx *gin.Context) {
 			}
 		}
 	}
-	list, total, err := man.DbAdapter.GetShovelListByAddress(address, lv, path, query, key, operator, value, cursor, size)
+	list, total, err := man.DbAdapter.GetShovelListByAddress(address, info.Qual.Creator, lv, path, query, key, operator, value, cursor, size)
 	if err != nil || list == nil {
-		if err == mongo.ErrNoDocuments {
+		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		} else {
 			ctx.JSON(http.StatusOK, respond.ErrServiceError)

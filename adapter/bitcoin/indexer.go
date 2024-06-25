@@ -82,7 +82,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 	}
 	return
 }
-func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
+func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo, mrc20TransferPinTx map[string]struct{}) (savelist []*mrc20.Mrc20Utxo) {
 	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
 	keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
 	for _, u := range utxoList {
@@ -95,7 +95,8 @@ func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*
 	t := block.Header.Timestamp.Unix()
 	for _, tx := range block.Transactions {
 		//if have data transfer
-		if tx.HasWitness() {
+		_, ok := mrc20TransferPinTx[tx.TxHash().String()]
+		if ok {
 			continue
 		}
 		for _, in := range tx.TxIn {
