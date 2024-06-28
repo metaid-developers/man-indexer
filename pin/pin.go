@@ -12,6 +12,7 @@ type PinInscription struct {
 	MetaId             string `json:"metaid"`
 	Address            string `json:"address"`
 	CreateAddress      string `json:"creator"`
+	CreateMetaId       string `json:"createMetaId"`
 	InitialOwner       string `json:"initialOwner"`
 	Output             string `json:"output"`
 	OutputValue        int64  `json:"outputValue"`
@@ -43,8 +44,9 @@ type PinInscription struct {
 	PopLv              int    `json:"popLv"`
 	ChainName          string `json:"chainName"`
 	DataValue          int    `json:"dataValue"`
-	Mrc20Minted        bool   `json:"mrc20Minted"`  //true Consumed
-	Mrc20MintPin       string `json:"mrc20MintPin"` //mrc20 mint pin id
+	//Mrc20Minted        bool   `json:"mrc20Minted"`  //true Consumed
+	//Mrc20MintPin       string `json:"mrc20MintPin"` //mrc20 mint pin id
+	Mrc20MintId []string `json:"mrc20MintId"`
 }
 type PinTransferInfo struct {
 	Address     string `json:"address"`

@@ -391,7 +391,7 @@ func mrc20List(ctx *gin.Context) {
 		return
 	}
 	cousor := (page - 1) * 100
-	_, list, err := man.DbAdapter.GetMrc20TickPageList(cousor, 100, "", "")
+	_, list, err := man.DbAdapter.GetMrc20TickPageList(cousor, 100, "", "", "")
 	if err != nil {
 		ctx.String(200, "fail")
 		return

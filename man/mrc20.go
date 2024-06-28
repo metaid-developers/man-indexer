@@ -7,9 +7,11 @@ import (
 	"manindexer/mrc20"
 	"manindexer/pin"
 	"strconv"
+	"strings"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/shopspring/decimal"
 )
 
 func Mrc20Handle(mrc20List []*pin.PinInscription) {
@@ -20,11 +22,20 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 	for _, pinNode := range mrc20List {
 		switch pinNode.Path {
 		case "/ft/mrc20/deploy":
-			mrc20Pin, info, err := CreateMrc20DeployPin(pinNode, &validator)
+			mrc20Pin, preMineUtxo, info, err := CreateMrc20DeployPin(pinNode, &validator)
 			if err == nil {
-				mrc20Pin.Chain = pinNode.ChainName
-				mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
-				deployList = append(deployList, info)
+				if mrc20Pin.Mrc20Id != "" {
+					mrc20Pin.Chain = pinNode.ChainName
+					mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
+				}
+
+				if preMineUtxo.Mrc20Id != "" {
+					mrc20UtxoList = append(mrc20UtxoList, preMineUtxo)
+				}
+				if info.Tick != "" && info.Mrc20Id != "" {
+					deployList = append(deployList, info)
+				}
+
 			}
 		case "/ft/mrc20/mint":
 			mrc20Pin, err := CreateMrc20MintPin(pinNode, &validator)
@@ -62,18 +73,45 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 	}
 }
 
-func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator) (mrc20Utxo mrc20.Mrc20Utxo, info mrc20.Mrc20DeployInfo, err error) {
+func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator) (mrc20Utxo mrc20.Mrc20Utxo, preMineUtxo mrc20.Mrc20Utxo, info mrc20.Mrc20DeployInfo, err error) {
 	var df mrc20.Mrc20Deploy
 	err = json.Unmarshal(pinNode.ContentBody, &df)
 	if err != nil {
+		return
+	}
+	premineCount := int64(0)
+	if df.PremineCount != "" {
+		premineCount, err = strconv.ParseInt(df.PremineCount, 10, 64)
+		if err != nil {
+			return
+		}
+	}
+	mintCount, err := strconv.ParseInt(df.MintCount, 10, 64)
+	if err != nil {
+		return
+	}
+
+	amtPerMint, err := strconv.ParseInt(df.AmtPerMint, 10, 64)
+	if err != nil {
+		return
+	}
+
+	//premineCount
+	if mintCount < premineCount {
+		return
+	}
+	premineAddress, pointValue, err1 := validator.Deploy(pinNode.ContentBody, pinNode)
+	if err1 != nil {
+		//mrc20Utxo.Verify = false
+		//mrc20Utxo.Msg = err1.Error()
 		return
 	}
 	info.Tick = df.Tick
 	info.TokenName = df.TokenName
 	info.Decimals = df.Decimals
 	info.AmtPerMint = df.AmtPerMint
-	info.PremineCount, _ = strconv.ParseInt(df.PremineCount, 10, 64)
-	info.MintCount, _ = strconv.ParseInt(df.MintCount, 10, 64)
+	info.PremineCount = premineCount
+	info.MintCount = mintCount
 	info.Blockheight = df.Blockheight
 	info.Metadata = df.Metadata
 	info.DeployType = df.DeployType
@@ -90,18 +128,32 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 	mrc20Utxo.PinId = pinNode.Id
 	mrc20Utxo.BlockHeight = pinNode.GenesisHeight
 	mrc20Utxo.MrcOption = "deploy"
-	mrc20Utxo.FromAddress = pinNode.Address
+	mrc20Utxo.FromAddress = pinNode.CreateAddress
 	mrc20Utxo.ToAddress = pinNode.Address
 	mrc20Utxo.TxPoint = pinNode.Output
 	mrc20Utxo.PinContent = string(pinNode.ContentBody)
 	mrc20Utxo.Timestamp = pinNode.Timestamp
 	mrc20Utxo.PointValue = pinNode.OutputValue
-	err1 := validator.Deploy(pinNode.ContentBody)
-	if err1 != nil {
-		mrc20Utxo.Verify = false
-		mrc20Utxo.Msg = err1.Error()
-	} else {
-		mrc20Utxo.Verify = true
+	mrc20Utxo.Verify = true
+
+	if premineAddress != "" && premineCount > 0 {
+		preMineUtxo.Verify = true
+		//preMineUtxo.PinId = pinNode.Id
+		preMineUtxo.BlockHeight = pinNode.GenesisHeight
+		preMineUtxo.MrcOption = "pre-mint"
+		preMineUtxo.FromAddress = pinNode.Address
+		preMineUtxo.ToAddress = premineAddress
+		preMineUtxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, 1)
+		//mrc20Utxo.PinContent = string(pinNode.ContentBody)
+		preMineUtxo.Timestamp = pinNode.Timestamp
+		preMineUtxo.PointValue = pointValue
+		preMineUtxo.Mrc20Id = info.Mrc20Id
+		preMineUtxo.Tick = info.Tick
+		preMineUtxo.Chain = pinNode.ChainName
+		//preMineUtxo.AmtChange = premineCount * amtPerMint
+		num := strconv.FormatInt(premineCount*amtPerMint, 10)
+		preMineUtxo.AmtChange, _ = decimal.NewFromString(num)
+		info.TotalMinted = premineCount
 	}
 	return
 }
@@ -132,9 +184,12 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 		mrc20Utxo.Verify = false
 		mrc20Utxo.Msg = err1.Error()
 	} else {
-		DbAdapter.AddMrc20Shovel(shovelList, pinNode.Id)
+		if len(shovelList) > 0 {
+			DbAdapter.AddMrc20Shovel(shovelList, pinNode.Id, mrc20Utxo.Mrc20Id)
+		}
 		DbAdapter.UpdateMrc20TickInfo(info.Mrc20Id, info.TotalMinted+1)
-		mrc20Utxo.AmtChange, _ = strconv.ParseInt(info.AmtPerMint, 10, 64)
+		//mrc20Utxo.AmtChange, _ = strconv.ParseInt(info.AmtPerMint, 10, 64)
+		mrc20Utxo.AmtChange, _ = decimal.NewFromString(info.AmtPerMint)
 	}
 
 	return
@@ -178,18 +233,20 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 	// }
 	address := make(map[string]string)
 	name := make(map[string]string)
-	inputAmtMap := make(map[string]int64)
+	inputAmtMap := make(map[string]decimal.Decimal)
 
 	for _, utxo := range utxoList {
 		address[utxo.Mrc20Id] = utxo.ToAddress
 		name[utxo.Mrc20Id] = utxo.Tick
 		//Spent the input UTXO
-		amt := utxo.AmtChange * -1
+		//amt := utxo.AmtChange * -1
+		amt := utxo.AmtChange.Mul(decimal.NewFromInt(-1))
 		mrc20Utxo := mrc20.Mrc20Utxo{TxPoint: utxo.TxPoint, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1, AmtChange: amt}
 		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
-		inputAmtMap[utxo.Mrc20Id] += utxo.AmtChange
+		//inputAmtMap[utxo.Mrc20Id] += utxo.AmtChange
+		inputAmtMap[utxo.Mrc20Id] = inputAmtMap[utxo.Mrc20Id].Add(utxo.AmtChange)
 	}
-	outputAmtMap := make(map[string]int64)
+	outputAmtMap := make(map[string]decimal.Decimal)
 	x := 0
 	for _, item := range content {
 		mrc20Utxo := mrc20.Mrc20Utxo{}
@@ -206,19 +263,25 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 		mrc20Utxo.PinContent = string(pinNode.ContentBody)
 		mrc20Utxo.Index = x
 		mrc20Utxo.PointValue = outputValueList[item.Vout]
-		mrc20Utxo.AmtChange, _ = strconv.ParseInt(item.Amount, 10, 64)
-		outputAmtMap[item.Id] += mrc20Utxo.AmtChange
+		//mrc20Utxo.AmtChange, _ = strconv.ParseInt(item.Amount, 10, 64)
+		mrc20Utxo.AmtChange, _ = decimal.NewFromString(item.Amount)
+		//outputAmtMap[item.Id] += mrc20Utxo.AmtChange
+		outputAmtMap[item.Id] = outputAmtMap[item.Id].Add(mrc20Utxo.AmtChange)
 		mrc20Utxo.Timestamp = pinNode.Timestamp
 		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
 		x += 1
 	}
 	//Check if the input exceeds the output.
 	for id, inputAmt := range inputAmtMap {
-		if inputAmt > outputAmtMap[id] {
+		//inputAmt > outputAmtMap[id]
+		if inputAmt.Compare(outputAmtMap[id]) == 1 {
 			find := false
 			for _, utxo := range mrc20UtxoList {
-				if utxo.Mrc20Id == id && utxo.ToAddress == toAddress[0] {
-					utxo.AmtChange += (inputAmt - outputAmtMap[id])
+				vout := strings.Split(utxo.TxPoint, ":")[1]
+				if utxo.Mrc20Id == id && utxo.ToAddress == toAddress[0] && vout == "0" {
+					//utxo.AmtChange += (inputAmt - outputAmtMap[id])
+					diff := inputAmt.Sub(outputAmtMap[id])
+					utxo.AmtChange = utxo.AmtChange.Add(diff)
 					utxo.Msg = "The total input amount is greater than the output amount"
 					find = true
 				}
@@ -241,7 +304,8 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 			mrc20Utxo.PointValue = outputValueList[firstIdx]
 			mrc20Utxo.PinContent = string(pinNode.ContentBody)
 			mrc20Utxo.Index = x
-			mrc20Utxo.AmtChange = inputAmt - outputAmtMap[id]
+			//mrc20Utxo.AmtChange = inputAmt - outputAmtMap[id]
+			mrc20Utxo.AmtChange = inputAmt.Sub(outputAmtMap[id])
 			mrc20Utxo.Msg = "The total input amount is greater than the output amount"
 			mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
 			x += 1
@@ -284,11 +348,13 @@ func sendAllAmountToFirstOutput(pinNode *pin.PinInscription, msg string) (mrc20U
 	utxoList := make(map[string]*mrc20.Mrc20Utxo)
 	for _, item := range list {
 		//Spent the input UTXO
-		amt := item.AmtChange * -1
+		//amt := item.AmtChange * -1
+		amt := item.AmtChange.Neg()
 		mrc20Utxo := mrc20.Mrc20Utxo{TxPoint: item.TxPoint, Index: item.Index, Mrc20Id: item.Mrc20Id, Verify: true, Status: -1, AmtChange: amt}
 		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
 		if v, ok := utxoList[item.Mrc20Id]; ok {
-			v.AmtChange += item.AmtChange
+			//v.AmtChange += item.AmtChange
+			v.AmtChange = v.AmtChange.Add(item.AmtChange)
 		} else {
 			utxoList[item.Mrc20Id] = &mrc20.Mrc20Utxo{
 				Mrc20Id:     item.Mrc20Id,

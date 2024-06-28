@@ -164,6 +164,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				pop, _ = common.GenPop(id, merkleRoot, blockHash)
 			}
 			popLv, _ := pin.PopLevelCount(indexer.ChainName, pop)
+			creator := chain.GetCreatorAddress(msgTx.TxIn[0].PreviousOutPoint.Hash.String(), msgTx.TxIn[0].PreviousOutPoint.Index, indexer.ChainParams)
 			pinInscriptions = append(pinInscriptions, &pin.PinInscription{
 				//Pin:                pinInscription,
 				ChainName:          indexer.ChainName,
@@ -172,7 +173,8 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				Number:             0,
 				Address:            address,
 				InitialOwner:       address,
-				CreateAddress:      chain.GetCreatorAddress(msgTx.TxIn[0].PreviousOutPoint.Hash.String(), msgTx.TxIn[0].PreviousOutPoint.Index, indexer.ChainParams),
+				CreateAddress:      creator,
+				CreateMetaId:       common.GetMetaIdByAddress(creator),
 				Timestamp:          timestamp,
 				GenesisHeight:      blockHeight,
 				GenesisTransaction: txHash,
@@ -196,6 +198,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				Pop:                pop,
 				PopLv:              popLv,
 				DataValue:          pin.RarityScoreBinary(indexer.ChainName, pop),
+				Mrc20MintId:        []string{},
 			})
 			haveOpReturn = true
 			break
@@ -406,7 +409,8 @@ func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*
 					key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
 					_, find := keyMap[key]
 					if find {
-						keyMap[key].AmtChange += send.AmtChange
+						//keyMap[key].AmtChange += send.AmtChange
+						keyMap[key].AmtChange = keyMap[key].AmtChange.Add(send.AmtChange)
 					} else {
 						recive := *utxo
 						recive.MrcOption = "native-transfer"

@@ -1,44 +1,52 @@
 package mrc20
 
+import (
+	"github.com/shopspring/decimal"
+)
+
 const (
-	ErrDeployContent     = "deploy content format error, it needs to be a JSON string"
-	ErrDeployTickLength  = "the length must be between 2 and 24"
-	ErrDeployTickExists  = "tick already exists"
-	ErrCrossChain        = "cross-chain operations are currently not allowed"
-	ErrMintTickNotExists = "tick not exists"
-	ErrMintLimit         = "minting capacity reached"
-	ErrMintHeight        = "current block height is too low"
-	ErrMintPopNull       = "shovel is none"
-	ErrMintPopDiff       = "pop level check failed"
-	ErrMintCreator       = "creator check failed"
-	ErrMintPathCheck     = "shovel path check failed"
-	ErrMintCountCheck    = "shovel count check failed"
-	ErrMintTickIdNull    = "tickId is null"
-	ErrMintPinIdNull     = "pin is null"
-	ErrMintPinOwner      = "not have the right to use this PIN"
-	ErrTranferReqData    = "transfer data error"
-	ErrTranferBalnceErr  = "transfer balance error"
-	ErrTranferBalnceLess = "insufficient balance for transfer"
+	ErrDeployContent        = "deploy content format error, it needs to be a JSON string"
+	ErrDeployTickLength     = "the length must be between 2 and 24"
+	ErrDeployTickNameLength = "the length must be between 1 and 48"
+	ErrDeployNum            = "incorrect deployment parameters"
+	ErrDeployTxGet          = "failed to retrieve transaction information"
+	ErrDeployTickExists     = "tick already exists"
+	ErrCrossChain           = "cross-chain operations are currently not allowed"
+	ErrMintTickNotExists    = "tick not exists"
+	ErrMintLimit            = "minting capacity reached"
+	ErrMintHeight           = "current block height is too low"
+	ErrMintPopNull          = "shovel is none"
+	ErrMintPopDiff          = "pop level check failed"
+	ErrMintCreator          = "creator check failed"
+	ErrMintPathCheck        = "shovel path check failed"
+	ErrMintCountCheck       = "shovel count check failed"
+	ErrMintTickIdNull       = "tickId is null"
+	ErrMintDecimals         = "decimals error"
+	ErrMintPinIdNull        = "pin is null"
+	ErrMintPinOwner         = "not have the right to use this PIN"
+	ErrTranferReqData       = "transfer data error"
+	ErrTranferBalnceErr     = "transfer balance error"
+	ErrTranferBalnceLess    = "insufficient balance for transfer"
 )
 
 type Mrc20Utxo struct {
-	Tick        string `json:"tick"`
-	Mrc20Id     string `json:"mrc20Id"`
-	TxPoint     string `json:"txPoint"`
-	PointValue  int64  `json:"pointValue"`
-	PinId       string `json:"pinId"`
-	PinContent  string `json:"pinContent"`
-	Verify      bool   `json:"verify"`
-	BlockHeight int64  `json:"blockHeight"`
-	MrcOption   string `json:"mrcOption"`
-	FromAddress string `json:"fromAddress"`
-	ToAddress   string `json:"toAddress"`
-	Msg         string `json:"msg"`
-	AmtChange   int64  `json:"amtChange"`
-	Status      int    `json:"status"`
-	Chain       string `json:"chain"`
-	Index       int    `json:"index"`
-	Timestamp   int64  `json:"timestamp"`
+	Tick        string          `json:"tick"`
+	Mrc20Id     string          `json:"mrc20Id"`
+	TxPoint     string          `json:"txPoint"`
+	PointValue  int64           `json:"pointValue"`
+	PinId       string          `json:"pinId"`
+	PinContent  string          `json:"pinContent"`
+	Verify      bool            `json:"verify"`
+	BlockHeight int64           `json:"blockHeight"`
+	MrcOption   string          `json:"mrcOption"`
+	FromAddress string          `json:"fromAddress"`
+	ToAddress   string          `json:"toAddress"`
+	Msg         string          `json:"msg"`
+	AmtChange   decimal.Decimal `json:"amtChange"`
+	Status      int             `json:"status"`
+	Chain       string          `json:"chain"`
+	Index       int             `json:"index"`
+	Timestamp   int64           `json:"timestamp"`
 }
 type Mrc20DeployQual struct {
 	Creator string `json:"creator"`
@@ -94,7 +102,7 @@ type Mrc20TranferData struct {
 	Id     string `json:"id"`
 }
 type Mrc20Balance struct {
-	Id      string `json:"id"`
-	Name    string `json:"name"`
-	Balance int64  `json:"balance"`
+	Id      string          `json:"id"`
+	Name    string          `json:"name"`
+	Balance decimal.Decimal `json:"balance"`
 }

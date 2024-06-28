@@ -21,6 +21,7 @@ func mrc20JsonApi(r *gin.Engine) {
 	mrc20Group.GET("/address/balance/:address", getBalanceByAddress)
 	mrc20Group.GET("/tx/history", getHistoryByTx)
 	mrc20Group.GET("/address/shovel/list", getShovelListByAddress)
+	mrc20Group.GET("/shovel/used", getUsedShovelListByTickId)
 }
 
 func allTick(ctx *gin.Context) {
@@ -36,7 +37,8 @@ func allTick(ctx *gin.Context) {
 	}
 	order := ctx.Query("order")
 	completed := ctx.Query("completed")
-	total, list, err := man.DbAdapter.GetMrc20TickPageList(cursor, size, order, completed)
+	orderType := ctx.Query("orderType")
+	total, list, err := man.DbAdapter.GetMrc20TickPageList(cursor, size, order, completed, orderType)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
@@ -195,9 +197,12 @@ func getShovelListByAddress(ctx *gin.Context) {
 			if key == "" && operator == "" && value == "" {
 				query = query[2 : len(query)-2]
 			}
+		} else if path == "" {
+			path = info.Qual.Path
 		}
 	}
-	list, total, err := man.DbAdapter.GetShovelListByAddress(address, info.Qual.Creator, lv, path, query, key, operator, value, cursor, size)
+
+	list, total, err := man.DbAdapter.GetShovelListByAddress(address, tickId, info.Qual.Creator, lv, path, query, key, operator, value, cursor, size)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
@@ -209,4 +214,29 @@ func getShovelListByAddress(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": list, "total": total}))
 
 	//ctx.String(200, "ok")
+}
+func getUsedShovelListByTickId(ctx *gin.Context) {
+	cursor, err := strconv.ParseInt(ctx.Query("cursor"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
+	}
+	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
+	}
+	address := ctx.Query("address")
+	tickId := ctx.Query("tickId")
+	list, total, err := man.DbAdapter.GetUsedShovelIdListByAddress(address, tickId, cursor, size)
+	if err != nil || list == nil {
+		if err == mongo.ErrNoDocuments || len(list) == 0 {
+			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
+		} else {
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
+		}
+		return
+	}
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": list, "total": total}))
+
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/shopspring/decimal"
 )
 
 type Mrc20Validator struct {
@@ -21,27 +22,79 @@ type Mrc20Validator struct {
 func (validator *Mrc20Validator) Check(pinNode *pin.PinInscription) {
 
 }
-func (validator *Mrc20Validator) Deploy(content []byte) error {
+func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscription) (string, int64, error) {
 	var data mrc20.Mrc20Deploy
 	err := json.Unmarshal(content, &data)
 	if err != nil {
-		return errors.New(mrc20.ErrDeployContent)
+		return "", 0, errors.New(mrc20.ErrDeployContent)
 	}
 	if len(data.Tick) < 2 || len(data.Tick) > 24 {
-		return errors.New(mrc20.ErrDeployTickLength)
+		return "", 0, errors.New(mrc20.ErrDeployTickLength)
 	}
-	/*
-		info, err := DbAdapter.GetMrc20TickInfo(strings.ToLower(data.Tick))
-		if err != nil {
-			log.Println("GetMrc20TickInfo:", err)
-		}
-		if info != (mrc20.Mrc20DeployInfo{}) {
-			return errors.New(mrc20.ErrDeployTickExists)
-		}
-	*/
-	return nil
-}
+	if len(data.TokenName) < 1 || len(data.TokenName) > 48 {
+		return "", 0, errors.New(mrc20.ErrDeployTickNameLength)
+	}
 
+	decimals, err := strconv.ParseInt(data.Decimals, 10, 64)
+	if err != nil {
+		return "", 0, err
+	}
+	if decimals < 0 || decimals > 12 {
+		return "", 0, errors.New(mrc20.ErrDeployNum)
+	}
+
+	amtPerMint, err := strconv.ParseInt(data.AmtPerMint, 10, 64)
+	if err != nil {
+		return "", 0, err
+	}
+	if amtPerMint < 1 || amtPerMint > 1000000000000 {
+		return "", 0, errors.New(mrc20.ErrDeployNum)
+	}
+
+	mintCount, err := strconv.ParseInt(data.MintCount, 10, 64)
+	if err != nil {
+		return "", 0, err
+	}
+	if mintCount < 1 || mintCount > 1000000000000 {
+		return "", 0, errors.New(mrc20.ErrDeployNum)
+	}
+
+	premineCount := int64(0)
+	if data.PremineCount != "" {
+		premineCount, err = strconv.ParseInt(data.PremineCount, 10, 64)
+		if err != nil {
+			return "", 0, err
+		}
+	}
+	if premineCount <= 0 {
+		return "", 0, nil
+	}
+	t := getDigitsCount(amtPerMint*mintCount) + decimals
+	if t > 20 {
+		return "", 0, errors.New(mrc20.ErrDeployNum)
+	}
+	tx, err := ChainAdapter[pinNode.ChainName].GetTransaction(pinNode.GenesisTransaction)
+	if err != nil {
+		return "", 0, errors.New(mrc20.ErrDeployTxGet)
+	}
+	txb := tx.(*btcutil.Tx)
+	//premineCount check
+	if len(txb.MsgTx().TxOut) < 2 {
+		return "", 0, errors.New("tx error")
+	}
+	if pinNode.Offset != 0 {
+		return "", 0, errors.New("tx error")
+	}
+	toAddress := ""
+	class, addresses, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[1].PkScript, ChainParams)
+	if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
+		toAddress = addresses[0].String()
+	}
+	return toAddress, txb.MsgTx().TxOut[1].Value, nil
+}
+func getDigitsCount(n int64) int64 {
+	return int64(len(strconv.FormatInt(n, 10)))
+}
 func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.PinInscription) (info mrc20.Mrc20DeployInfo, shovelList []string, err error) {
 	if content.Id == "" {
 		err = errors.New(mrc20.ErrMintTickIdNull)
@@ -66,8 +119,8 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		err = errors.New(mrc20.ErrCrossChain)
 		return
 	}
-	if info.Qual.Count == "" {
-		info.Qual.Count = "1"
+	if info.Qual.Count == "" || info.Qual.Count == "0" {
+		return
 	}
 	//count, _ := strconv.ParseInt(info.MintCount, 10, 64)
 	height, _ := strconv.ParseInt(info.Blockheight, 10, 64)
@@ -129,7 +182,12 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	for _, pinNode := range pins {
 		pinIds = append(pinIds, pinNode.Id)
 	}
-	usedShovels, err := DbAdapter.GetMrc20Shovel(pinIds)
+	if len(pinIds) <= 0 {
+		err = errors.New(mrc20.ErrMintPopNull)
+		return
+	}
+	usedShovels, err := DbAdapter.GetMrc20Shovel(pinIds, content.Id)
+
 	shovelsCount, _ := strconv.Atoi(info.Qual.Count)
 	shovelChcek := true
 	var lvShovelList []string
@@ -150,11 +208,20 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 			return
 		}
 	}
+
 	var pathShovelList []string
 	if info.Qual.Path != "" {
 		shovelChcek, pathShovelList = pathCheck(usedShovels, pins, shovelsCount, info.Qual.Path)
 		if !shovelChcek {
 			err = errors.New(mrc20.ErrMintPathCheck)
+			return
+		}
+	}
+	var countShovelList []string
+	if info.Qual.Creator == "" && info.Qual.Lv == "" && info.Qual.Path == "" {
+		shovelChcek, countShovelList = onlyCountCheck(usedShovels, pins, shovelsCount)
+		if !shovelChcek {
+			err = errors.New(mrc20.ErrMintCountCheck)
 			return
 		}
 	}
@@ -166,6 +233,9 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	}
 	if len(pathShovelList) > 0 {
 		shovelList = append(shovelList, pathShovelList...)
+	}
+	if len(countShovelList) > 0 {
+		shovelList = append(shovelList, countShovelList...)
 	}
 	return
 }
@@ -345,6 +415,23 @@ func contentPathCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinI
 	}
 	return
 }
+func onlyCountCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int) (verified bool, shovelList []string) {
+	x := 0
+	for _, pinNode := range pins {
+		if _, ok := usedShovels[pinNode.Id]; ok {
+			continue
+		}
+		x += 1
+		shovelList = append(shovelList, pinNode.Id)
+		if x == shovelsCount {
+			break
+		}
+	}
+	if x >= shovelsCount {
+		verified = true
+	}
+	return
+}
 func countLeadingZeros(str string) int {
 	count := 0
 	for _, char := range str {
@@ -362,7 +449,7 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 		msg = mrc20.ErrTranferReqData
 		return
 	}
-	outMap := make(map[string]int64)
+	outMap := make(map[string]decimal.Decimal)
 	maxVout := 0
 	for _, item := range content {
 		if item.Id == "" || item.Amount == "" {
@@ -373,8 +460,23 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 		if maxVout < item.Vout {
 			maxVout = item.Vout
 		}
-		amt, _ := strconv.ParseInt(item.Amount, 10, 64)
-		outMap[item.Id] += amt
+		//amt, _ := strconv.ParseInt(item.Amount, 10, 64)
+		amt, _ := decimal.NewFromString(item.Amount)
+		outMap[item.Id] = outMap[item.Id].Add(amt)
+
+		tick, err1 := DbAdapter.GetMrc20TickInfo(item.Id)
+		if err1 != nil {
+			err = errors.New(mrc20.ErrMintTickIdNull)
+			msg = mrc20.ErrMintTickIdNull
+			return
+		}
+		decimals, _ := strconv.ParseInt(tick.Decimals, 10, 64)
+		if getDecimalPlaces(item.Amount) > decimals {
+			err = errors.New(mrc20.ErrMintDecimals)
+			msg = mrc20.ErrMintDecimals
+			return
+		}
+
 	}
 
 	//get  mrc20 list in tx input
@@ -408,15 +510,16 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 		//log.Println("GetMrc20UtxoByOutPutList:", err)
 		return
 	}
-	inMap := make(map[string]int64)
+	inMap := make(map[string]decimal.Decimal)
 	for _, item := range list {
-		inMap[item.Mrc20Id] += item.AmtChange
+		inMap[item.Mrc20Id] = inMap[item.Mrc20Id].Add(item.AmtChange)
 		utxoList = append(utxoList, item)
 	}
 	//if out list value error
 	for k, v := range outMap {
 		if in, ok := inMap[k]; ok {
-			if in < v {
+			//in < v
+			if in.Compare(v) == -1 {
 				msg = "The total input amount is less than the output"
 				err = errors.New("valueErr")
 				return
@@ -436,21 +539,31 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 			if firstIdx < 0 {
 				firstIdx = i
 			}
+		} else {
+			toAddress[i] = "nonexistent"
 		}
 		outputValueList = append(outputValueList, out.Value)
 	}
 	return
 }
-func getBalanceByaddressAndTick(address string, tickId string) (blance int64, tick string, err error) {
+func getDecimalPlaces(str string) int64 {
+	if dotIndex := strings.IndexByte(str, '.'); dotIndex != -1 {
+		return int64(len(str) - dotIndex - 1)
+	}
+	return int64(0)
+}
+func getBalanceByaddressAndTick(address string, tickId string) (blance decimal.Decimal, tick string, err error) {
 	list, err := DbAdapter.GetMrc20ByAddressAndTick(address, tickId)
 	if err != nil {
 		return
 	}
 	for _, item := range list {
-		if item.AmtChange == 0 {
+		//item.AmtChange == 0
+		if item.AmtChange.Compare(decimal.Zero) == 0 {
 			continue
 		}
-		blance += item.AmtChange
+		//blance += item.AmtChange
+		blance = blance.Add(item.AmtChange)
 		if tick == "" {
 			tick = item.Tick
 		}

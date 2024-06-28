@@ -10,7 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -43,7 +45,7 @@ func (mg *Mongodb) SaveMrc20Tick(data []mrc20.Mrc20DeployInfo) (err error) {
 	_, err = mongoClient.Collection(Mrc20TickCollection).InsertMany(context.TODO(), list, &option)
 	return
 }
-func (mg *Mongodb) GetMrc20TickPageList(cursor int64, size int64, order string, completed string) (total int64, list []mrc20.Mrc20DeployInfo, err error) {
+func (mg *Mongodb) GetMrc20TickPageList(cursor int64, size int64, order string, completed string, orderType string) (total int64, list []mrc20.Mrc20DeployInfo, err error) {
 	//cursor := (page - 1) * size
 	if order == "" {
 		order = "pinnumber"
@@ -54,7 +56,11 @@ func (mg *Mongodb) GetMrc20TickPageList(cursor int64, size int64, order string, 
 	} else if completed == "false" {
 		filter = bson.M{"$expr": bson.M{"$gt": []string{"$mintcount", "$totalminted"}}}
 	}
-	opts := options.Find().SetSort(bson.D{{Key: order, Value: -1}}).SetSkip(cursor).SetLimit(size)
+	sortNum := -1
+	if orderType == "asc" {
+		sortNum = 1
+	}
+	opts := options.Find().SetSort(bson.D{{Key: order, Value: sortNum}}).SetSkip(cursor).SetLimit(size)
 	result, err := mongoClient.Collection(Mrc20TickCollection).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return
@@ -66,21 +72,21 @@ func (mg *Mongodb) GetMrc20TickPageList(cursor int64, size int64, order string, 
 	total, err = mongoClient.Collection(Mrc20TickCollection).CountDocuments(context.TODO(), filter)
 	return
 }
-func (mg *Mongodb) AddMrc20Shovel(shovelList []string, pinId string) (err error) {
+func (mg *Mongodb) AddMrc20Shovel(shovelList []string, pinId string, mrc20Id string) (err error) {
 	var models []mongo.WriteModel
 	for _, id := range shovelList {
 		filter := bson.D{{Key: "id", Value: id}}
 		var updateInfo bson.D
-		updateInfo = append(updateInfo, bson.E{Key: "mrc20minted", Value: true})
-		updateInfo = append(updateInfo, bson.E{Key: "mrc20mintpin", Value: pinId})
-		update := bson.D{{Key: "$set", Value: updateInfo}}
+		//updateInfo = append(updateInfo, bson.E{Key: "mrc20minted", Value: true})
+		//updateInfo = append(updateInfo, bson.E{Key: "mrc20mintpin", Value: pinId})
+		updateInfo = append(updateInfo, bson.E{Key: "mrc20mintid", Value: mrc20Id})
+		update := bson.D{{Key: "$push", Value: updateInfo}}
 		m := mongo.NewUpdateOneModel()
 		m.SetFilter(filter).SetUpdate(update)
 		models = append(models, m)
 	}
 	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
 	_, err = mongoClient.Collection(PinsCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
-
 	return
 
 	// var list []interface{}
@@ -92,8 +98,8 @@ func (mg *Mongodb) AddMrc20Shovel(shovelList []string, pinId string) (err error)
 	// _, err = mongoClient.Collection(Mrc20MintShovel).InsertMany(context.TODO(), list, &option)
 	// return
 }
-func (mg *Mongodb) GetMrc20Shovel(shovels []string) (data map[string]mrc20.Mrc20Shovel, err error) {
-	filter := bson.M{"id": bson.M{"$in": shovels}, "mrc20minted": true}
+func (mg *Mongodb) GetMrc20Shovel(shovels []string, mrc20Id string) (data map[string]mrc20.Mrc20Shovel, err error) {
+	filter := bson.M{"id": bson.M{"$in": shovels}, "mrc20mintid": bson.M{"$in": bson.A{mrc20Id}}}
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter)
 	data = make(map[string]mrc20.Mrc20Shovel)
 	if err != nil {
@@ -285,7 +291,9 @@ func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size i
 	var idList []string
 	for _, result := range results {
 		idList = append(idList, result["_id"].(string))
-		b := mrc20.Mrc20Balance{Id: result["_id"].(string), Balance: result["total"].(int64)}
+		balance := result["total"].(primitive.Decimal128)
+		balanceDecimal, _ := decimal.NewFromString(balance.String())
+		b := mrc20.Mrc20Balance{Id: result["_id"].(string), Balance: balanceDecimal}
 		//fmt.Printf("Category: %v, Total: %v\n", result["_id"], result["total"])
 		list = append(list, b)
 	}
@@ -345,13 +353,15 @@ func (mg *Mongodb) GetHistoryByTx(txId string, index int64, cursor int64, size i
 	total, err = mongoClient.Collection(Mrc20UtxoCollection).CountDocuments(context.TODO(), filter)
 	return
 }
-func (mg *Mongodb) GetShovelListByAddress(address string, creator string, lv int, path, query, key, operator, value string, cursor int64, size int64) (list []*pin.PinInscription, total int64, err error) {
+func (mg *Mongodb) GetShovelListByAddress(address string, mrc20Id string, creator string, lv int, path, query, key, operator, value string, cursor int64, size int64) (list []*pin.PinInscription, total int64, err error) {
 	//fmt.Println(lv, path, query, key, operator, value)
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetSkip(cursor).SetLimit(size)
 	//filter := bson.M{"txpoint": txpoint}
 	filter := bson.D{
 		{Key: "address", Value: address},
-		{Key: "mrc20minted", Value: false},
+		{Key: "mrc20mintid", Value: bson.D{
+			{Key: "$nin", Value: bson.A{mrc20Id}},
+		}},
 		{Key: "operation", Value: bson.D{
 			{Key: "$ne", Value: "hide"},
 		}},
@@ -360,8 +370,9 @@ func (mg *Mongodb) GetShovelListByAddress(address string, creator string, lv int
 		filter = append(filter, bson.E{Key: "poplv", Value: bson.D{{Key: "$gte", Value: lv}}})
 	}
 	if creator != "" {
-		filter = append(filter, bson.E{Key: "createaddress", Value: creator})
+		filter = append(filter, bson.E{Key: "createmetaid", Value: creator})
 	}
+
 	if key != "" && operator != "" && value != "" {
 		protocols := strings.ReplaceAll(path, "/protocols", "")
 		idList, err1 := getPinIdInProtocols(strings.ToLower(protocols), key, value)
@@ -378,7 +389,15 @@ func (mg *Mongodb) GetShovelListByAddress(address string, creator string, lv int
 		}
 		filter = append(filter, bson.E{Key: "id", Value: pinId})
 	} else if path != "" {
-		filter = append(filter, bson.E{Key: "path", Value: path})
+		pathArr := strings.Split(path, "/")
+		//Wildcard
+		if pathArr[len(pathArr)-1] == "*" {
+			path = path[0 : len(path)-2]
+			filter = append(filter, bson.E{Key: "path", Value: bson.D{{Key: "$regex", Value: "^" + path}}})
+		} else {
+			filter = append(filter, bson.E{Key: "path", Value: path})
+		}
+
 	}
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -415,5 +434,31 @@ func getFollowPinId(metaid string, address string) (pinId string, err error) {
 		return
 	}
 	pinId = f.FollowPinId
+	return
+}
+
+func (mg *Mongodb) GetUsedShovelIdListByAddress(address string, tickId string, cursor int64, size int64) (list []*string, total int64, err error) {
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetSkip(cursor).SetLimit(size)
+	projection := bson.D{
+		{Key: "_id", Value: 0},
+		{Key: "id", Value: 1},
+	}
+	opts.SetProjection(projection)
+	//filter := bson.M{"address": address, "mrc20mintid": tickId}
+	filter := bson.M{"mrc20mintid": tickId}
+	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return
+	}
+	var rr []bson.M
+	err = result.All(context.TODO(), &rr)
+	if err != nil {
+		return
+	}
+	for _, item := range rr {
+		s := item["id"].(string)
+		list = append(list, &s)
+	}
+	total, err = mongoClient.Collection(PinsCollection).CountDocuments(context.TODO(), filter)
 	return
 }

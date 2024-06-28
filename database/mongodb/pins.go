@@ -167,9 +167,19 @@ func (mg *Mongodb) GetPinListByAddress(address string, addressType string, curso
 	if addressType == "creator" {
 		addStr = "createaddress"
 	}
-	filter := bson.M{addStr: address, "status": 0}
+	// filter := bson.M{addStr: address, "status": 0}
+	// if path != "" {
+	// 	filter = bson.M{addStr: address, "status": 0, "originalpath": path}
+	// }
+	filter := bson.D{
+		{Key: addStr, Value: address},
+		{Key: "status", Value: 0},
+		{Key: "operation", Value: bson.D{
+			{Key: "$ne", Value: "hide"},
+		}},
+	}
 	if path != "" {
-		filter = bson.M{addStr: address, "status": 0, "originalpath": path}
+		filter = append(filter, bson.E{Key: "originalpath", Value: path})
 	}
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter, opts)
 	if err != nil {

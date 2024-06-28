@@ -73,6 +73,19 @@
       <div>
 
       </div>
+      <div style="margin-left: 40px;font-size: 18px;margin-bottom: 20px;">
+        {{if eq .PrePage 0}}
+        Prev
+        {{else}}
+        <a href="/mrc20/history/{{.Tick}}/{{.PrePage}}" class="link">Prev</a>
+        {{end}}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        {{if eq .NextPage 0}}
+        Next
+        {{else}}
+        <a href="/mrc20/history/{{.Tick}}/{{.NextPage}}" class="link">Next</a>
+        {{end}}
+      </div>
       <!-- Footer -->
       {{ template "public/footer.html"}}
       <!-- End Footer -->

@@ -7,8 +7,10 @@ import (
 	"manindexer/common"
 	"manindexer/database"
 	"manindexer/pin"
+	"reflect"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -44,6 +46,10 @@ func connectMongoDb() {
 	defer cancel()
 	o := options.Client().ApplyURI(mg.MongoURI)
 	o.SetMaxPoolSize(uint64(mg.PoolSize))
+	o.SetRegistry(bson.NewRegistryBuilder().
+		RegisterDecoder(reflect.TypeOf(decimal.Decimal{}), Decimal{}).
+		RegisterEncoder(reflect.TypeOf(decimal.Decimal{}), Decimal{}).
+		Build())
 	client, err := mongo.Connect(ctx, o)
 	if err != nil {
 		log.Panic("ConnectToDB", err)
@@ -62,7 +68,9 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, PinsCollection, "chainname_1", bson.D{{Key: "chainname", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "timestamp_1", bson.D{{Key: "timestamp", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "metaid_1", bson.D{{Key: "metaid", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinsCollection, "creatormetaid_1", bson.D{{Key: "creatormetaid", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "number_1", bson.D{{Key: "number", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinsCollection, "operation_1", bson.D{{Key: "operation", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "address_status_1", bson.D{{Key: "address", Value: 1}, {Key: "status", Value: 1}}, false)
 
 	createIndexIfNotExists(mongoClient, MempoolPinsCollection, "id_1", bson.D{{Key: "id", Value: 1}}, true)

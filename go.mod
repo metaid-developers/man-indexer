@@ -81,6 +81,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/pebbe/zmq4 v1.2.10
 	github.com/schollz/progressbar/v3 v3.14.2
+	github.com/shopspring/decimal v1.4.0
 	go.mongodb.org/mongo-driver v1.13.1
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
