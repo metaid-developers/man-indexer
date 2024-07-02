@@ -84,7 +84,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 }
 func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*mrc20.Mrc20Utxo, mrc20TransferPinTx map[string]struct{}) (savelist []*mrc20.Mrc20Utxo) {
 	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
-	keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
+	//keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
 	for _, u := range utxoList {
 		if u.MrcOption == "deploy" {
 			continue
@@ -99,34 +99,58 @@ func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*
 		if ok {
 			continue
 		}
-		for _, in := range tx.TxIn {
-			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
-			if v, ok := pointMap[id]; ok {
-				for _, utxo := range v {
-					send := mrc20.Mrc20Utxo{TxPoint: id, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1}
-					savelist = append(savelist, &send)
-					key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
-					_, find := keyMap[key]
-					if find {
-						//keyMap[key].AmtChange += send.AmtChange
-						keyMap[key].AmtChange = keyMap[key].AmtChange.Add(send.AmtChange)
-					} else {
-						recive := *utxo
-						recive.MrcOption = "native-transfer"
-						recive.FromAddress = recive.ToAddress
-						recive.ToAddress = indexer.GetAddress(tx.TxOut[0].PkScript)
-						recive.BlockHeight = blockHeight
-						recive.TxPoint = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
-						recive.Timestamp = t
-						recive.Chain = "btc"
-						keyMap[key] = &recive
-					}
+		list := indexer.createMrc20NativeTransfer(tx, blockHeight, t, pointMap)
+		if len(list) > 0 {
+			savelist = append(savelist, list...)
+		}
+	}
+	// for _, u := range keyMap {
+	// 	savelist = append(savelist, u)
+	// }
+	return
+}
+func (indexer *Indexer) createMrc20NativeTransfer(tx *wire.MsgTx, blockHeight int64, blockTime int64, pointMap map[string][]*mrc20.Mrc20Utxo) (mrc20Utxolist []*mrc20.Mrc20Utxo) {
+	keyMap := make(map[string]*mrc20.Mrc20Utxo)
+	for _, in := range tx.TxIn {
+		id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+		if v, ok := pointMap[id]; ok {
+			for _, utxo := range v {
+				send := mrc20.Mrc20Utxo{TxPoint: id, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1}
+				mrc20Utxolist = append(mrc20Utxolist, &send)
+				key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
+				_, find := keyMap[key]
+				if find {
+					//keyMap[key].AmtChange += send.AmtChange
+					keyMap[key].AmtChange = keyMap[key].AmtChange.Add(send.AmtChange)
+				} else {
+					recive := *utxo
+					recive.MrcOption = "native-transfer"
+					recive.FromAddress = recive.ToAddress
+					recive.ToAddress = indexer.GetAddress(tx.TxOut[0].PkScript)
+					recive.BlockHeight = blockHeight
+					recive.TxPoint = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
+					recive.Timestamp = blockTime
+					recive.Chain = "btc"
+					keyMap[key] = &recive
 				}
 			}
 		}
 	}
-	for _, u := range keyMap {
-		savelist = append(savelist, u)
+	return
+}
+func (indexer *Indexer) CatchMempoolNativeMrc20Transfer(tx *wire.MsgTx, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
+	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
+	for _, u := range utxoList {
+		if u.MrcOption == "deploy" {
+			continue
+		}
+		pointMap[u.TxPoint] = append(pointMap[u.TxPoint], u)
+	}
+	block := indexer.Block.(*wire.MsgBlock)
+	t := block.Header.Timestamp.Unix()
+	list := indexer.createMrc20NativeTransfer(tx, -1, t, pointMap)
+	if len(list) > 0 {
+		savelist = append(savelist, list...)
 	}
 	return
 }

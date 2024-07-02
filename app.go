@@ -2,12 +2,10 @@ package main
 
 import (
 	"embed"
-	"flag"
-	"fmt"
 	"log"
 	"manindexer/api"
+	"manindexer/common"
 	"manindexer/man"
-	"os"
 	"time"
 )
 
@@ -18,19 +16,9 @@ var (
 
 func main() {
 	log.Println("hello")
-	chain := flag.String("chain", "btc", "Which chain to perform indexing")
-	db := flag.String("database", "mongo", "Which database to use")
-	test := flag.String("test", "0", "Connect to testnet")
-	server := flag.String("server", "1", "Run the explorer service")
-	//reindex := flag.String("reindex", "", "reindex block height,from:to")
-	flag.Parse()
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "args:\n")
-		flag.PrintDefaults()
-	}
-	man.InitAdapter(*chain, *db, *test, *server)
-	log.Printf("ManIndex,chain=%s,test=%s,db=%s,server=%s", *chain, *test, *db, *server)
-	if *server == "1" {
+	man.InitAdapter(common.Chain, common.Db, common.TestNet, common.Server)
+	log.Printf("ManIndex,chain=%s,test=%s,db=%s,server=%s", common.Chain, common.TestNet, common.Db, common.Server)
+	if common.Server == "1" {
 		go api.Start(f)
 	}
 	go man.ZmqRun()

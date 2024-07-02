@@ -1,0 +1,31 @@
+version: '3'
+services:
+  indexer:
+    network_mode: "host"
+    container_name: man-indexer
+    stdin_open: true
+    tty: true
+    privileged: true
+    build: 
+      context: .
+      args:
+        VER: ${VER}
+    restart: always
+    depends_on:
+      - mongodb
+    command: /man/releases/linux/manindexer -test=${TEST} -chain=${CHAIN} -btc_height=${BTC_STARTING_BLOCK_HEIGHT}  -btc_rpc_host=${BTC_RPC_HOST}  -btc_height=${BTC_STARTING_BLOCK_HEIGHT}  -btc_rpc_user=${BTC_RPC_USER}  -btc_rpc_password=${BTC_RPC_PASSWORD}  -btc_zmqpubrawtx=${BTC_ZMQPUBRAWTX}  -mvc_height=${MVC_STARTING_BLOCK_HEIGHT} -mvc_rpc_host=${MVC_RPC_HOST}  -mvc_height=${MVC_STARTING_BLOCK_HEIGHT}  -mvc_rpc_user=${MVC_RPC_USER} -mvc_rpc_password=${MVC_RPC_PASSWORD}  -mvc_zmqpubrawtx=${MVC_ZMQPUBRAWTX} -server_port=${SERVER_PORT}  -https_pem_file=${HTTPS_PEM_FILE}  -https_key_file=${HTTPS_KEY_FILE}  -domain_name=${DOMAIN_NAME}   -mongo_uri=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@127.0.0.1:${MONGO_PORT}  -mongo_db_name=${MONGO_DB_NAME}
+  mongodb:
+    image: mongo:latest
+    container_name: man-mongodb
+    restart: always
+    network_mode: "host"
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGO_DB_NAME}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "${MONGO_PORT}:27017"
+    volumes:
+      - ${DATA_DIR}/data:/data/db
+    command:
+      - "--auth"

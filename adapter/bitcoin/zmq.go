@@ -53,6 +53,8 @@ func (indexer *Indexer) ZmqRun(chanMsg chan []*pin.PinInscription) {
 		if err == nil && len(tansferList) > 0 {
 			chanMsg <- tansferList
 		}
+		//check mrc20 transfer
+
 	}
 }
 func (indexer *Indexer) TransferCheck(tx *wire.MsgTx) (transferPinList []*pin.PinInscription, err error) {
@@ -89,4 +91,20 @@ func (indexer *Indexer) TransferCheck(tx *wire.MsgTx) (transferPinList []*pin.Pi
 		transferPinList = append(transferPinList, &transferPin)
 	}
 	return
+}
+func (indexer *Indexer) Mrc20NativeTransferCheck(tx *wire.MsgTx) {
+	var outputList []string
+	for _, in := range tx.TxIn {
+		output := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+		outputList = append(outputList, output)
+	}
+
+	mrc20transferCheck, err := (*indexer.DbAdapter).GetMrc20UtxoByOutPutList(outputList)
+	if err == nil && len(mrc20transferCheck) > 0 {
+		mrc20TrasferList := indexer.CatchMempoolNativeMrc20Transfer(tx, mrc20transferCheck)
+		if len(mrc20TrasferList) > 0 {
+			//TODO update mempool db
+			//DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
+		}
+	}
 }
