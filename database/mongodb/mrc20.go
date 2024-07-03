@@ -52,9 +52,9 @@ func (mg *Mongodb) GetMrc20TickPageList(cursor int64, size int64, order string, 
 	}
 	filter := bson.M{}
 	if completed == "true" {
-		filter = bson.M{"$expr": bson.M{"$gte": []string{"$totalminted", "$mintcount"}}}
+		filter = bson.M{"chain": "btc", "$expr": bson.M{"$gte": []string{"$totalminted", "$mintcount"}}}
 	} else if completed == "false" {
-		filter = bson.M{"$expr": bson.M{"$gt": []string{"$mintcount", "$totalminted"}}}
+		filter = bson.M{"chain": "btc", "$expr": bson.M{"$gt": []string{"$mintcount", "$totalminted"}}}
 	}
 	sortNum := -1
 	if orderType == "asc" {
