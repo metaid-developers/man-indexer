@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -8,8 +9,6 @@ import (
 	"manindexer/api"
 	"manindexer/man"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -24,7 +23,7 @@ func main() {
 	db := flag.String("database", "mongo", "Which database to use")
 	test := flag.String("test", "0", "Connect to testnet")
 	server := flag.String("server", "1", "Run the explorer service")
-	reindex := flag.String("reindex", "", "reindex block height,from:to")
+	//manCli := flag.String("cli", "0", "Run the man cmd cli")
 	flag.Parse()
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "args:\n")
@@ -35,21 +34,17 @@ func main() {
 	if *server == "1" {
 		go api.Start(f)
 	}
+	//if *manCli == "1" {
+	//	go cli.Execute()
+	//}
 	go man.ZmqRun()
-	if *reindex != "" {
-		arr := strings.Split(*reindex, ":")
-		from, err1 := strconv.ParseInt(arr[0], 10, 64)
-		to, err2 := strconv.ParseInt(arr[1], 10, 64)
-		if err1 == nil && err2 == nil {
-			man.IndexerRun(from, to)
-		}
-	}
 	for {
 		man.CheckNewBlock()
-		err := man.IndexerRun(0, 0)
+		err := man.IndexerRun()
 		if err != nil {
 			log.Println(err)
 		}
 		time.Sleep(time.Second * 10)
 	}
 }
+
