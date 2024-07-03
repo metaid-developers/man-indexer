@@ -25,11 +25,19 @@ func (mg *Mongodb) GetMaxMetaIdNumber() (number int64) {
 	return
 }
 
-func (mg *Mongodb) GetMetaIdInfo(address string, mempool bool) (info *pin.MetaIdInfo, unconfirmed string, err error) {
+func (mg *Mongodb) GetMetaIdInfo(address string, mempool bool, metaid string) (info *pin.MetaIdInfo, unconfirmed string, err error) {
 	filter := bson.D{{Key: "address", Value: address}}
+	if metaid != "" {
+		filter = bson.D{{Key: "metaid", Value: metaid}}
+	}
 	var mempoolInfo pin.MetaIdInfo
 	if mempool {
-		mempoolInfo, _ = findMetaIdInfoInMempool(address)
+		if metaid != "" {
+			mempoolInfo, _ = findMetaIdInfoInMempool("metaid", metaid)
+		}
+		if address != "" {
+			mempoolInfo, _ = findMetaIdInfoInMempool("address", address)
+		}
 	}
 	var unconfirmedList []string
 	err = mongoClient.Collection(MetaIdInfoCollection).FindOne(context.TODO(), filter).Decode(&info)
@@ -62,8 +70,8 @@ func (mg *Mongodb) GetMetaIdInfo(address string, mempool bool) (info *pin.MetaId
 	}
 	return
 }
-func findMetaIdInfoInMempool(address string) (info pin.MetaIdInfo, err error) {
-	result, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), bson.M{"address": address})
+func findMetaIdInfoInMempool(key string, value string) (info pin.MetaIdInfo, err error) {
+	result, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), bson.M{key: value})
 	if err != nil {
 		return
 	}
@@ -151,5 +159,22 @@ func (mg *Mongodb) GetMetaIdPageList(page int64, size int64) (pins []*pin.MetaId
 		return
 	}
 	err = result.All(context.TODO(), &pins)
+	return
+}
+func (mg *Mongodb) BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAdditional) (err error) {
+	var models []mongo.WriteModel
+	for _, info := range infoList {
+		filter := bson.D{{Key: "metaid", Value: info.MetaId}, {Key: "infokey", Value: info.InfoKey}}
+		var updateInfo bson.D
+		updateInfo = append(updateInfo, bson.E{Key: "infoValue", Value: info.InfoValue})
+		updateInfo = append(updateInfo, bson.E{Key: "pinid", Value: info.PinId})
+		update := bson.D{{Key: "$set", Value: updateInfo}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(update).SetUpsert(true)
+		models = append(models, m)
+	}
+
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err = mongoClient.Collection(InfoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
 	return
 }

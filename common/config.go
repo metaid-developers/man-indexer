@@ -12,12 +12,13 @@ var (
 )
 
 type AllConfig struct {
-	Sync      syncConfig
-	Protocols map[string]protocols
-	Btc       btcConfig
-	MongoDb   mongoConfig
-	Pebble    pebble
-	Web       webConfig
+	ProtocolID string `toml:"protocolID"`
+	Sync       syncConfig
+	Protocols  map[string]protocols
+	Btc        btcConfig
+	MongoDb    mongoConfig
+	Pebble     pebble
+	Web        webConfig
 }
 type syncConfig struct {
 	SyncAllData   bool     `toml:"syncAllData"`

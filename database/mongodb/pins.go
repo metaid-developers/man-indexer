@@ -138,13 +138,30 @@ func (mg *Mongodb) DeleteMempoolInscription(txIds []string) (err error) {
 	if err != nil {
 		log.Println("DeleteMempoolInscription err", err)
 	}
+	var ts []string
+	for _, id := range txIds {
+		index := strings.LastIndex(id, "i")
+		if index <= 0 {
+			continue
+		}
+		ts = append(ts, id[:index])
+	}
+	filter2 := bson.M{"txhash": bson.M{"$in": ts}}
+	_, err = mongoClient.Collection(MempoolTransferPinsCollection).DeleteMany(context.TODO(), filter2)
+	if err != nil {
+		log.Println("DeleteMempoolTransfer err", err)
+	}
 	return
 }
-func (mg *Mongodb) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string) (pins []*pin.PinInscription, total int64, err error) {
+func (mg *Mongodb) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string, path string) (pins []*pin.PinInscription, total int64, err error) {
 	opts := options.Find().SetSort(bson.D{{Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
-	filter := bson.M{"address": address, "status": 0}
+	addStr := "address"
 	if addressType == "creator" {
-		filter = bson.M{"createaddress": address, "status": 0}
+		addStr = "createaddress"
+	}
+	filter := bson.M{addStr: address, "status": 0}
+	if path != "" {
+		filter = bson.M{addStr: address, "status": 0, "originalpath": path}
 	}
 	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter, opts)
 	if err != nil {
@@ -196,7 +213,7 @@ func (mg *Mongodb) GetPinByNumberOrId(numberOrId string) (pinInscription *pin.Pi
 	return
 }
 func (mg *Mongodb) GetPinByMeatIdOrId(key string) (pinInscription *pin.PinInscription, err error) {
-	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"$or": bson.A{bson.M{"id": key}, bson.M{"metaid": key}}}).Decode(&pinInscription)
+	err = mongoClient.Collection(PinsCollection).FindOne(context.TODO(), bson.M{"$or": bson.A{bson.M{"id": key}, bson.M{"metaid": key}, bson.M{"genesistransaction": key}}}).Decode(&pinInscription)
 	return
 }
 func (mg *Mongodb) GetPinByOutput(output string) (pinInscription *pin.PinInscription, err error) {
@@ -273,41 +290,23 @@ func (mg *Mongodb) GetParentNodeById(pinId string) (pinnode *pin.PinInscription,
 	}
 	return
 }
-func (mg *Mongodb) GetAllPinByPath(page, limit int64, path string) (pins []*pin.PinInscription, total int64, err error) {
+func (mg *Mongodb) GetAllPinByPath(page, limit int64, path string, metaidList []string) (pins []*pin.PinInscription, total int64, err error) {
 	filter := bson.M{"path": path}
+	if len(metaidList) > 0 {
+		filter = bson.M{"path": path, "metaid": bson.M{"$in": metaidList}}
+	}
 	cursor := (page - 1) * limit
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(limit)
-	mempoolResult, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), filter, opts)
+	//mempoolResult, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), filter, opts)
+	result, err := mongoClient.Collection(PinsView).Find(context.TODO(), filter, opts)
 	if err != nil && err != mongo.ErrNoDocuments {
 		return
 	}
-	var memPins []*pin.PinInscription
-	var blockPins []*pin.PinInscription
-	if mempoolResult != nil {
-		err = mempoolResult.All(context.TODO(), &memPins)
-		if err != nil {
-			return
-		}
+	err = result.All(context.TODO(), &pins)
+	if err != nil {
+		return
 	}
-	newLimit := limit - int64(len(memPins))
-	if newLimit > 0 {
-		opts = options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(newLimit)
-		result, err1 := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter, opts)
-		if err1 != nil {
-			return
-		}
-		err = result.All(context.TODO(), &blockPins)
-		if err != nil {
-			return
-		}
-	}
-	var blockTotal int64
-	var memTotal int64
-	blockTotal, err = mongoClient.Collection(PinsCollection).CountDocuments(context.TODO(), filter)
-	memTotal, err = mongoClient.Collection(MempoolPinsCollection).CountDocuments(context.TODO(), filter)
-	total = blockTotal + memTotal
-	pins = append(pins, memPins...)
-	pins = append(pins, blockPins...)
+	total, err = mongoClient.Collection(PinsView).CountDocuments(context.TODO(), filter)
 	return
 }
 func (mg *Mongodb) BatchAddProtocolData(pins []*pin.PinInscription) (err error) {
@@ -361,5 +360,22 @@ func getDataByContent(pinList []*pin.PinInscription) (data []map[string]interfac
 			//fmt.Println(err)
 		}
 	}
+	return
+}
+func (mg *Mongodb) AddMempoolTransfer(transferData *pin.MemPoolTrasferPin) (err error) {
+	_, err = mongoClient.Collection(MempoolTransferPinsCollection).InsertOne(context.TODO(), transferData)
+	return
+}
+func (mg *Mongodb) GetMempoolTransfer(address string, act string) (list []*pin.MemPoolTrasferPin, err error) {
+	filter := bson.M{"$or": bson.A{bson.M{"toaddress": address}, bson.M{"fromaddress": address}}}
+	result, err := mongoClient.Collection(MempoolTransferPinsCollection).Find(context.TODO(), filter)
+	if err != nil {
+		return
+	}
+	err = result.All(context.TODO(), &list)
+	return
+}
+func (mg *Mongodb) GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasferPin, err error) {
+	err = mongoClient.Collection(MempoolTransferPinsCollection).FindOne(context.TODO(), bson.M{"pinid": pinId}).Decode(&result)
 	return
 }

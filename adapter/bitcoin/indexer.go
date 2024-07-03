@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"manindexer/common"
+	"manindexer/database"
 	"manindexer/pin"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ type Indexer struct {
 	ChainParams *chaincfg.Params
 	Block       interface{}
 	PopCutNum   int
+	DbAdapter   *database.Db
 }
 
 func init() {
@@ -69,7 +71,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 		for _, in := range tx.TxIn {
 			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 			if _, ok := idMap[id]; ok {
-				info, err := indexer.getOWnerAddress(id, tx)
+				info, err := indexer.GetOWnerAddress(id, tx)
 				if err == nil && info != nil {
 					trasferMap[id] = info
 				}
@@ -78,7 +80,7 @@ func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map
 	}
 	return
 }
-func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (info *pin.PinTransferInfo, err error) {
+func (indexer *Indexer) GetOWnerAddress(inputId string, tx *wire.MsgTx) (info *pin.PinTransferInfo, err error) {
 	//fmt.Println("tx:", tx.TxHash().String(), inputId)
 	info = &pin.PinTransferInfo{}
 	firstInputId := fmt.Sprintf("%s:%d", tx.TxIn[0].PreviousOutPoint.Hash, tx.TxIn[0].PreviousOutPoint.Index)
@@ -126,7 +128,8 @@ func (indexer *Indexer) getOWnerAddress(inputId string, tx *wire.MsgTx) (info *p
 				info.Address = hex.EncodeToString(out.PkScript)
 			}
 			info.Output = fmt.Sprintf("%s:%d", tx.TxHash().String(), i)
-			info.Location = fmt.Sprintf("%s:%d", info.Output, outputValue-inputValue)
+			//count offset
+			info.Location = fmt.Sprintf("%s:%d", info.Output, out.Value-(outputValue-inputValue))
 			info.Offset = uint64(i)
 			info.OutputValue = out.Value
 			break
@@ -163,7 +166,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 		if pinInscription == nil {
 			continue
 		}
-		address, outIdx, locationIdx := indexer.getPinOwner(msgTx, index)
+		address, outIdx, locationIdx := indexer.GetPinOwner(msgTx, index)
 		id := fmt.Sprintf("%si%d", msgTx.TxHash().String(), outIdx)
 		metaId := common.GetMetaIdByAddress(address)
 		contentTypeDetect := common.DetectContentType(&pinInscription.ContentBody)
@@ -224,7 +227,7 @@ func getContentSummary(pinode *pin.PersonalInformationNode, id string, contentTy
 		}
 	}
 }
-func (indexer *Indexer) getPinOwner(tx *wire.MsgTx, inIdx int) (address string, outIdx int, locationIdx int64) {
+func (indexer *Indexer) GetPinOwner(tx *wire.MsgTx, inIdx int) (address string, outIdx int, locationIdx int64) {
 	if len(tx.TxIn) == 1 || len(tx.TxOut) == 1 || inIdx == 0 {
 		_, addresses, _, _ := txscript.ExtractPkScriptAddrs(tx.TxOut[0].PkScript, indexer.ChainParams)
 		if len(addresses) > 0 {
@@ -267,7 +270,7 @@ func (indexer *Indexer) ParsePins(witnessScript []byte) (pins []*pin.PersonalInf
 			if !tokenizer.Next() || tokenizer.Opcode() != txscript.OP_IF {
 				return
 			}
-			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != pin.ProtocolID {
+			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != common.Config.ProtocolID {
 				return
 			}
 			pinode := indexer.parseOnePin(&tokenizer)
@@ -287,7 +290,7 @@ func (indexer *Indexer) ParsePin(witnessScript []byte) (pinode *pin.PersonalInfo
 			if !tokenizer.Next() || tokenizer.Opcode() != txscript.OP_IF {
 				return
 			}
-			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != pin.ProtocolID {
+			if !tokenizer.Next() || hex.EncodeToString(tokenizer.Data()) != common.Config.ProtocolID {
 				return
 			}
 			pinode = indexer.parseOnePin(&tokenizer)
@@ -326,7 +329,10 @@ func (indexer *Indexer) parseOnePin(tokenizer *txscript.ScriptTokenizer) *pin.Pe
 		pinode.Path = "/"
 		return &pinode
 	}
-	if len(infoList) < 6 {
+	if len(infoList) < 6 && pinode.Operation != "revoke" {
+		return nil
+	}
+	if pinode.Operation == "revoke" && len(infoList) < 5 {
 		return nil
 	}
 	pinode.Path = strings.ToLower(string(infoList[1]))
@@ -373,6 +379,11 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) 
 	return
 }
 func (indexer *Indexer) PopLevelCount(pop string) (lv int, lastStr string) {
+	if len(pop) < PopCutNum {
+		lv = -1
+		lastStr = pop
+		return
+	}
 	cnt := len(pop) - len(strings.TrimLeft(pop, "0"))
 	if cnt <= PopCutNum {
 		lv = -1

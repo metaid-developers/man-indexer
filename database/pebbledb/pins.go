@@ -211,7 +211,7 @@ func (pb *Pebble) GetPinListByIdList(idList []string) (pinList []*pin.PinInscrip
 func (pb *Pebble) GetPinListByOutPutList(outputList []string) (pinList []*pin.PinInscription, err error) {
 	return
 }
-func (pb *Pebble) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string) (pins []*pin.PinInscription, total int64, err error) {
+func (pb *Pebble) GetPinListByAddress(address string, addressType string, cursor int64, size int64, cnt string, path string) (pins []*pin.PinInscription, total int64, err error) {
 	value, close, err := Pb[AddressPins].Get([]byte(address))
 	if err != nil {
 		return
@@ -317,7 +317,7 @@ func prefixIterOptions(prefix []byte) pebble.IterOptions {
 		UpperBound: keyUpperBound(prefix),
 	}
 }
-func (pb *Pebble) GetAllPinByPath(page, limit int64, path string) (pins []*pin.PinInscription, total int64, err error) {
+func (pb *Pebble) GetAllPinByPath(page, limit int64, path string, metaidList []string) (pins []*pin.PinInscription, total int64, err error) {
 	if path == "" {
 		return
 	}
@@ -579,5 +579,14 @@ func (pb *Pebble) DeleteMempoolInscription(txIds []string) (err error) {
 		log.Fatalf("Error committing batch: %v", err)
 		//return
 	}
+	return
+}
+func (pb *Pebble) AddMempoolTransfer(transferData *pin.MemPoolTrasferPin) (err error) {
+	return
+}
+func (pb *Pebble) GetMempoolTransfer(address string, act string) (list []*pin.MemPoolTrasferPin, err error) {
+	return
+}
+func (pb *Pebble) GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasferPin, err error) {
 	return
 }

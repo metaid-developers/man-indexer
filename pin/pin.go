@@ -1,9 +1,9 @@
 package pin
 
 const (
-	//ProtocolID string = "746573746964" //testid(HEX16)
-	ProtocolID    string = "6d6574616964" //metaid
-	CompliantPath string = "info;file;protocols;nft;ft;mrc20"
+	ProtocolID string = "746573746964" //testid(HEX16)
+	//ProtocolID    string = "6d6574616964" //metaid
+	CompliantPath string = "info;file;protocols;nft;ft;mrc20;follow"
 )
 
 type PinInscription struct {
@@ -62,7 +62,7 @@ type PersonalInformationNode struct {
 type FollowData struct {
 	MetaId        string `json:"metaId"`
 	FollowMetaId  string `json:"followMetaId"`
-	FoloowTime    int64  `json:"foloowTime"`
+	FollowTime    int64  `json:"followTime"`
 	FollowPinId   string `json:"followPinId"`
 	UnFollowPinId string `json:"unFollowPinId"`
 	Status        bool   `json:"status"`
@@ -80,7 +80,12 @@ type MetaIdInfo struct {
 	SoulbondToken string `json:"soulbondToken"`
 	IsInit        bool   `json:"isInit"`
 }
-
+type MetaIdInfoAdditional struct {
+	MetaId    string `json:"metaId"`
+	InfoKey   string `json:"infoKey"`
+	InfoValue string `json:"infoValue"`
+	PinId     string `json:"pinId"`
+}
 type PinTreeCatalog struct {
 	RootTxId string `json:"rootTxId"`
 	TreePath string `json:"treePath"`
@@ -112,4 +117,11 @@ type PinCount struct {
 	Pin    int64 `json:"Pin"`
 	MetaId int64 `json:"metaId"`
 	App    int64 `json:"app"`
+}
+type MemPoolTrasferPin struct {
+	PinId       string `json:"pinId"`
+	FromAddress string `json:"fromAddress"`
+	ToAddress   string `json:"toAddress"`
+	InTime      int64  `json:"inTime"`
+	TxHash      string `json:"txHash"`
 }
