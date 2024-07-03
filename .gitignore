@@ -13,3 +13,4 @@ manindex-linux.tar.gz
 manindexer.bak
 btc_del_mempool_height.txt
 mvc_del_mempool_height.txt
+go.mod

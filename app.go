@@ -14,6 +14,10 @@ var (
 	f embed.FS
 )
 
+func init() {
+	//fmt.Println("2>>")
+	//common.GetFlagConfig()
+}
 func main() {
 	log.Println("hello")
 	man.InitAdapter(common.Chain, common.Db, common.TestNet, common.Server)

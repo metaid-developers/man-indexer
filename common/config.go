@@ -86,13 +86,14 @@ type pebble struct {
 }
 
 func init() {
+	fmt.Println("1>>")
 	configMutex.Lock()
 	defer configMutex.Unlock()
 	filePath := "./config.toml"
 	if _, err := toml.DecodeFile(filePath, &Config); err != nil {
 		panic(err)
 	}
-	flagConfig := getFlagConfig()
+	flagConfig := GetFlagConfig()
 	for k, v := range flagConfig {
 		if *v == "" {
 			continue
@@ -146,11 +147,11 @@ func init() {
 		Config.ProtocolID = "6d6574616964"
 	}
 }
-func getFlagConfig() (flagConfig map[string]*string) {
-	Chain = *(flag.String("chain", "btc", "Which chain to perform indexing"))
-	Db = *(flag.String("database", "mongo", "Which database to use"))
-	TestNet = *(flag.String("test", "0", "Connect to testnet"))
-	Server = *(flag.String("server", "1", "Run the explorer service"))
+func GetFlagConfig() (flagConfig map[string]*string) {
+	chain := flag.String("chain", "btc", "Which chain to perform indexing")
+	db := flag.String("database", "mongo", "Which database to use")
+	testNet := flag.String("test", "", "Connect to testnet")
+	server := flag.String("server", "1", "Run the explorer service")
 	flagConfig = make(map[string]*string)
 	flagConfig["btc_height"] = flag.String("btc_height", "", "btc starting block height")
 	flagConfig["btc_rpc_host"] = flag.String("btc_rpc_host", "", "btc rpc host")
@@ -174,5 +175,9 @@ func getFlagConfig() (flagConfig map[string]*string) {
 		fmt.Fprintf(os.Stderr, "args:\n")
 		flag.PrintDefaults()
 	}
+	Chain = *chain
+	Db = *db
+	TestNet = *testNet
+	Server = *server
 	return
 }

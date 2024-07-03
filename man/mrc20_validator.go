@@ -66,6 +66,9 @@ func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscript
 			return "", 0, err
 		}
 	}
+	if premineCount > mintCount {
+		return "", 0, errors.New(mrc20.ErrDeployNum)
+	}
 	if premineCount <= 0 {
 		return "", 0, nil
 	}
@@ -124,7 +127,8 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	}
 	//count, _ := strconv.ParseInt(info.MintCount, 10, 64)
 	height, _ := strconv.ParseInt(info.Blockheight, 10, 64)
-	if info.TotalMinted >= (info.MintCount - info.PremineCount) {
+	//if info.TotalMinted >= (info.MintCount - info.PremineCount) {
+	if (info.MintCount - info.TotalMinted) < 1 {
 		err = errors.New(mrc20.ErrMintLimit)
 		return
 	}

@@ -13,7 +13,7 @@ const (
 	ErrDeployTickExists     = "tick already exists"
 	ErrCrossChain           = "cross-chain operations are currently not allowed"
 	ErrMintTickNotExists    = "tick not exists"
-	ErrMintLimit            = "minting capacity reached"
+	ErrMintLimit            = "minting limit reached"
 	ErrMintHeight           = "current block height is too low"
 	ErrMintPopNull          = "shovel is none"
 	ErrMintPopDiff          = "pop level check failed"
