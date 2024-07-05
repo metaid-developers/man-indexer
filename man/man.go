@@ -119,7 +119,10 @@ func InitAdapter(chainType, dbType, test, server string) {
 }
 func ZmqRun() {
 	//zmq
-	for _, indexer := range IndexerAdapter {
+	for chain, indexer := range IndexerAdapter {
+		if chain != "btc" {
+			continue
+		}
 		s := make(chan []*pin.PinInscription)
 		go indexer.ZmqRun(s)
 		//go IndexerAdapter.ZmqHashblock()

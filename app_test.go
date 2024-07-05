@@ -10,6 +10,7 @@ import (
 	"manindexer/database/mongodb"
 	"manindexer/man"
 	"manindexer/pin"
+	"strconv"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcutil"
@@ -73,6 +74,11 @@ func TestDelMempoolPin(t *testing.T) {
 func TestConfig(t *testing.T) {
 	config := common.Config
 	fmt.Println(config.Protocols)
+	decimals, err := strconv.ParseInt("", 10, 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(decimals)
 }
 
 func TestGetDbPin(t *testing.T) {

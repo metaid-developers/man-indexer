@@ -5,7 +5,7 @@ import (
 	"manindexer/pin"
 )
 
-func (pb *Pebble) GetMrc20TickInfo(tick string) (info mrc20.Mrc20DeployInfo, err error) {
+func (pb *Pebble) GetMrc20TickInfo(mrc20Id string, tick string) (info mrc20.Mrc20DeployInfo, err error) {
 	return
 }
 
@@ -24,7 +24,7 @@ func (pb *Pebble) AddMrc20Shovel(shovelList []string, pinId string, mrc20Id stri
 func (pb *Pebble) GetMrc20Shovel(shovels []string, mrc20Id string) (data map[string]mrc20.Mrc20Shovel, err error) {
 	return
 }
-func (pb *Pebble) UpdateMrc20TickInfo(tickId string, minted int64) (err error) {
+func (pb *Pebble) UpdateMrc20TickInfo(tickId string, txPoint string, minted int64) (err error) {
 	return
 }
 func (pb *Pebble) UpdateMrc20TickHolder(tickId string, txNum int64) (err error) {

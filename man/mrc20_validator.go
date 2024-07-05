@@ -23,24 +23,30 @@ func (validator *Mrc20Validator) Check(pinNode *pin.PinInscription) {
 
 }
 func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscription) (string, int64, error) {
-	var data mrc20.Mrc20Deploy
-	err := json.Unmarshal(content, &data)
+	lowerContent := strings.ToLower(string(content))
+	var data mrc20.Mrc20DeployLow
+	err := json.Unmarshal([]byte(lowerContent), &data)
 	if err != nil {
 		return "", 0, errors.New(mrc20.ErrDeployContent)
 	}
 	if len(data.Tick) < 2 || len(data.Tick) > 24 {
 		return "", 0, errors.New(mrc20.ErrDeployTickLength)
 	}
-	if len(data.TokenName) < 1 || len(data.TokenName) > 48 {
-		return "", 0, errors.New(mrc20.ErrDeployTickNameLength)
+	if data.TokenName != "" {
+		if len(data.TokenName) < 1 || len(data.TokenName) > 48 {
+			return "", 0, errors.New(mrc20.ErrDeployTickNameLength)
+		}
 	}
+	decimals := int64(0)
+	if data.Decimals != "" {
+		decimals, err := strconv.ParseInt(data.Decimals, 10, 64)
+		if err != nil {
+			return "", 0, err
+		}
 
-	decimals, err := strconv.ParseInt(data.Decimals, 10, 64)
-	if err != nil {
-		return "", 0, err
-	}
-	if decimals < 0 || decimals > 12 {
-		return "", 0, errors.New(mrc20.ErrDeployNum)
+		if decimals < 0 || decimals > 12 {
+			return "", 0, errors.New(mrc20.ErrDeployNum)
+		}
 	}
 
 	amtPerMint, err := strconv.ParseInt(data.AmtPerMint, 10, 64)
@@ -69,6 +75,16 @@ func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscript
 	if premineCount > mintCount {
 		return "", 0, errors.New(mrc20.ErrDeployNum)
 	}
+	//check tick name
+	//ErrDeployTickExists
+	tickName := strings.ToUpper(data.Tick)
+	info, _ := DbAdapter.GetMrc20TickInfo("", tickName)
+	if info != (mrc20.Mrc20DeployInfo{}) {
+		if tickName == info.Tick {
+			return "", 0, errors.New(mrc20.ErrDeployTickExists)
+		}
+	}
+
 	if premineCount <= 0 {
 		return "", 0, nil
 	}
@@ -76,6 +92,7 @@ func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscript
 	if t > 20 {
 		return "", 0, errors.New(mrc20.ErrDeployNum)
 	}
+
 	tx, err := ChainAdapter[pinNode.ChainName].GetTransaction(pinNode.GenesisTransaction)
 	if err != nil {
 		return "", 0, errors.New(mrc20.ErrDeployTxGet)
@@ -109,7 +126,7 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	// 	err = errors.New(mrc20.ErrMintPinIdNull)
 	// 	return
 	// }
-	info, err = DbAdapter.GetMrc20TickInfo(content.Id)
+	info, err = DbAdapter.GetMrc20TickInfo(content.Id, "")
 	if err != nil {
 		log.Println("GetMrc20TickInfo:", err)
 		return
@@ -122,16 +139,16 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		err = errors.New(mrc20.ErrCrossChain)
 		return
 	}
-	if info.Qual.Count == "" || info.Qual.Count == "0" {
-		return
-	}
-	//count, _ := strconv.ParseInt(info.MintCount, 10, 64)
-	height, _ := strconv.ParseInt(info.Blockheight, 10, 64)
 	//if info.TotalMinted >= (info.MintCount - info.PremineCount) {
 	if (info.MintCount - info.TotalMinted) < 1 {
 		err = errors.New(mrc20.ErrMintLimit)
 		return
 	}
+	if info.Qual.Count == "" || info.Qual.Count == "0" {
+		return
+	}
+	//count, _ := strconv.ParseInt(info.MintCount, 10, 64)
+	height, _ := strconv.ParseInt(info.Blockheight, 10, 64)
 	if pinNode.GenesisHeight < height {
 		err = errors.New(mrc20.ErrMintHeight)
 		return
@@ -468,7 +485,7 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 		amt, _ := decimal.NewFromString(item.Amount)
 		outMap[item.Id] = outMap[item.Id].Add(amt)
 
-		tick, err1 := DbAdapter.GetMrc20TickInfo(item.Id)
+		tick, err1 := DbAdapter.GetMrc20TickInfo(item.Id, "")
 		if err1 != nil {
 			err = errors.New(mrc20.ErrMintTickIdNull)
 			msg = mrc20.ErrMintTickIdNull

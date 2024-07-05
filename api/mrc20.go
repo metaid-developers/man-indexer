@@ -16,6 +16,7 @@ func mrc20JsonApi(r *gin.Engine) {
 	mrc20Group.Use(CorsMiddleware())
 	mrc20Group.GET("/tick/all", allTick)
 	mrc20Group.GET("/tick/info/:id", getTickInfoById)
+	mrc20Group.GET("/tick/info", getTickInfo)
 	mrc20Group.GET("/tick/address", getHistoryByAddress)
 	mrc20Group.GET("/tick/history", getHistoryById)
 	mrc20Group.GET("/address/balance/:address", getBalanceByAddress)
@@ -50,7 +51,19 @@ func allTick(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", gin.H{"list": list, "total": total}))
 }
 func getTickInfoById(ctx *gin.Context) {
-	info, err := man.DbAdapter.GetMrc20TickInfo(ctx.Param("id"))
+	info, err := man.DbAdapter.GetMrc20TickInfo(ctx.Param("id"), "")
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)
+		} else {
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
+		}
+		return
+	}
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", info))
+}
+func getTickInfo(ctx *gin.Context) {
+	info, err := man.DbAdapter.GetMrc20TickInfo(ctx.Query("id"), ctx.Query("tick"))
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)
@@ -177,7 +190,7 @@ func getShovelListByAddress(ctx *gin.Context) {
 	tickId := ctx.Query("tickId")
 	address := ctx.Query("address")
 	//fmt.Println(cursor, size, tickId, address)
-	info, err := man.DbAdapter.GetMrc20TickInfo(tickId)
+	info, err := man.DbAdapter.GetMrc20TickInfo(tickId, "")
 	if err != nil {
 		ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
 		return

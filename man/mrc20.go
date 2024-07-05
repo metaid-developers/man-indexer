@@ -54,13 +54,17 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 	if len(mrc20UtxoList) > 0 {
 		DbAdapter.SaveMrc20Pin(mrc20UtxoList)
 		for _, item := range mrc20UtxoList {
-			changedTick[item.Mrc20Id] += 1
+			if item.MrcOption != "deploy" {
+				changedTick[item.Mrc20Id] += 1
+			}
 		}
 	}
 	if len(mrc20TrasferList) > 0 {
 		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
 		for _, item := range mrc20TrasferList {
-			changedTick[item.Mrc20Id] += 1
+			if item.MrcOption != "deploy" {
+				changedTick[item.Mrc20Id] += 1
+			}
 		}
 	}
 
@@ -106,7 +110,7 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 		//mrc20Utxo.Msg = err1.Error()
 		return
 	}
-	info.Tick = df.Tick
+	info.Tick = strings.ToUpper(df.Tick)
 	info.TokenName = df.TokenName
 	info.Decimals = df.Decimals
 	info.AmtPerMint = df.AmtPerMint
@@ -187,7 +191,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 		if len(shovelList) > 0 {
 			DbAdapter.AddMrc20Shovel(shovelList, pinNode.Id, mrc20Utxo.Mrc20Id)
 		}
-		DbAdapter.UpdateMrc20TickInfo(info.Mrc20Id, info.TotalMinted+1)
+		DbAdapter.UpdateMrc20TickInfo(info.Mrc20Id, mrc20Utxo.TxPoint, info.TotalMinted+1)
 		//mrc20Utxo.AmtChange, _ = strconv.ParseInt(info.AmtPerMint, 10, 64)
 		mrc20Utxo.AmtChange, _ = decimal.NewFromString(info.AmtPerMint)
 	}

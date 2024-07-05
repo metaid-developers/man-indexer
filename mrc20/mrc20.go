@@ -66,7 +66,18 @@ type Mrc20Deploy struct {
 	PremineCount string          `json:"premineCount"`
 	Qual         Mrc20DeployQual `json:"qual"`
 }
-
+type Mrc20DeployLow struct {
+	Tick         string          `json:"tick"`
+	TokenName    string          `json:"tokenname"`
+	Decimals     string          `json:"decimals"`
+	AmtPerMint   string          `json:"amtpermint"`
+	MintCount    string          `json:"mintcount"`
+	Blockheight  string          `json:"blockheight"`
+	Metadata     string          `json:"metadata"`
+	DeployType   string          `json:"type"`
+	PremineCount string          `json:"preminecount"`
+	Qual         Mrc20DeployQual `json:"qual"`
+}
 type Mrc20DeployInfo struct {
 	Tick         string          `json:"tick"`
 	TokenName    string          `json:"tokenName"`
@@ -88,6 +99,7 @@ type Mrc20DeployInfo struct {
 	Address      string          `json:"address"`
 	DeployTime   int64           `json:"deployTime"`
 }
+
 type Mrc20Shovel struct {
 	Id           string `json:"id"`
 	Mrc20MintPin string `json:"mrc20MintPin"`

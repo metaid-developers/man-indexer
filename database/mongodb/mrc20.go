@@ -17,8 +17,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (mg *Mongodb) GetMrc20TickInfo(mrc20Id string) (info mrc20.Mrc20DeployInfo, err error) {
-	err = mongoClient.Collection(Mrc20TickCollection).FindOne(context.TODO(), bson.M{"mrc20id": mrc20Id}).Decode(&info)
+func (mg *Mongodb) GetMrc20TickInfo(mrc20Id string, tick string) (info mrc20.Mrc20DeployInfo, err error) {
+	if mrc20Id == "" && tick == "" {
+		return
+	}
+	filter := bson.D{}
+	if mrc20Id != "" {
+		filter = append(filter, bson.E{Key: "mrc20id", Value: mrc20Id})
+	}
+	if tick != "" {
+		filter = append(filter, bson.E{Key: "tick", Value: tick})
+	}
+	err = mongoClient.Collection(Mrc20TickCollection).FindOne(context.TODO(), filter).Decode(&info)
 	if err == mongo.ErrNoDocuments {
 		err = nil
 	}
@@ -115,10 +125,16 @@ func (mg *Mongodb) GetMrc20Shovel(shovels []string, mrc20Id string) (data map[st
 	}
 	return
 }
-func (mg *Mongodb) UpdateMrc20TickInfo(mrc20Id string, minted int64) (err error) {
-	filter := bson.M{"mrc20id": mrc20Id}
-	update := bson.M{"totalminted": minted}
-	_, err = mongoClient.Collection(Mrc20TickCollection).UpdateOne(context.Background(), filter, bson.M{"$set": update})
+func (mg *Mongodb) UpdateMrc20TickInfo(mrc20Id string, txPoint string, minted int64) (err error) {
+	//Check if already counted
+	utxoFilter := bson.M{"txpoint": txPoint}
+	var utxo mrc20.Mrc20Utxo
+	find := mongoClient.Collection(Mrc20UtxoCollection).FindOne(context.TODO(), utxoFilter).Decode(&utxo)
+	if find == mongo.ErrNoDocuments {
+		filter := bson.M{"mrc20id": mrc20Id}
+		update := bson.M{"totalminted": minted}
+		_, err = mongoClient.Collection(Mrc20TickCollection).UpdateOne(context.Background(), filter, bson.M{"$set": update})
+	}
 	return
 }
 func (mg *Mongodb) UpdateMrc20TickHolder(tickId string, txNum int64) (err error) {
@@ -130,7 +146,7 @@ func (mg *Mongodb) UpdateMrc20TickHolder(tickId string, txNum int64) (err error)
 	return
 }
 func getHolderCount(tickId string) (count int64) {
-	filter := bson.D{{Key: "mrc20id", Value: tickId}}
+	filter := bson.D{{Key: "mrc20id", Value: tickId}, {Key: "verify", Value: true}, {Key: "mrcoption", Value: bson.D{{Key: "$ne", Value: "deploy"}}}}
 	match := bson.D{{Key: "$match", Value: filter}}
 	project := bson.D{{Key: "$project", Value: bson.D{{Key: "toaddress", Value: true}}}}
 	groupStage := bson.D{
