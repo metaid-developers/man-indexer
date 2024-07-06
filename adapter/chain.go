@@ -9,4 +9,5 @@ type Chain interface {
 	GetInitialHeight() (height int64)
 	GetBestHeight() (height int64)
 	GetBlockMsg(height int64) (blockMsg *pin.BlockMsg)
+	GetMempoolTransactionList() (list []interface{}, err error)
 }

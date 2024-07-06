@@ -44,7 +44,7 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 				mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
 			}
 		case "/ft/mrc20/transfer":
-			transferPinList, _ := CreateMrc20TransferUtxo(pinNode, &validator)
+			transferPinList, _ := CreateMrc20TransferUtxo(pinNode, &validator, false)
 			if len(transferPinList) > 0 {
 				mrc20TrasferList = append(mrc20TrasferList, transferPinList...)
 			}
@@ -60,7 +60,7 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 		}
 	}
 	if len(mrc20TrasferList) > 0 {
-		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
+		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
 		for _, item := range mrc20TrasferList {
 			if item.MrcOption != "deploy" {
 				changedTick[item.Mrc20Id] += 1
@@ -198,7 +198,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 
 	return
 }
-func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Validator) (mrc20UtxoList []*mrc20.Mrc20Utxo, err error) {
+func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Validator, isMempool bool) (mrc20UtxoList []*mrc20.Mrc20Utxo, err error) {
 	var content []mrc20.Mrc20TranferData
 	err = json.Unmarshal(pinNode.ContentBody, &content)
 	if err != nil {
@@ -212,29 +212,6 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 		mrc20UtxoList = sendAllAmountToFirstOutput(pinNode, msg)
 		return
 	}
-	// if err1 != nil && err1.Error() == "valueErr" {
-	// 	for i, utxo := range utxoList {
-	// 		mrc20Utxo := mrc20.Mrc20Utxo{}
-	// 		mrc20Utxo.Mrc20Id = utxo.Mrc20Id
-	// 		mrc20Utxo.Tick = utxo.Tick
-	// 		mrc20Utxo.Verify = true
-	// 		mrc20Utxo.PinId = pinNode.Id
-	// 		mrc20Utxo.BlockHeight = pinNode.GenesisHeight
-	// 		mrc20Utxo.MrcOption = "data-transfer"
-	// 		mrc20Utxo.FromAddress = utxo.ToAddress
-	// 		mrc20Utxo.ToAddress = pinNode.Address
-	// 		mrc20Utxo.Chain = pinNode.ChainName
-	// 		mrc20Utxo.Timestamp = pinNode.Timestamp
-	// 		mrc20Utxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, pinNode.Offset)
-	// 		mrc20Utxo.PinContent = string(pinNode.ContentBody)
-	// 		mrc20Utxo.Index = i
-	// 		mrc20Utxo.AmtChange = utxo.AmtChange
-	// 		mrc20Utxo.Msg = msg
-	// 		mrc20Utxo.PointValue = pinNode.OutputValue
-	// 		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
-	// 	}
-	// 	return
-	// }
 	address := make(map[string]string)
 	name := make(map[string]string)
 	inputAmtMap := make(map[string]decimal.Decimal)
@@ -246,6 +223,10 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 		//amt := utxo.AmtChange * -1
 		amt := utxo.AmtChange.Mul(decimal.NewFromInt(-1))
 		mrc20Utxo := mrc20.Mrc20Utxo{TxPoint: utxo.TxPoint, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1, AmtChange: amt}
+		if isMempool {
+			mrc20Utxo = *utxo
+			mrc20Utxo.Status = -1
+		}
 		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
 		//inputAmtMap[utxo.Mrc20Id] += utxo.AmtChange
 		inputAmtMap[utxo.Mrc20Id] = inputAmtMap[utxo.Mrc20Id].Add(utxo.AmtChange)

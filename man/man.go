@@ -358,7 +358,7 @@ func GetSaveData(chainName string, blockHeight int64) (
 	if err == nil && len(mrc20transferCheck) > 0 {
 		mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(blockHeight, mrc20transferCheck, mrc20TransferPinTx)
 		if len(mrc20TrasferList) > 0 {
-			DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
+			DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
 		}
 	}
 

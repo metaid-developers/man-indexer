@@ -61,7 +61,7 @@ func createIndexIfNotExists(mongoClient *mongo.Database, collectionName, indexNa
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Index %s created successfully\n", indexName)
+		//fmt.Printf("Index %s created successfully\n", indexName)
 	}
 	return nil
 }

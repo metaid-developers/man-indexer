@@ -86,7 +86,6 @@ type pebble struct {
 }
 
 func init() {
-	fmt.Println("1>>")
 	configMutex.Lock()
 	defer configMutex.Unlock()
 	filePath := "./config.toml"

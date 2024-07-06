@@ -1,7 +1,6 @@
 package microvisionchain
 
 import (
-	"fmt"
 	"manindexer/common"
 	"manindexer/pin"
 	"time"
@@ -38,7 +37,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("mvc rpc  connect")
+	//fmt.Println("mvc rpc  connect")
 }
 func (chain *MicroVisionChain) GetBlock(blockHeight int64) (block interface{}, err error) {
 	blockhash, err := client.GetBlockHash(blockHeight)
@@ -125,5 +124,8 @@ func (chain *MicroVisionChain) GetCreatorAddress(txHashStr string, idx uint32, n
 	} else {
 		address = "errorAddr"
 	}
+	return
+}
+func (chain *MicroVisionChain) GetMempoolTransactionList() (list []interface{}, err error) {
 	return
 }

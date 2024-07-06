@@ -27,6 +27,7 @@ const (
 	FollowCollection              string = "follow"
 	InfoCollection                string = "info"
 	Mrc20UtxoCollection           string = "mrc20utxos"
+	Mrc20UtxoMempoolCollection    string = "mrc20utxosmempool"
 	Mrc20TickCollection           string = "mrc20ticks"
 	//Mrc20MintShovel               string = "mrc20shovel"
 )
@@ -96,6 +97,8 @@ func connectMongoDb() {
 	//mrc20
 	createIndexIfNotExists(mongoClient, Mrc20TickCollection, "mrc20id_1", bson.D{{Key: "mrc20id", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, Mrc20UtxoCollection, "mrc20id_txpoint_verify_1", bson.D{{Key: "mrc20id", Value: 1}, {Key: "txpoint", Value: 1}, {Key: "index", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, Mrc20UtxoMempoolCollection, "mrc20id_txpoint_verify_1", bson.D{{Key: "mrc20id", Value: 1}, {Key: "txpoint", Value: 1}, {Key: "index", Value: 1}}, true)
+
 }
 
 func (mg *Mongodb) Count() (count pin.PinCount) {

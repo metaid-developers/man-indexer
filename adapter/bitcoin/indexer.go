@@ -10,6 +10,7 @@ import (
 	"manindexer/pin"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -66,6 +67,28 @@ func (indexer *Indexer) CatchPins(blockHeight int64) (pinInscriptions []*pin.Pin
 	}
 	return
 }
+
+func (indexer *Indexer) CatchMempoolPins(txList []interface{}) (pinInscriptions []*pin.PinInscription, txInList []string) {
+	timestamp := time.Now().Unix()
+	blockHash := "none"
+	merkleRoot := "none"
+	for i, item := range txList {
+		tx := item.(*wire.MsgTx)
+		for _, in := range tx.TxIn {
+			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
+			txInList = append(txInList, id)
+		}
+		if !tx.HasWitness() {
+			continue
+		}
+		txPins := indexer.CatchPinsByTx(tx, -1, timestamp, blockHash, merkleRoot, i)
+		if len(txPins) > 0 {
+			pinInscriptions = append(pinInscriptions, txPins...)
+		}
+	}
+	return
+}
+
 func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map[string]*pin.PinTransferInfo) {
 	trasferMap = make(map[string]*pin.PinTransferInfo)
 	block := indexer.Block.(*wire.MsgBlock)
@@ -109,13 +132,41 @@ func (indexer *Indexer) CatchNativeMrc20Transfer(blockHeight int64, utxoList []*
 	// }
 	return
 }
+func (indexer *Indexer) CatchMempoolNativeMrc20Transfer(txList []interface{}, utxoList []*mrc20.Mrc20Utxo, mrc20TransferPinTx map[string]struct{}) (savelist []*mrc20.Mrc20Utxo) {
+	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
+	//keyMap := make(map[string]*mrc20.Mrc20Utxo) //key point-tickid
+	for _, u := range utxoList {
+		if u.MrcOption == "deploy" {
+			continue
+		}
+		pointMap[u.TxPoint] = append(pointMap[u.TxPoint], u)
+	}
+	t := time.Now().Unix()
+	for _, item := range txList {
+		tx := item.(*wire.MsgTx)
+		//if have data transfer
+		_, ok := mrc20TransferPinTx[tx.TxHash().String()]
+		if ok {
+			continue
+		}
+		list := indexer.createMrc20NativeTransfer(tx, -1, t, pointMap)
+		if len(list) > 0 {
+			savelist = append(savelist, list...)
+		}
+	}
+	// for _, u := range keyMap {
+	// 	savelist = append(savelist, u)
+	// }
+	return
+}
 func (indexer *Indexer) createMrc20NativeTransfer(tx *wire.MsgTx, blockHeight int64, blockTime int64, pointMap map[string][]*mrc20.Mrc20Utxo) (mrc20Utxolist []*mrc20.Mrc20Utxo) {
 	keyMap := make(map[string]*mrc20.Mrc20Utxo)
 	for _, in := range tx.TxIn {
 		id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 		if v, ok := pointMap[id]; ok {
 			for _, utxo := range v {
-				send := mrc20.Mrc20Utxo{TxPoint: id, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1}
+				send := *utxo
+				send.Status = -1
 				mrc20Utxolist = append(mrc20Utxolist, &send)
 				key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
 				_, find := keyMap[key]
@@ -136,24 +187,12 @@ func (indexer *Indexer) createMrc20NativeTransfer(tx *wire.MsgTx, blockHeight in
 			}
 		}
 	}
-	return
-}
-func (indexer *Indexer) CatchMempoolNativeMrc20Transfer(tx *wire.MsgTx, utxoList []*mrc20.Mrc20Utxo) (savelist []*mrc20.Mrc20Utxo) {
-	pointMap := make(map[string][]*mrc20.Mrc20Utxo)
-	for _, u := range utxoList {
-		if u.MrcOption == "deploy" {
-			continue
-		}
-		pointMap[u.TxPoint] = append(pointMap[u.TxPoint], u)
-	}
-	block := indexer.Block.(*wire.MsgBlock)
-	t := block.Header.Timestamp.Unix()
-	list := indexer.createMrc20NativeTransfer(tx, -1, t, pointMap)
-	if len(list) > 0 {
-		savelist = append(savelist, list...)
+	for _, u := range keyMap {
+		mrc20Utxolist = append(mrc20Utxolist, u)
 	}
 	return
 }
+
 func (indexer *Indexer) GetOWnerAddress(inputId string, tx *wire.MsgTx) (info *pin.PinTransferInfo, err error) {
 	//fmt.Println("tx:", tx.TxHash().String(), inputId)
 	info = &pin.PinTransferInfo{}
@@ -312,7 +351,12 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 		contentTypeDetect := common.DetectContentType(&pinInscription.ContentBody)
 		pop := ""
 		if merkleRoot != "" && blockHash != "" {
-			pop, _ = common.GenPop(id, merkleRoot, blockHash)
+			if merkleRoot == "none" && blockHash == "none" {
+				pop = "none"
+			} else {
+				pop, _ = common.GenPop(id, merkleRoot, blockHash)
+			}
+
 		}
 		popLv, _ := pin.PopLevelCount(indexer.ChainName, pop)
 		creator := chain.GetCreatorAddress(v.PreviousOutPoint.Hash.String(), v.PreviousOutPoint.Index, indexer.ChainParams)

@@ -208,12 +208,16 @@ func (mg *Mongodb) GetMrc20UtxoByOutPutList(outputList []string) (list []*mrc20.
 	err = result.All(context.TODO(), &list)
 	return
 }
-func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo) (err error) {
+func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo, isMempool bool) (err error) {
 	var models []mongo.WriteModel
+	collection := Mrc20UtxoCollection
+	if isMempool {
+		collection = Mrc20UtxoMempoolCollection
+	}
 	for _, info := range list {
 		filter := bson.D{{Key: "txpoint", Value: info.TxPoint}, {Key: "index", Value: info.Index}, {Key: "mrc20id", Value: info.Mrc20Id}, {Key: "verify", Value: info.Verify}}
 		var updateInfo bson.D
-		if info.Status == -1 {
+		if info.Status == -1 && !isMempool {
 			updateInfo = append(updateInfo, bson.E{Key: "status", Value: -1})
 			//updateInfo = append(updateInfo, bson.E{Key: "amtchange", Value: info.AmtChange})
 		} else {
@@ -239,7 +243,7 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo) (err error) {
 		models = append(models, m)
 	}
 	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
-	_, err = mongoClient.Collection(Mrc20UtxoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+	_, err = mongoClient.Collection(collection).BulkWrite(context.Background(), models, bulkWriteOptions)
 	return
 }
 func (mg *Mongodb) GetHistoryByAddress(tickId string, address string, cursor int64, size int64, status string, verify string) (list []mrc20.Mrc20Utxo, total int64, err error) {

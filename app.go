@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"log"
 	"manindexer/api"
 	"manindexer/common"
@@ -14,18 +15,23 @@ var (
 	f embed.FS
 )
 
-func init() {
-	//fmt.Println("2>>")
-	//common.GetFlagConfig()
-}
 func main() {
-	log.Println("hello")
+	banner := `
+    __  ______    _   __
+   /  |/  /   |  / | / /  v0.0.2
+  / /|_/ / /| | /  |/ / 
+ / /  / / ___ |/ /|  /  
+/_/  /_/_/  |_/_/ |_/                   
+ `
+	fmt.Println(banner)
 	man.InitAdapter(common.Chain, common.Db, common.TestNet, common.Server)
 	log.Printf("ManIndex,chain=%s,test=%s,db=%s,server=%s", common.Chain, common.TestNet, common.Db, common.Server)
 	if common.Server == "1" {
 		go api.Start(f)
 	}
 	go man.ZmqRun()
+	mm := man.ManMempool{}
+	go mm.CheckMempool("btc")
 	// if *reindex != "" {
 	// 	arr := strings.Split(*reindex, ":")
 	// 	from, err1 := strconv.ParseInt(arr[0], 10, 64)

@@ -92,19 +92,20 @@ func (indexer *Indexer) TransferCheck(tx *wire.MsgTx) (transferPinList []*pin.Pi
 	}
 	return
 }
-func (indexer *Indexer) Mrc20NativeTransferCheck(tx *wire.MsgTx) {
+func (indexer *Indexer) Mrc20NativeTransferCheck(txMsg interface{}) {
+	tx := txMsg.(*wire.MsgTx)
 	var outputList []string
 	for _, in := range tx.TxIn {
 		output := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 		outputList = append(outputList, output)
 	}
 
-	mrc20transferCheck, err := (*indexer.DbAdapter).GetMrc20UtxoByOutPutList(outputList)
-	if err == nil && len(mrc20transferCheck) > 0 {
-		mrc20TrasferList := indexer.CatchMempoolNativeMrc20Transfer(tx, mrc20transferCheck)
-		if len(mrc20TrasferList) > 0 {
-			//TODO update mempool db
-			//DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
-		}
-	}
+	// mrc20transferCheck, err := (*indexer.DbAdapter).GetMrc20UtxoByOutPutList(outputList)
+	// if err == nil && len(mrc20transferCheck) > 0 {
+	// 	mrc20TrasferList := indexer.CatchMempoolNativeMrc20Transfer(tx, mrc20transferCheck)
+	// 	if len(mrc20TrasferList) > 0 {
+	// 		//TODO update mempool db
+	// 		//DbAdapter.UpdateMrc20Utxo(mrc20TrasferList)
+	// 	}
+	// }
 }

@@ -132,3 +132,17 @@ func (chain *BitcoinChain) GetCreatorAddress(txHashStr string, idx uint32, netPa
 	}
 	return
 }
+func (chain *BitcoinChain) GetMempoolTransactionList() (list []interface{}, err error) {
+	txIdList, err := client.GetRawMempool()
+	if err != nil {
+		return
+	}
+	for _, txHash := range txIdList {
+		tx, err := client.GetRawTransaction(txHash)
+		if err != nil {
+			continue
+		}
+		list = append(list, tx.MsgTx())
+	}
+	return
+}

@@ -112,7 +112,7 @@ func Start(f embed.FS) {
 	//btc json api
 	btcJsonApi(r)
 	mrc20JsonApi(r)
-	log.Println(common.Config.Web.Port)
+	log.Println("Server Start", common.Config.Web.Port)
 	if common.Config.Web.KeyFile != "" && common.Config.Web.PemFile != "" {
 		r.RunTLS(common.Config.Web.Port, common.Config.Web.PemFile, common.Config.Web.KeyFile)
 	} else {
