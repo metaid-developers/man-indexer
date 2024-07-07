@@ -119,22 +119,28 @@ func InitAdapter(chainType, dbType, test, server string) {
 }
 func ZmqRun() {
 	//zmq
+	mm := ManMempool{}
 	for chain, indexer := range IndexerAdapter {
 		if chain != "btc" {
 			continue
 		}
-		s := make(chan []*pin.PinInscription)
-		go indexer.ZmqRun(s)
+		msg := make(chan pin.MempollChanMsg)
+		go indexer.ZmqRun(msg)
 		//go IndexerAdapter.ZmqHashblock()
-		for x := range s {
-			for _, pinNode := range x {
+		for x := range msg {
+			for _, pinNode := range x.PinList {
 				if !pinNode.IsTransfered {
 					handleMempoolPin(pinNode)
 				} else if pinNode.IsTransfered {
 					handleMempoolTransferPin(pinNode)
 				}
 			}
+			list := []interface{}{x.Tx}
+			if len(list) > 0 {
+				mm.CheckMempoolHadle(chain, list)
+			}
 		}
+
 	}
 
 }
@@ -184,8 +190,9 @@ func CheckNewBlock() {
 	}
 }
 func DeleteMempoolData(bestHeight int64, chainName string) {
-	list := IndexerAdapter[chainName].GetBlockTxHash(bestHeight)
-	DbAdapter.DeleteMempoolInscription(list)
+	txList, pinIdList := IndexerAdapter[chainName].GetBlockTxHash(bestHeight)
+	DbAdapter.DeleteMempoolInscription(pinIdList)
+	DbAdapter.DeleteMempoolBrc20(txList)
 }
 func getSyncHeight(chainName string) (from, to int64) {
 	if MaxHeight[chainName] <= 0 {
@@ -333,7 +340,7 @@ func GetSaveData(chainName string, blockHeight int64) (
 	//pin validator
 	mrc20TransferPinTx := make(map[string]struct{})
 	for _, pinNode := range pins {
-		err := validator(pinNode)
+		err := ManValidator(pinNode)
 		if err != nil {
 			continue
 		}

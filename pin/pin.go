@@ -55,6 +55,10 @@ type PinTransferInfo struct {
 	Offset      uint64 `json:"offset"`
 	Location    string `json:"location"`
 }
+type MempollChanMsg struct {
+	PinList []*PinInscription
+	Tx      interface{}
+}
 type PersonalInformationNode struct {
 	Operation     string `json:"operation"`
 	Path          string `json:"path"`

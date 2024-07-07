@@ -57,3 +57,6 @@ func (pg *Postgresql) GetShovelListByAddress(address string, mrc20Id string, cre
 func (pg *Postgresql) GetUsedShovelIdListByAddress(address string, tickId string, cursor int64, size int64) (list []*string, total int64, err error) {
 	return
 }
+func (pg *Postgresql) DeleteMempoolBrc20(txIds []string) (err error) {
+	return
+}

@@ -47,6 +47,7 @@ type Mrc20Utxo struct {
 	Chain       string          `json:"chain"`
 	Index       int             `json:"index"`
 	Timestamp   int64           `json:"timestamp"`
+	OperationTx string          `json:"operationTx"`
 }
 type Mrc20DeployQual struct {
 	Creator string `json:"creator"`
@@ -114,7 +115,8 @@ type Mrc20TranferData struct {
 	Id     string `json:"id"`
 }
 type Mrc20Balance struct {
-	Id      string          `json:"id"`
-	Name    string          `json:"name"`
-	Balance decimal.Decimal `json:"balance"`
+	Id            string          `json:"id"`
+	Name          string          `json:"name"`
+	Balance       decimal.Decimal `json:"balance"`
+	UnsafeBalance decimal.Decimal `json:"unsafeBalance"`
 }

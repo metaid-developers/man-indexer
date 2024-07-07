@@ -57,3 +57,6 @@ func (pb *Pebble) GetShovelListByAddress(address string, mrc20Id string, creator
 func (pb *Pebble) GetUsedShovelIdListByAddress(address string, tickId string, cursor int64, size int64) (list []*string, total int64, err error) {
 	return
 }
+func (pb *Pebble) DeleteMempoolBrc20(txIds []string) (err error) {
+	return
+}

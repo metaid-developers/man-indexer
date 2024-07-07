@@ -226,6 +226,7 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 		if isMempool {
 			mrc20Utxo = *utxo
 			mrc20Utxo.Status = -1
+			mrc20Utxo.OperationTx = pinNode.GenesisTransaction
 		}
 		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
 		//inputAmtMap[utxo.Mrc20Id] += utxo.AmtChange
@@ -247,6 +248,7 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 		mrc20Utxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, item.Vout)
 		mrc20Utxo.PinContent = string(pinNode.ContentBody)
 		mrc20Utxo.Index = x
+		mrc20Utxo.OperationTx = pinNode.GenesisTransaction
 		mrc20Utxo.PointValue = outputValueList[item.Vout]
 		//mrc20Utxo.AmtChange, _ = strconv.ParseInt(item.Amount, 10, 64)
 		mrc20Utxo.AmtChange, _ = decimal.NewFromString(item.Amount)
@@ -288,6 +290,7 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 			mrc20Utxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, firstIdx)
 			mrc20Utxo.PointValue = outputValueList[firstIdx]
 			mrc20Utxo.PinContent = string(pinNode.ContentBody)
+			mrc20Utxo.TxPoint = pinNode.GenesisTransaction
 			mrc20Utxo.Index = x
 			//mrc20Utxo.AmtChange = inputAmt - outputAmtMap[id]
 			mrc20Utxo.AmtChange = inputAmt.Sub(outputAmtMap[id])
@@ -358,6 +361,7 @@ func sendAllAmountToFirstOutput(pinNode *pin.PinInscription, msg string) (mrc20U
 				Index:       0,
 				AmtChange:   item.AmtChange,
 				Msg:         msg,
+				OperationTx: pinNode.GenesisTransaction,
 			}
 		}
 

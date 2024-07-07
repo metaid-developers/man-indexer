@@ -29,7 +29,7 @@ func (indexer *Indexer) ZmqHashblock() {
 		}
 	}
 }
-func (indexer *Indexer) ZmqRun(chanMsg chan []*pin.PinInscription) {
+func (indexer *Indexer) ZmqRun(chanMsg chan pin.MempollChanMsg) {
 	q, _ := zmq.NewSocket(zmq.SUB)
 	defer q.Close()
 	err := q.Connect(common.Config.Mvc.ZmqHost)
@@ -45,12 +45,12 @@ func (indexer *Indexer) ZmqRun(chanMsg chan []*pin.PinInscription) {
 		}
 		pinInscriptions := indexer.CatchPinsByTx(&msgTx, 0, 0, "", "", 0)
 		if len(pinInscriptions) > 0 {
-			chanMsg <- pinInscriptions
+			chanMsg <- pin.MempollChanMsg{PinList: pinInscriptions, Tx: msgTx}
 		}
 		//PIN transfer check
 		tansferList, err := indexer.TransferCheck(&msgTx)
 		if err == nil && len(tansferList) > 0 {
-			chanMsg <- tansferList
+			chanMsg <- pin.MempollChanMsg{PinList: tansferList, Tx: msgTx}
 		}
 	}
 }

@@ -1,6 +1,8 @@
 package man
 
-import "manindexer/mrc20"
+import (
+	"manindexer/mrc20"
+)
 
 type ManMempool struct{}
 
@@ -10,12 +12,15 @@ func (mm *ManMempool) CheckMempool(chainName string) {
 	if err != nil {
 		return
 	}
+	mm.CheckMempoolHadle(chainName, list)
+}
+func (mm *ManMempool) CheckMempoolHadle(chainName string, list []interface{}) {
 	pins, txInList := IndexerAdapter[chainName].CatchMempoolPins(list)
 	mrc20TransferPinTx := make(map[string]struct{})
 	var mrc20TrasferList []*mrc20.Mrc20Utxo
 	mrc20Validator := Mrc20Validator{}
 	for _, pinNode := range pins {
-		err := validator(pinNode)
+		err := ManValidator(pinNode)
 		if err != nil {
 			continue
 		}
@@ -41,5 +46,4 @@ func (mm *ManMempool) CheckMempool(chainName string) {
 			DbAdapter.UpdateMrc20Utxo(mrc20NativeTrasferList, true)
 		}
 	}
-
 }

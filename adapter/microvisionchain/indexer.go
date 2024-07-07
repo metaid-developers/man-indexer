@@ -361,7 +361,7 @@ func (indexer *Indexer) parseOnePin(tokenizer *txscript.ScriptTokenizer) *pin.Pe
 	pinode.ContentLength = uint64(len(body))
 	return &pinode
 }
-func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) {
+func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string, pinIdList []string) {
 	chain := MicroVisionChain{}
 	blockMsg, err := chain.GetBlock(blockHeight)
 	if err != nil {
@@ -374,8 +374,9 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) 
 			pinId.WriteString(tx.TxHash().String())
 			pinId.WriteString("i")
 			pinId.WriteString(strconv.Itoa(i))
-			txhashList = append(txhashList, pinId.String())
+			pinIdList = append(pinIdList, pinId.String())
 		}
+		txhashList = append(txhashList, tx.TxHash().String())
 	}
 	return
 }

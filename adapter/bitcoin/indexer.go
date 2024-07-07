@@ -167,6 +167,7 @@ func (indexer *Indexer) createMrc20NativeTransfer(tx *wire.MsgTx, blockHeight in
 			for _, utxo := range v {
 				send := *utxo
 				send.Status = -1
+				send.OperationTx = tx.TxHash().String()
 				mrc20Utxolist = append(mrc20Utxolist, &send)
 				key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
 				_, find := keyMap[key]
@@ -182,6 +183,7 @@ func (indexer *Indexer) createMrc20NativeTransfer(tx *wire.MsgTx, blockHeight in
 					recive.TxPoint = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
 					recive.Timestamp = blockTime
 					recive.Chain = "btc"
+					recive.OperationTx = tx.TxHash().String()
 					keyMap[key] = &recive
 				}
 			}
@@ -628,7 +630,7 @@ func (indexer *Indexer) parseOnePin(tokenizer *txscript.ScriptTokenizer) *pin.Pe
 	pinode.ContentLength = uint64(len(body))
 	return &pinode
 }
-func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) {
+func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string, pinIdList []string) {
 	chain := BitcoinChain{}
 	blockMsg, err := chain.GetBlock(blockHeight)
 	if err != nil {
@@ -641,8 +643,9 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string) 
 			pinId.WriteString(tx.TxHash().String())
 			pinId.WriteString("i")
 			pinId.WriteString(strconv.Itoa(i))
-			txhashList = append(txhashList, pinId.String())
+			pinIdList = append(pinIdList, pinId.String())
 		}
+		txhashList = append(txhashList, tx.TxHash().String())
 	}
 	return
 }
