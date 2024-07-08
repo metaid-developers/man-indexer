@@ -312,6 +312,7 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	}
 	//}
 	//bar.Finish()
+	DeleteMempoolData(height, chainName)
 	return
 }
 func GetSaveData(chainName string, blockHeight int64) (

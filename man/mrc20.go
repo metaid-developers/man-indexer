@@ -262,19 +262,21 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 	for id, inputAmt := range inputAmtMap {
 		//inputAmt > outputAmtMap[id]
 		if inputAmt.Compare(outputAmtMap[id]) == 1 {
-			find := false
-			for _, utxo := range mrc20UtxoList {
-				vout := strings.Split(utxo.TxPoint, ":")[1]
-				if utxo.Mrc20Id == id && utxo.ToAddress == toAddress[0] && vout == "0" {
-					//utxo.AmtChange += (inputAmt - outputAmtMap[id])
-					diff := inputAmt.Sub(outputAmtMap[id])
-					utxo.AmtChange = utxo.AmtChange.Add(diff)
-					utxo.Msg = "The total input amount is greater than the output amount"
-					find = true
+			if !isMempool {
+				find := false
+				for _, utxo := range mrc20UtxoList {
+					vout := strings.Split(utxo.TxPoint, ":")[1]
+					if utxo.Mrc20Id == id && utxo.ToAddress == toAddress[0] && vout == "0" {
+						//utxo.AmtChange += (inputAmt - outputAmtMap[id])
+						diff := inputAmt.Sub(outputAmtMap[id])
+						utxo.AmtChange = utxo.AmtChange.Add(diff)
+						utxo.Msg = "The total input amount is greater than the output amount"
+						find = true
+					}
 				}
-			}
-			if find {
-				continue
+				if find {
+					continue
+				}
 			}
 			mrc20Utxo := mrc20.Mrc20Utxo{}
 			mrc20Utxo.Mrc20Id = id
@@ -290,7 +292,7 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 			mrc20Utxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, firstIdx)
 			mrc20Utxo.PointValue = outputValueList[firstIdx]
 			mrc20Utxo.PinContent = string(pinNode.ContentBody)
-			mrc20Utxo.TxPoint = pinNode.GenesisTransaction
+			mrc20Utxo.OperationTx = pinNode.GenesisTransaction
 			mrc20Utxo.Index = x
 			//mrc20Utxo.AmtChange = inputAmt - outputAmtMap[id]
 			mrc20Utxo.AmtChange = inputAmt.Sub(outputAmtMap[id])

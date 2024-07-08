@@ -42,7 +42,7 @@ func (mm *ManMempool) CheckMempoolHadle(chainName string, list []interface{}) {
 	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
 	if err == nil && len(mrc20transferCheck) > 0 {
 		mrc20NativeTrasferList := IndexerAdapter[chainName].CatchMempoolNativeMrc20Transfer(list, mrc20transferCheck, mrc20TransferPinTx)
-		if len(mrc20TrasferList) > 0 {
+		if len(mrc20NativeTrasferList) > 0 {
 			DbAdapter.UpdateMrc20Utxo(mrc20NativeTrasferList, true)
 		}
 	}
