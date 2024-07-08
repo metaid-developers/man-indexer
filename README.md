@@ -126,9 +126,13 @@ We support the following three deployment and execution methods.
   - Extract the files.
   - Properly configure the config.toml file in the same directory as the executable.
   - Run the executable.
-3. ### shell 
-  - Download the latest shell file from [here](https://github.com/metaid-developers/man-indexer/blob/main/doc/run_manindex.sh).
-  - Execute the shell file on the server.
+3. ### docker
+  - You need to install Docker and Docker Compose first.
+  - Download  docker-compose.yml  from [here](https://github.com/metaid-developers/man-indexer/blob/main/docker/docker-compose.yml)
+  - Download  .env  from [here](https://github.com/metaid-developers/man-indexer/blob/main/docker/.env)
+  - Fill in your configuration items in the .env file, especially the Bitcoin RPC node information.
+  - Run `docker-compose up -d` on the server.
+  - You can open the MAN browser using `http://DOMAIN_NAME:SERVER_PORT` as configured in the .env file, for example, `http://xxx.com:7778`.
 ```
 ./run_manindex.sh
 ```
