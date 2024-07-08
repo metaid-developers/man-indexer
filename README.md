@@ -126,7 +126,7 @@ We support the following three deployment and execution methods.
   - Extract the files.
   - Properly configure the config.toml file in the same directory as the executable.
   - Run the executable.
-3. ### docker
+3. ### Docker
   - You need to install Docker and Docker Compose first.
   - Download  docker-compose.yml  from [here](https://github.com/metaid-developers/man-indexer/blob/main/docker/docker-compose.yml)
   - Download  .env  from [here](https://github.com/metaid-developers/man-indexer/blob/main/docker/.env)
