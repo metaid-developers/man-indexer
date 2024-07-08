@@ -12,6 +12,8 @@ import (
 	"manindexer/pin"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/gin-contrib/cors"
@@ -25,16 +27,34 @@ func formatRootId(rootId string) string {
 	//return fmt.Sprintf("%s...%s", rootId[0:3], rootId[len(rootId)-3:])
 	return rootId[0:6]
 }
-func popLevelCount(pop string) string {
-	lv, _ := man.IndexerAdapter.PopLevelCount(pop)
+func formatTime(t int64) string {
+	tm := time.Unix(t, 0)
+	return tm.Format("2006-01-02 15:04:05")
+}
+func formatAddress(address string) string {
+	if len(address) < 6 {
+		return ""
+	}
+	return fmt.Sprintf("%s...%s", address[0:6], address[len(address)-3:])
+}
+func popLevelCount(chainName, pop string) string {
+	lv, _ := pin.PopLevelCount(chainName, pop)
 	if lv == -1 {
 		return "--"
 	}
 	return fmt.Sprintf("Lv%d", lv)
 }
-func popStrShow(pop string) string {
-	_, lastStr := man.IndexerAdapter.PopLevelCount(pop)
+func popStrShow(chainName, pop string) string {
+	_, lastStr := pin.PopLevelCount(chainName, pop)
 	return lastStr[0:8] + "..."
+}
+func outpointToTxId(outpoint string) string {
+	arr := strings.Split(outpoint, ":")
+	if len(arr) == 2 {
+		return arr[0]
+	} else {
+		return "erro"
+	}
 }
 func CorsMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
@@ -57,9 +77,12 @@ func Start(f embed.FS) {
 	gin.DefaultWriter = io.Discard
 	r := gin.Default()
 	funcMap := template.FuncMap{
-		"formatRootId":  formatRootId,
-		"popLevelCount": popLevelCount,
-		"popStrShow":    popStrShow,
+		"formatRootId":   formatRootId,
+		"popLevelCount":  popLevelCount,
+		"popStrShow":     popStrShow,
+		"formatAddress":  formatAddress,
+		"formatTime":     formatTime,
+		"outpointToTxId": outpointToTxId,
 	}
 	//use embed.FS
 	fp, _ := fs.Sub(f, "web/static")
@@ -79,14 +102,17 @@ func Start(f embed.FS) {
 	r.GET("/block/:height", block)
 	r.GET("/pin/:number", pinshow)
 	r.GET("/search/:key", searchshow)
-	r.GET("/tx/:txid", tx)
+	r.GET("/tx/:chain/:txid", tx)
 	r.GET("/node/:rootid", node)
 	r.GET("/content/:number", content)
 	r.GET("/stream/:number", stream)
-
+	//mrc20
+	r.GET("/mrc20/:page", mrc20List)
+	r.GET("/mrc20/history/:id/:page", mrc20History)
 	//btc json api
 	btcJsonApi(r)
-	log.Println(common.Config.Web.Port)
+	mrc20JsonApi(r)
+	log.Println("Server Start", common.Config.Web.Port)
 	if common.Config.Web.KeyFile != "" && common.Config.Web.PemFile != "" {
 		r.RunTLS(common.Config.Web.Port, common.Config.Web.PemFile, common.Config.Web.KeyFile)
 	} else {
@@ -103,7 +129,7 @@ func home(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop, MetaId: p.MetaId}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop, MetaId: p.MetaId, ChainName: p.ChainName}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -121,7 +147,7 @@ func pinPageList(ctx *gin.Context) {
 	}
 	var msg []*pin.PinMsg
 	for _, p := range list {
-		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop}
+		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Operation: p.Operation, Id: p.Id, Type: p.ContentTypeDetect, Path: p.Path, Pop: p.Pop, ChainName: p.ChainName}
 		msg = append(msg, pmsg)
 	}
 	count := man.DbAdapter.Count()
@@ -171,7 +197,7 @@ func metaid(ctx *gin.Context) {
 		ctx.String(200, "fail")
 		return
 	}
-	list, err := man.DbAdapter.GetMetaIdPageList(page, 100)
+	list, err := man.DbAdapter.GetMetaIdPageList(page, 100, "")
 	if err != nil {
 		ctx.String(200, "fail")
 		return
@@ -219,7 +245,13 @@ func content(ctx *gin.Context) {
 		ctx.Header("Content-Type", "text/html; charset=utf-8")
 		ctx.String(200, `<video controls autoplay muted src="/stream/`+p.Id+`"></viedo>`)
 	} else {
-		ctx.String(200, string(p.ContentBody))
+		baseStr, isImage := common.IsBase64Image(string(p.ContentBody))
+		if isImage {
+			ctx.String(200, baseStr+string(p.ContentBody))
+		} else {
+			ctx.String(200, string(p.ContentBody))
+		}
+
 	}
 }
 func stream(ctx *gin.Context) {
@@ -279,7 +311,7 @@ func block(ctx *gin.Context) {
 		pmsg := &pin.PinMsg{Content: p.ContentSummary, Number: p.Number, Id: p.Id, Type: p.ContentTypeDetect}
 		pins = append(pins, pmsg)
 	}
-	block := man.ChainAdapter.GetBlockMsg(height)
+	block := man.ChainAdapter["btc"].GetBlockMsg(height)
 	msg := gin.H{
 		"Pins":   pins,
 		"PinNum": total,
@@ -295,10 +327,15 @@ type txMsgOutput struct {
 	Script  string
 	Address string
 }
+type txMsgInput struct {
+	Point   string
+	Witness [][]string
+}
 
 func tx(ctx *gin.Context) {
 	txid := ctx.Param("txid")
-	trst, err := man.ChainAdapter.GetTransaction(txid)
+	chain := ctx.Param("chain")
+	trst, err := man.ChainAdapter[chain].GetTransaction(txid)
 	if err != nil {
 		ctx.String(200, "fail")
 		return
@@ -307,15 +344,33 @@ func tx(ctx *gin.Context) {
 	var outList []*txMsgOutput
 	for i, out := range tx.MsgTx().TxOut {
 		id := fmt.Sprintf("%s:%d", tx.Hash().String(), i)
-		address := man.IndexerAdapter.GetAddress(out.PkScript)
+		address := man.IndexerAdapter[chain].GetAddress(out.PkScript)
 		outList = append(outList, &txMsgOutput{Id: id, Value: out.Value, Script: string(out.PkScript), Address: address})
 	}
+	var inList []*txMsgInput
+	for _, in := range tx.MsgTx().TxIn {
+		point := in.PreviousOutPoint
+		witness := [][]string{}
+		if chain == "btc" && tx.MsgTx().HasWitness() {
+			//for _, in := range tx.MsgTx().TxIn {
+			if len(in.Witness) > 0 {
+				w, err := common.BtcParseWitnessScript(in.Witness)
+				if err == nil {
+					witness = w
+				}
+			}
+			//}
+		}
+		inList = append(inList, &txMsgInput{Point: point.String(), Witness: witness})
+	}
+
 	msg := gin.H{
 		"TxHash":    tx.Hash().String(),
 		"InputNum":  len(tx.MsgTx().TxIn),
 		"OutPutNum": len(tx.MsgTx().TxOut),
-		"TxIn":      tx.MsgTx().TxIn,
+		"TxIn":      inList,
 		"TxOut":     outList,
+		"Chain":     ctx.Param("chain"),
 	}
 	ctx.HTML(200, "home/tx.html", msg)
 }
@@ -328,4 +383,53 @@ func node(ctx *gin.Context) {
 		return
 	}
 	ctx.HTML(200, "home/node.html", &gin.H{"RootId": rootid, "Total": total, "Pins": list})
+}
+func mrc20List(ctx *gin.Context) {
+	page, err := strconv.ParseInt(ctx.Param("page"), 10, 64)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	cousor := (page - 1) * 100
+	_, list, err := man.DbAdapter.GetMrc20TickPageList(cousor, 100, "", "", "")
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	prePage := page - 1
+	nextPage := page + 1
+	if len(list) == 0 {
+		nextPage = 0
+	}
+	if prePage <= 0 {
+		prePage = 0
+	}
+	ctx.HTML(200, "home/mrc20.html", gin.H{"Ticks": list, "Active": "mrc20", "NextPage": nextPage, "PrePage": prePage})
+}
+func mrc20History(ctx *gin.Context) {
+	page, err := strconv.ParseInt(ctx.Param("page"), 10, 64)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+
+	if ctx.Param("id") == "" {
+		ctx.String(200, "fail")
+		return
+	}
+	list, _, err := man.DbAdapter.GetMrc20HistoryPageList(ctx.Param("id"), true, page, 20)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	prePage := page - 1
+	nextPage := page + 1
+	if len(list) == 0 {
+		nextPage = 0
+	}
+	if prePage <= 0 {
+		prePage = 0
+	}
+
+	ctx.HTML(200, "home/mrc20history.html", gin.H{"List": list, "Tick": ctx.Param("id"), "Active": "", "NextPage": nextPage, "PrePage": prePage})
 }

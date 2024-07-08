@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 )
 
 var (
@@ -41,6 +44,15 @@ func (chain *BitcoinChain) GetBlock(blockHeight int64) (block interface{}, err e
 		return
 	}
 	block, err = client.GetBlock(blockhash)
+	return
+}
+func (chain *BitcoinChain) GetBlockTime(blockHeight int64) (timestamp int64, err error) {
+	block, err := chain.GetBlock(blockHeight)
+	if err != nil {
+		return
+	}
+	b := block.(*wire.MsgBlock)
+	timestamp = b.Header.Timestamp.Unix()
 	return
 }
 func (chain *BitcoinChain) GetBlockByHash(hash string) (block *btcjson.GetBlockVerboseResult, err error) {
@@ -93,5 +105,44 @@ func (chain *BitcoinChain) GetBlockMsg(height int64) (blockMsg *pin.BlockMsg) {
 	blockMsg.Size = int64(block.Size)
 	blockMsg.Transaction = block.Tx
 	blockMsg.TransactionNum = len(block.Tx)
+	return
+}
+func (chain *BitcoinChain) GetCreatorAddress(txHashStr string, idx uint32, netParams *chaincfg.Params) (address string) {
+	txHash, err := chainhash.NewHashFromStr(txHashStr)
+	if err != nil {
+		return "errorAddr"
+	}
+	//get commit tx
+	tx, err := client.GetRawTransaction(txHash)
+	if err != nil {
+		return "errorAddr"
+	}
+	//get commit tx first input
+	inputHash := tx.MsgTx().TxIn[0].PreviousOutPoint.Hash
+	inputIdx := tx.MsgTx().TxIn[0].PreviousOutPoint.Index
+	inputTx, err := client.GetRawTransaction(&inputHash)
+	if err != nil {
+		return "errorAddr"
+	}
+	_, addresses, _, _ := txscript.ExtractPkScriptAddrs(inputTx.MsgTx().TxOut[inputIdx].PkScript, netParams)
+	if len(addresses) > 0 {
+		address = addresses[0].String()
+	} else {
+		address = "errorAddr"
+	}
+	return
+}
+func (chain *BitcoinChain) GetMempoolTransactionList() (list []interface{}, err error) {
+	txIdList, err := client.GetRawMempool()
+	if err != nil {
+		return
+	}
+	for _, txHash := range txIdList {
+		tx, err := client.GetRawTransaction(txHash)
+		if err != nil {
+			continue
+		}
+		list = append(list, tx.MsgTx())
+	}
 	return
 }

@@ -20,17 +20,23 @@
         <div class="row">
           {{ range $i, $v := .Ticks }}
           <div class="col-md-4 col-lg-3 col-xl-3 mb-4 ">
-            <a href="/mrc20/history/{{$v.TickId}}/1" class="link">
+            <a href="/mrc20/history/{{$v.Mrc20Id}}/1" class="link">
               <div class="pin-card height-200 blur shadow-blur">
                 <div class="pin-card-body">
                   <div class="number">#{{ $v.Tick }}</div>
-                  TickId: {{ $v.TickId }}<br />
-                  TokenName: {{ $v.TokenName }}<br />
-                  AmtPerMint: {{ $v.AmtPerMint }}<br />
-                  MintCount: {{ $v.MintCount }}<br />
-                  Blockheight: {{ $v.Blockheight }}<br />
-                  Qual: {{ $v.Qual }}<br />
-                  TotalMinted: {{ $v.TotalMinted }}
+                  <b>TickId: </b>{{ $v.Mrc20Id | formatAddress }}<br />
+                  <b>TokenName:</b> {{ $v.TokenName }}<br />
+                  <b>AmtPerMint:</b> {{ $v.AmtPerMint }}<br />
+                  <b>MintCount:</b> {{ $v.MintCount }}<br />
+                  <b>PremineCount:</b> {{ $v.PremineCount }}<br />
+                  <b>Blockheight:</b> {{ $v.Blockheight }}<br />
+                  <b>Qual:</b> {
+                  creator:"{{ $v.Qual.Creator }}",
+                  lvl:"{{ $v.Qual.Lv }}",
+                  count:"{{ $v.Qual.Count }}",
+                  path:"{{ $v.Qual.Path }}"
+                  }<br />
+                  <b>TotalMinted:</b> {{ $v.TotalMinted }}
                 </div>
               </div>
             </a>

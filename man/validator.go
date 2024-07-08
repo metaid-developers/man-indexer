@@ -16,7 +16,7 @@ func init() {
 		compliantPath[path] = struct{}{}
 	}
 }
-func validator(pinode *pin.PinInscription) (err error) {
+func ManValidator(pinode *pin.PinInscription) (err error) {
 	limitCheck := false
 	for _, limit := range OptionLimit {
 		if pinode.Operation == limit {

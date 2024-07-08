@@ -4,6 +4,7 @@
 <!-- Head -->
 {{ template "public/head.html"}}
 <!-- End Head -->
+
 <body>
   <!-- Header (Topbar) -->
   {{ template "public/header.html"}}
@@ -21,10 +22,27 @@
           <div>
             <ul>
               {{ range $i1, $v1 := .TxIn }}
-              <li style="padding-left: 30px;">{{ $v1.PreviousOutPoint}} </li>
+              <li style="padding-left: 15px;line-height: 30px;">
+                <a style="text-decoration: underline;" href="/tx/{{ $.Chain }}/{{$v1.Point | outpointToTxId}}"
+                   target="_blank">{{
+                  $v1.Point}}</a>
+                {{ if $v1.Witness }}
+                <div class="script">
+                  {{ range $wn := $v1.Witness }}
+                  <div>
+                    {{ range $info := $wn }}
+                    {{ $info }}
+                    {{ end }}
+                  </div>
+                  {{end}}
+                </div>
+                {{end}}
+
+              </li>
               {{ end }}
             </ul>
           </div>
+
           <div class="row row-title">{{ .OutPutNum }} Outputs</div>
           <div>
             <ul>

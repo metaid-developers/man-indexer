@@ -9,6 +9,8 @@ import (
 	"manindexer/database"
 	"manindexer/database/mongodb"
 	"manindexer/man"
+	"manindexer/pin"
+	"strconv"
 	"testing"
 
 	"github.com/btcsuite/btcd/btcutil"
@@ -67,11 +69,16 @@ func TestAddMempoolPin(t *testing.T) {
 }
 func TestDelMempoolPin(t *testing.T) {
 	man.InitAdapter("btc", "mongo", "1", "1")
-	man.DeleteMempoolData(2572919)
+	man.DeleteMempoolData(2572919, "btc")
 }
 func TestConfig(t *testing.T) {
 	config := common.Config
 	fmt.Println(config.Protocols)
+	decimals, err := strconv.ParseInt("", 10, 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(decimals)
 }
 
 func TestGetDbPin(t *testing.T) {
@@ -108,23 +115,9 @@ func TestMongoGeneratorFind(t *testing.T) {
 }
 func TestGetSaveData(t *testing.T) {
 	man.InitAdapter("btc", "mongo", "1", "1")
-	man.GetSaveData(2816534)
-	// chain := &bitcoin.BitcoinChain{}
-
-	// b, _ := chain.GetBlock(2816534)
-	// block := b.(*wire.MsgBlock)
-	// for _, tx := range block.Transactions {
-	// 	if tx.TxHash().String() == "1aa8b3f358fcd4931c1a59d0c1eab6476909b92f02d2c215471cbdd03bb910da" {
-	// 		for _, in := range tx.TxIn {
-	// 			id := fmt.Sprintf("%si%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
-	// 			if id == "fa387e936bd347b1f22a3d5f9989ae3b5d1a7726da00a4c5462a624387467014i0" {
-	// 				fmt.Println("find")
-	// 			}
-	// 		}
-	// 		break
-	// 	}
-	// }
-	//fmt.Println(block.Header.BlockHash().String())
+	pinList, _, _, _, _, mrc20List, _, _, err := man.GetSaveData("btc", 652)
+	fmt.Println(err, len(pinList), len(mrc20List))
+	man.Mrc20Handle(mrc20List)
 }
 func TestHash(t *testing.T) {
 	add := "tb1pss8ce6tgupnhmfj8u9h4saue48upucu04c7549tzal6n67v8njyst7e0fx"
@@ -154,4 +147,10 @@ func TestGetOwner(t *testing.T) {
 	// }
 	ll, e := man.DbAdapter.GetMempoolTransfer("tb1q3h9twrcz7s5mz7q2eu6pneex446tp3v5yasnp5", "")
 	fmt.Println(e, len(ll))
+}
+func TestRarityScoreBinary(t *testing.T) {
+	str := "00000000000000000000000000354712732267161417502043436707557310655121055015573522441662265776662610002362543123510570022146525640016535265733565315137521366643101110550222"
+	//fmt.Println(pin.RarityScoreBinary("000001010101"))
+	fmt.Println(pin.RarityScoreBinary("btc", str))
+
 }

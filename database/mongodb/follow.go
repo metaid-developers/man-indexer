@@ -12,13 +12,19 @@ import (
 func (mg *Mongodb) BatchUpsertFollowData(followData []*pin.FollowData) (err error) {
 	var followList []*pin.FollowData
 	var unFollowList []*pin.FollowData
+	followMap := make(map[string]int)
 	for _, follow := range followData {
 		if follow.Status {
 			followList = append(followList, follow)
+			followMap[follow.MetaId] += 1
+			go addFollowFDV(follow.MetaId, follow.FollowMetaId, "follow")
 		} else {
 			unFollowList = append(unFollowList, follow)
+			followMap[follow.MetaId] -= 1
+			go addFollowFDV(follow.MetaId, follow.FollowMetaId, "unfollow")
 		}
 	}
+	go batchUpdateFollowCount(followMap)
 	var followModels []mongo.WriteModel
 	for _, info := range followList {
 		filter := bson.D{{Key: "metaid", Value: info.MetaId}, {Key: "followmetaid", Value: info.FollowMetaId}}

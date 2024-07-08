@@ -2,33 +2,38 @@ package man
 
 import (
 	"fmt"
-	"log"
 	"manindexer/adapter"
 	"manindexer/adapter/bitcoin"
+	"manindexer/adapter/microvisionchain"
 	"manindexer/common"
 	"manindexer/database"
 	"manindexer/database/mongodb"
 	"manindexer/database/pebbledb"
 	"manindexer/database/postgresql"
 	"manindexer/pin"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/IceflowRE/go-multiprogressbar"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/schollz/progressbar/v3"
 )
 
 var (
-	ChainAdapter   adapter.Chain
-	IndexerAdapter adapter.Indexer
+	ChainAdapter   map[string]adapter.Chain
+	IndexerAdapter map[string]adapter.Indexer
 	DbAdapter      database.Db
+	ChainParams    *chaincfg.Params
 	//Number          int64    = 0
-	MaxHeight       int64    = 0
-	CurBlockHeight  int64    = 0
-	BaseFilter      []string = []string{"/info", "/file", "/flow"}
+	MaxHeight       map[string]int64
+	CurBlockHeight  map[string]int64
+	BaseFilter      []string = []string{"/info", "/file", "/flow", "ft"}
 	SyncBaseFilter  map[string]struct{}
 	ProtocolsFilter map[string]struct{}
-	OptionLimit     []string = []string{"create", "modify", "revoke"}
+	OptionLimit     []string = []string{"create", "modify", "revoke", "hide"}
+	BarMap          map[string]*progressbar.ProgressBar
 )
 
 const (
@@ -48,9 +53,13 @@ const (
 )
 
 func InitAdapter(chainType, dbType, test, server string) {
-
+	ChainAdapter = make(map[string]adapter.Chain)
+	IndexerAdapter = make(map[string]adapter.Indexer)
+	MaxHeight = make(map[string]int64)
+	CurBlockHeight = make(map[string]int64)
 	ProtocolsFilter = make(map[string]struct{})
 	SyncBaseFilter = make(map[string]struct{})
+	BarMap = make(map[string]*progressbar.ProgressBar)
 	syncConfig := common.Config.Sync
 	if len(syncConfig.SyncProtocols) > 0 {
 		for _, f := range BaseFilter {
@@ -71,42 +80,69 @@ func InitAdapter(chainType, dbType, test, server string) {
 		DbAdapter = &pebbledb.Pebble{}
 	}
 	DbAdapter.InitDatabase()
-	switch chainType {
-	case "btc":
-		ChainAdapter = &bitcoin.BitcoinChain{}
-		chainParams := &chaincfg.MainNetParams
-		if test == "1" {
-			chainParams = &chaincfg.TestNet3Params
-		}
-		if test == "2" {
-			chainParams = &chaincfg.RegressionNetParams
-		}
-		IndexerAdapter = &bitcoin.Indexer{
-			ChainParams: chainParams,
-			PopCutNum:   common.Config.Btc.PopCutNum,
-			DbAdapter:   &DbAdapter,
-		}
-		// case "mvc":
-		// 	ChainAdapter = &mvc.MvcChain{}
-		// 	IndexerAdapter = &mvc.Indexer{}
+	chainList := strings.Split(chainType, ",")
+	ChainParams = &chaincfg.MainNetParams
+	if test == "1" {
+		ChainParams = &chaincfg.TestNet3Params
 	}
-	bestHeight := ChainAdapter.GetBestHeight()
-	common.InitHeightFile("./del_mempool_height.txt", bestHeight)
+	if test == "2" {
+		ChainParams = &chaincfg.RegressionNetParams
+	}
+	for _, chain := range chainList {
+		switch chain {
+		case "btc":
+			ChainAdapter[chain] = &bitcoin.BitcoinChain{}
+			IndexerAdapter[chain] = &bitcoin.Indexer{
+				ChainParams: ChainParams,
+				PopCutNum:   common.Config.Btc.PopCutNum,
+				DbAdapter:   &DbAdapter,
+				ChainName:   chain,
+			}
+			//BarMap[chain] = progressbar.Default(1, "[BTC]")
+			bestHeight := ChainAdapter[chain].GetBestHeight()
+			common.InitHeightFile("./btc_del_mempool_height.txt", bestHeight)
+		case "mvc":
+			ChainAdapter[chain] = &microvisionchain.MicroVisionChain{}
+			IndexerAdapter[chain] = &microvisionchain.Indexer{
+				ChainParams: ChainParams,
+				PopCutNum:   common.Config.Mvc.PopCutNum,
+				DbAdapter:   &DbAdapter,
+				ChainName:   chain,
+			}
+
+			//BarMap[chain] = progressbar.Default(1, "[MVC]")
+			bestHeight := ChainAdapter["mvc"].GetBestHeight()
+			common.InitHeightFile("./mvc_del_mempool_height.txt", bestHeight)
+		}
+	}
+
 }
 func ZmqRun() {
 	//zmq
-	s := make(chan []*pin.PinInscription)
-	go IndexerAdapter.ZmqRun(s)
-	//go IndexerAdapter.ZmqHashblock()
-	for x := range s {
-		for _, pinNode := range x {
-			if !pinNode.IsTransfered {
-				handleMempoolPin(pinNode)
-			} else if pinNode.IsTransfered {
-				handleMempoolTransferPin(pinNode)
+	mm := ManMempool{}
+	for chain, indexer := range IndexerAdapter {
+		if chain != "btc" {
+			continue
+		}
+		msg := make(chan pin.MempollChanMsg)
+		go indexer.ZmqRun(msg)
+		//go IndexerAdapter.ZmqHashblock()
+		for x := range msg {
+			for _, pinNode := range x.PinList {
+				if !pinNode.IsTransfered {
+					handleMempoolPin(pinNode)
+				} else if pinNode.IsTransfered {
+					handleMempoolTransferPin(pinNode)
+				}
+			}
+			list := []interface{}{x.Tx}
+			if len(list) > 0 {
+				mm.CheckMempoolHadle(chain, list)
 			}
 		}
+
 	}
+
 }
 func handleMempoolPin(pinNode *pin.PinInscription) {
 	if pinNode.Operation == "modify" || pinNode.Operation == "revoke" {
@@ -138,33 +174,36 @@ func handleMempoolTransferPin(pinNode *pin.PinInscription) {
 	DbAdapter.AddMempoolTransfer(&transferPin)
 }
 func CheckNewBlock() {
-	bestHeight := ChainAdapter.GetBestHeight()
-	localLastHeight, err := common.GetLocalLastHeight("./del_mempool_height.txt")
-	if err != nil {
-		return
-	}
-	if localLastHeight >= bestHeight {
-		return
-	}
-	for i := localLastHeight; i <= bestHeight; i++ {
-		DeleteMempoolData(i)
-		common.UpdateLocalLastHeight("./del_mempool_height.txt", i)
+	for k, chain := range ChainAdapter {
+		bestHeight := chain.GetBestHeight()
+		localLastHeight, err := common.GetLocalLastHeight(fmt.Sprintf("./%s_del_mempool_height.txt", k))
+		if err != nil {
+			return
+		}
+		if localLastHeight >= bestHeight {
+			return
+		}
+		for i := localLastHeight; i <= bestHeight; i++ {
+			DeleteMempoolData(i, k)
+			common.UpdateLocalLastHeight(fmt.Sprintf("./%s_del_mempool_height.txt", k), i)
+		}
 	}
 }
-func DeleteMempoolData(bestHeight int64) {
-	list := IndexerAdapter.GetBlockTxHash(bestHeight)
-	DbAdapter.DeleteMempoolInscription(list)
+func DeleteMempoolData(bestHeight int64, chainName string) {
+	txList, pinIdList := IndexerAdapter[chainName].GetBlockTxHash(bestHeight)
+	DbAdapter.DeleteMempoolInscription(pinIdList)
+	DbAdapter.DeleteMempoolBrc20(txList)
 }
-func getSyncHeight() (from, to int64) {
-	if MaxHeight <= 0 {
+func getSyncHeight(chainName string) (from, to int64) {
+	if MaxHeight[chainName] <= 0 {
 		var err error
-		MaxHeight, err = DbAdapter.GetMaxHeight()
+		MaxHeight[chainName], err = DbAdapter.GetMaxHeight(chainName)
 		if err != nil {
 			return
 		}
 	}
-	bestHeight := ChainAdapter.GetBestHeight()
-	if MaxHeight >= bestHeight {
+	bestHeight := ChainAdapter[chainName].GetBestHeight()
+	if MaxHeight[chainName] >= bestHeight {
 		return
 	}
 	/*
@@ -172,56 +211,111 @@ func getSyncHeight() (from, to int64) {
 			Number = DbAdapter.GetMaxNumber()
 		}
 	*/
-	initialHeight := ChainAdapter.GetInitialHeight()
-	if MaxHeight < initialHeight {
+	initialHeight := ChainAdapter[chainName].GetInitialHeight()
+	if MaxHeight[chainName] < initialHeight {
 		from = initialHeight
 	} else {
-		from = MaxHeight
+		from = MaxHeight[chainName]
 	}
 	to = bestHeight
 	return
 }
-func IndexerRun(from, to int64) (err error) {
-	if from == 0 && to == 0 {
-		from, to = getSyncHeight()
-		if from >= to {
-			return
-		}
-	}
-	log.Println("from:", from, ",to:", to)
-	bar := progressbar.Default(to - from)
-	for i := from + 1; i <= to; i++ {
-		bar.Add(1)
-		MaxHeight = i
-		pinList, protocolsData, metaIdData, pinTreeData, updatedData, _, followData, infoAdditional, _ := GetSaveData(i)
-		if len(metaIdData) > 0 {
-			err = DbAdapter.BatchUpsertMetaIdInfo(metaIdData)
-			//metaIdData = metaIdData[0:0]
-		}
-		if len(pinList) > 0 {
-			DbAdapter.BatchAddPins(pinList)
-		}
 
-		if len(pinTreeData) > 0 {
-			DbAdapter.BatchAddPinTree(pinTreeData)
+func IndexerRun() {
+	size := int64(0)
+	fromMap := make(map[string]int64)
+	toMap := make(map[string]int64)
+	mpb := multiprogressbar.New()
+	mbpIndex := make(map[string]int)
+	i := 0
+	for chainName := range ChainAdapter {
+		from, to := getSyncHeight(chainName)
+		if from >= to {
+			continue
 		}
-		if len(protocolsData) > 0 {
-			DbAdapter.BatchAddProtocolData(protocolsData)
+		if to-from > size {
+			size = to - from
 		}
-		if len(updatedData) > 0 {
-			DbAdapter.BatchUpdatePins(updatedData)
-		}
-		if len(followData) > 0 {
-			DbAdapter.BatchUpsertFollowData(followData)
-		}
-		if len(infoAdditional) > 0 {
-			DbAdapter.BatchUpsertMetaIdInfoAddition(infoAdditional)
+		fromMap[chainName] = from
+		toMap[chainName] = to
+		BarMap[chainName] = progressbar.Default(to-from, "["+chainName+"]")
+		//BarMap[chainName].ChangeMax64(to)
+		//BarMap[chainName].Set64(from)
+		mpb.Add(BarMap[chainName])
+		mbpIndex[chainName] = i
+		i += 1
+	}
+	if size > 0 {
+		for i := int64(0); i <= size; i++ {
+			var nextStr []string
+			for chainName := range ChainAdapter {
+				if _, ok := fromMap[chainName]; !ok {
+					continue
+				}
+				if toMap[chainName]-fromMap[chainName] < i {
+					continue
+				}
+				next := fromMap[chainName] + i
+				timestamp, err := ChainAdapter[chainName].GetBlockTime(next)
+				if err != nil {
+					return
+				}
+				nextStr = append(nextStr, fmt.Sprintf("%d_%s_%d", timestamp, chainName, next))
+			}
+			if len(nextStr) > 0 {
+				sort.Strings(nextStr)
+				for _, str := range nextStr {
+					arr := strings.Split(str, "_")
+					nextHeight, _ := strconv.ParseInt(arr[2], 10, 64)
+					chainName := arr[1]
+					DoIndexerRun(chainName, nextHeight)
+					mpb.Get(mbpIndex[chainName]).Add(1)
+				}
+			}
 		}
 	}
-	bar.Finish()
+
+}
+func DoIndexerRun(chainName string, height int64) (err error) {
+	//bar := progressbar.Default(to - from)
+	//for i := from + 1; i <= to; i++ {
+	//bar.Add(1)
+	MaxHeight[chainName] = height
+	pinList, protocolsData, metaIdData, pinTreeData, updatedData, mrc20List, followData, infoAdditional, _ := GetSaveData(chainName, height)
+
+	if len(metaIdData) > 0 {
+		err = DbAdapter.BatchUpsertMetaIdInfo(metaIdData)
+		//metaIdData = metaIdData[0:0]
+	}
+	if len(pinList) > 0 {
+		DbAdapter.BatchAddPins(pinList)
+	}
+
+	if len(pinTreeData) > 0 {
+		DbAdapter.BatchAddPinTree(pinTreeData)
+	}
+	if len(protocolsData) > 0 {
+		DbAdapter.BatchAddProtocolData(protocolsData)
+	}
+	if len(updatedData) > 0 {
+		DbAdapter.BatchUpdatePins(updatedData)
+	}
+	if len(followData) > 0 {
+		DbAdapter.BatchUpsertFollowData(followData)
+	}
+	if len(infoAdditional) > 0 {
+		DbAdapter.BatchUpsertMetaIdInfoAddition(infoAdditional)
+	}
+	//Handle MRC20 last.
+	if len(mrc20List) > 0 {
+		Mrc20Handle(mrc20List)
+	}
+	//}
+	//bar.Finish()
+	DeleteMempoolData(height, chainName)
 	return
 }
-func GetSaveData(blockHeight int64) (
+func GetSaveData(chainName string, blockHeight int64) (
 	pinList []interface{},
 	protocolsData []*pin.PinInscription,
 	metaIdData map[string]*pin.MetaIdInfo,
@@ -232,7 +326,7 @@ func GetSaveData(blockHeight int64) (
 	infoAdditional []*pin.MetaIdInfoAdditional,
 	err error) {
 	metaIdData = make(map[string]*pin.MetaIdInfo)
-	pins, txInList := IndexerAdapter.CatchPins(blockHeight)
+	pins, txInList := IndexerAdapter[chainName].CatchPins(blockHeight)
 	//check transfer
 	transferCheck, err := DbAdapter.GetPinListByOutPutList(txInList)
 	if err == nil && len(transferCheck) > 0 {
@@ -240,11 +334,14 @@ func GetSaveData(blockHeight int64) (
 		for _, t := range transferCheck {
 			idMap[t.Output] = struct{}{}
 		}
-		trasferMap := IndexerAdapter.CatchTransfer(idMap)
+		trasferMap := IndexerAdapter[chainName].CatchTransfer(idMap)
 		DbAdapter.UpdateTransferPin(trasferMap)
 	}
+
+	//pin validator
+	mrc20TransferPinTx := make(map[string]struct{})
 	for _, pinNode := range pins {
-		err := validator(pinNode)
+		err := ManValidator(pinNode)
 		if err != nil {
 			continue
 		}
@@ -257,9 +354,20 @@ func GetSaveData(blockHeight int64) (
 		}
 		pinList = append(pinList, pinNode)
 		//mrc20 pin
-		// if common.Config.Mrc20 == 1 && len(pinNode.Path) > 7 && pinNode.Path[0:7] == "/mrc20/" {
-		// 	mrc20List = append(mrc20List, pinNode)
-		// }
+		if len(pinNode.Path) > 10 && pinNode.Path[0:10] == "/ft/mrc20/" {
+			mrc20List = append(mrc20List, pinNode)
+			if pinNode.Path == "/ft/mrc20/transfer" {
+				mrc20TransferPinTx[pinNode.GenesisTransaction] = struct{}{}
+			}
+		}
+	}
+	//check mrc20 transfer
+	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
+	if err == nil && len(mrc20transferCheck) > 0 {
+		mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(blockHeight, mrc20transferCheck, mrc20TransferPinTx)
+		if len(mrc20TrasferList) > 0 {
+			DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
+		}
 	}
 
 	handlePathAndOperation(&pinList, &metaIdData, &pinTreeData, &updatedData, &followData, &infoAdditional)
@@ -287,6 +395,9 @@ func createPinNumber(pinList *[]interface{}) {
 		maxNumber := DbAdapter.GetMaxNumber()
 		for _, p := range *pinList {
 			pinNode := p.(*pin.PinInscription)
+			if pinNode.ChainName != "btc" {
+				continue
+			}
 			pinNode.Number = maxNumber
 			maxNumber += 1
 			if pinNode.MetaId == "" {
@@ -299,6 +410,9 @@ func createMetaIdNumber(metaIdData map[string]*pin.MetaIdInfo) {
 	if len(metaIdData) > 0 {
 		maxMetaIdNumber := DbAdapter.GetMaxMetaIdNumber()
 		for _, m := range metaIdData {
+			if m.ChainName != "btc" {
+				continue
+			}
 			if m.Number == 0 {
 				m.Number = maxMetaIdNumber
 				maxMetaIdNumber += 1
@@ -316,7 +430,6 @@ func handlePathAndOperation(
 	var modifyPinIdList []string
 	newPinMap := make(map[string]*pin.PinInscription)
 	for _, p := range *pinList {
-
 		pinNode := p.(*pin.PinInscription)
 		if pinNode.MetaId == "" {
 			pinNode.MetaId = common.GetMetaIdByAddress(pinNode.Address)
@@ -517,6 +630,9 @@ func metaIdInfoParse(pinNode *pin.PinInscription, path string, metaIdData *map[s
 
 	if metaIdInfo.MetaId == "" {
 		metaIdInfo.MetaId = pinNode.Id
+	}
+	if metaIdInfo.ChainName == "" {
+		metaIdInfo.ChainName = pinNode.ChainName
 	}
 	switch path {
 	case "/info/name":

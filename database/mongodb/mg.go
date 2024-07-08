@@ -7,8 +7,10 @@ import (
 	"manindexer/common"
 	"manindexer/database"
 	"manindexer/pin"
+	"reflect"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -24,9 +26,10 @@ const (
 	PinTreeCatalogCollection      string = "pintree"
 	FollowCollection              string = "follow"
 	InfoCollection                string = "info"
-	// Mrc20PinCollection       string = "mrc20pins"
-	// Mrc20TickCollection      string = "mrc20ticks"
-	// Mrc20MintShovel          string = "mrc20shovel"
+	Mrc20UtxoCollection           string = "mrc20utxos"
+	Mrc20UtxoMempoolCollection    string = "mrc20utxosmempool"
+	Mrc20TickCollection           string = "mrc20ticks"
+	//Mrc20MintShovel               string = "mrc20shovel"
 )
 
 var (
@@ -45,6 +48,10 @@ func connectMongoDb() {
 	defer cancel()
 	o := options.Client().ApplyURI(mg.MongoURI)
 	o.SetMaxPoolSize(uint64(mg.PoolSize))
+	o.SetRegistry(bson.NewRegistryBuilder().
+		RegisterDecoder(reflect.TypeOf(decimal.Decimal{}), Decimal{}).
+		RegisterEncoder(reflect.TypeOf(decimal.Decimal{}), Decimal{}).
+		Build())
 	client, err := mongo.Connect(ctx, o)
 	if err != nil {
 		log.Panic("ConnectToDB", err)
@@ -61,9 +68,13 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, PinsCollection, "id_1", bson.D{{Key: "id", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, PinsCollection, "output_1", bson.D{{Key: "output", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "path_1", bson.D{{Key: "path", Value: 1}}, false)
-	createIndexIfNotExists(mongoClient, PinsCollection, "metaid_1", bson.D{{Key: "metaid", Value: 1}}, false)
-	createIndexIfNotExists(mongoClient, PinsCollection, "number_1", bson.D{{Key: "number", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinsCollection, "chainname_1", bson.D{{Key: "chainname", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "timestamp_1", bson.D{{Key: "timestamp", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinsCollection, "metaid_1", bson.D{{Key: "metaid", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinsCollection, "creatormetaid_1", bson.D{{Key: "creatormetaid", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinsCollection, "number_1", bson.D{{Key: "number", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinsCollection, "operation_1", bson.D{{Key: "operation", Value: 1}}, false)
+
 	createIndexIfNotExists(mongoClient, PinsCollection, "address_status_1", bson.D{{Key: "address", Value: 1}, {Key: "status", Value: 1}}, false)
 
 	createIndexIfNotExists(mongoClient, MempoolPinsCollection, "id_1", bson.D{{Key: "id", Value: 1}}, true)
@@ -83,6 +94,12 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, MempoolTransferPinsCollection, "fromaddress_1", bson.D{{Key: "fromaddress", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, MempoolTransferPinsCollection, "toaddress_1", bson.D{{Key: "toaddress", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, MempoolTransferPinsCollection, "txhash_1", bson.D{{Key: "txhash", Value: 1}}, false)
+
+	//mrc20
+	createIndexIfNotExists(mongoClient, Mrc20TickCollection, "mrc20id_1", bson.D{{Key: "mrc20id", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, Mrc20UtxoCollection, "mrc20id_txpoint_verify_1", bson.D{{Key: "mrc20id", Value: 1}, {Key: "txpoint", Value: 1}, {Key: "index", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, Mrc20UtxoMempoolCollection, "mrc20id_txpoint_verify_1", bson.D{{Key: "mrc20id", Value: 1}, {Key: "txpoint", Value: 1}, {Key: "index", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, Mrc20UtxoMempoolCollection, "mrc20id_operationtx_1", bson.D{{Key: "operationtx", Value: 1}}, false)
 }
 
 func (mg *Mongodb) Count() (count pin.PinCount) {
@@ -177,9 +194,9 @@ func getCondition(filter database.GeneratorFilter) bson.D {
 	case ">":
 		return bson.D{{Key: "$gt", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
 	case ">=":
-		return bson.D{{Key: "$lt", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
-	case "<":
 		return bson.D{{Key: "$gte", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
+	case "<":
+		return bson.D{{Key: "$lt", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
 	case "<=":
 		return bson.D{{Key: "$lte", Value: bson.D{{Key: filter.Key, Value: filter.Value}}}}
 	default:

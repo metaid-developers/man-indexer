@@ -124,6 +124,9 @@ func (mg *Mongodb) BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (e
 		if info.Address != "" {
 			updateInfo = append(updateInfo, bson.E{Key: "address", Value: info.Address})
 		}
+		if info.ChainName != "" {
+			updateInfo = append(updateInfo, bson.E{Key: "chainname", Value: info.ChainName})
+		}
 		if len(info.Avatar) > 0 {
 			updateInfo = append(updateInfo, bson.E{Key: "avatar", Value: info.Avatar})
 		}
@@ -150,10 +153,76 @@ func (mg *Mongodb) BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (e
 	//fmt.Println("BatchUpsertMetaIdInfo time: ", eT)
 	return
 }
-
-func (mg *Mongodb) GetMetaIdPageList(page int64, size int64) (pins []*pin.MetaIdInfo, err error) {
+func addPDV(pins []interface{}) error {
+	var models []mongo.WriteModel
+	for _, p := range pins {
+		pinNode := p.(*pin.PinInscription)
+		filter := bson.D{{Key: "metaid", Value: pinNode.MetaId}}
+		updateInfo := bson.M{"$inc": bson.M{"pdv": pinNode.DataValue}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(updateInfo).SetUpsert(true)
+		models = append(models, m)
+	}
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err := mongoClient.Collection(MetaIdInfoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+	return err
+}
+func addFDV(pins []interface{}) (err error) {
+	for _, p := range pins {
+		pinNode := p.(*pin.PinInscription)
+		addSingleFDV(pinNode.MetaId, pinNode.DataValue)
+	}
+	return
+}
+func addSingleFDV(metaId string, value int) (err error) {
+	//get follow
+	filter := bson.M{"followmetaid": metaId, "status": true}
+	result, err := mongoClient.Collection(FollowCollection).Find(context.TODO(), filter)
+	if err != nil {
+		return
+	}
+	var followData []*pin.FollowData //pin.FollowData
+	err = result.All(context.TODO(), &followData)
+	if err != nil {
+		return
+	}
+	if len(followData) <= 0 {
+		return
+	}
+	var models []mongo.WriteModel
+	for _, f := range followData {
+		filter := bson.D{{Key: "metaid", Value: f.MetaId}}
+		updateInfo := bson.M{"$inc": bson.M{"fdv": value}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(updateInfo).SetUpsert(true)
+		models = append(models, m)
+	}
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err = mongoClient.Collection(MetaIdInfoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+	return err
+}
+func addFollowFDV(metaId string, follower string, action string) (err error) {
+	var info pin.MetaIdInfo
+	filter := bson.M{"metaid": follower}
+	err = mongoClient.Collection(MetaIdInfoCollection).FindOne(context.TODO(), filter).Decode(&info)
+	if err != nil {
+		return
+	}
+	filter = bson.M{"metaid": metaId}
+	value := info.Pdv
+	if action == "unfollow" {
+		value = value * -1
+	}
+	update := bson.M{"$inc": bson.M{"fdv": value}}
+	_, err = mongoClient.Collection(MetaIdInfoCollection).UpdateOne(context.TODO(), filter, update)
+	return
+}
+func (mg *Mongodb) GetMetaIdPageList(page int64, size int64, order string) (pins []*pin.MetaIdInfo, err error) {
 	cursor := (page - 1) * size
-	opts := options.Find().SetSort(bson.D{{Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(size)
+	if order == "" {
+		order = "number"
+	}
+	opts := options.Find().SetSort(bson.D{{Key: order, Value: -1}}).SetSkip(cursor).SetLimit(size)
 	result, err := mongoClient.Collection(MetaIdInfoCollection).Find(context.TODO(), bson.M{}, opts)
 	if err != nil {
 		return
@@ -176,5 +245,31 @@ func (mg *Mongodb) BatchUpsertMetaIdInfoAddition(infoList []*pin.MetaIdInfoAddit
 
 	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
 	_, err = mongoClient.Collection(InfoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+	return
+}
+func batchUpdateFollowCount(list map[string]int) (err error) {
+	var models []mongo.WriteModel
+	for metaid, cnt := range list {
+		filter := bson.D{{Key: "metaid", Value: metaid}}
+		var updateInfo bson.D
+		updateInfo = append(updateInfo, bson.E{Key: "followcount", Value: cnt})
+
+		update := bson.D{{Key: "$inc", Value: updateInfo}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(update)
+		models = append(models, m)
+	}
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err = mongoClient.Collection(MetaIdInfoCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+
+	return
+}
+func (mg *Mongodb) GetDataValueByMetaIdList(list []string) (result []*pin.MetaIdDataValue, err error) {
+	filter := bson.M{"$or": bson.A{bson.M{"address": bson.M{"$in": list}}, bson.M{"metaid": bson.M{"$in": list}}}}
+	find, err := mongoClient.Collection(MetaIdInfoCollection).Find(context.TODO(), filter)
+	if err != nil {
+		return
+	}
+	err = find.All(context.TODO(), &result)
 	return
 }
