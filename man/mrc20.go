@@ -116,10 +116,12 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 	info.AmtPerMint = df.AmtPerMint
 	info.PremineCount = premineCount
 	info.MintCount = mintCount
-	info.Blockheight = df.Blockheight
+	info.BeginHeight = df.BeginHeight
+	info.EndHeight = df.EndHeight
 	info.Metadata = df.Metadata
 	info.DeployType = df.DeployType
-	info.Qual = df.Qual
+	info.PinCheck = df.PinCheck
+	info.PayCheck = df.PayCheck
 	info.DeployTime = pinNode.Timestamp
 
 	info.Mrc20Id = pinNode.Id
@@ -178,7 +180,11 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 	mrc20Utxo.PinContent = string(pinNode.ContentBody)
 	mrc20Utxo.Timestamp = pinNode.Timestamp
 	mrc20Utxo.PointValue = pinNode.OutputValue
-	info, shovelList, err1 := validator.Mint(content, pinNode)
+	info, shovelList, toAddress, vout, err1 := validator.Mint(content, pinNode)
+	if toAddress != "" {
+		mrc20Utxo.ToAddress = toAddress
+		mrc20Utxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, vout)
+	}
 	if info != (mrc20.Mrc20DeployInfo{}) {
 		mrc20Utxo.Mrc20Id = info.Mrc20Id
 		mrc20Utxo.Tick = info.Tick
@@ -198,6 +204,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 
 	return
 }
+
 func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Validator, isMempool bool) (mrc20UtxoList []*mrc20.Mrc20Utxo, err error) {
 	var content []mrc20.Mrc20TranferData
 	err = json.Unmarshal(pinNode.ContentBody, &content)

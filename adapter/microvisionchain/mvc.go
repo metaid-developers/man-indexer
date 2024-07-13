@@ -21,7 +21,7 @@ type MicroVisionChain struct {
 	IsTest bool
 }
 
-func init() {
+func (chain *MicroVisionChain) InitChain() {
 	mvc := common.Config.Mvc
 	rpcConfig := &rpcclient.ConnConfig{
 		Host:                 mvc.RpcHost,

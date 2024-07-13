@@ -18,6 +18,8 @@ const (
 	ErrMintPopNull          = "shovel is none"
 	ErrMintPopDiff          = "pop level check failed"
 	ErrMintCreator          = "creator check failed"
+	ErrMintVout             = "vout value error"
+	ErrMintPayCheck         = "payCheck validation failed"
 	ErrMintPathCheck        = "shovel path check failed"
 	ErrMintCountCheck       = "shovel count check failed"
 	ErrMintTickIdNull       = "tickId is null"
@@ -55,50 +57,64 @@ type Mrc20DeployQual struct {
 	Path    string `json:"path"`
 	Count   string `json:"count"`
 }
+type Mrc20DeployPayCheck struct {
+	PayTo     string `json:"payTo"`
+	PayAmount string `json:"payAmount"`
+}
+type Mrc20DeployPayCheckLower struct {
+	PayTo     string `json:"payto"`
+	PayAmount string `json:"payamount"`
+}
 type Mrc20Deploy struct {
-	Tick         string          `json:"tick"`
-	TokenName    string          `json:"tokenName"`
-	Decimals     string          `json:"decimals"`
-	AmtPerMint   string          `json:"amtPerMint"`
-	MintCount    string          `json:"mintCount"`
-	Blockheight  string          `json:"blockheight"`
-	Metadata     string          `json:"metadata"`
-	DeployType   string          `json:"type"`
-	PremineCount string          `json:"premineCount"`
-	Qual         Mrc20DeployQual `json:"qual"`
+	Tick         string              `json:"tick"`
+	TokenName    string              `json:"tokenName"`
+	Decimals     string              `json:"decimals"`
+	AmtPerMint   string              `json:"amtPerMint"`
+	MintCount    string              `json:"mintCount"`
+	BeginHeight  string              `json:"beginHeight"`
+	EndHeight    string              `json:"endHeight"`
+	Metadata     string              `json:"metadata"`
+	DeployType   string              `json:"type"`
+	PremineCount string              `json:"premineCount"`
+	PinCheck     Mrc20DeployQual     `json:"pinCheck"`
+	PayCheck     Mrc20DeployPayCheck `json:"payCheck"`
 }
 type Mrc20DeployLow struct {
-	Tick         string          `json:"tick"`
-	TokenName    string          `json:"tokenname"`
-	Decimals     string          `json:"decimals"`
-	AmtPerMint   string          `json:"amtpermint"`
-	MintCount    string          `json:"mintcount"`
-	Blockheight  string          `json:"blockheight"`
-	Metadata     string          `json:"metadata"`
-	DeployType   string          `json:"type"`
-	PremineCount string          `json:"preminecount"`
-	Qual         Mrc20DeployQual `json:"qual"`
+	Tick         string                   `json:"tick"`
+	TokenName    string                   `json:"tokenname"`
+	Decimals     string                   `json:"decimals"`
+	AmtPerMint   string                   `json:"amtpermint"`
+	MintCount    string                   `json:"mintcount"`
+	BeginHeight  string                   `json:"beginheight"`
+	EndHeight    string                   `json:"endheight"`
+	Metadata     string                   `json:"metadata"`
+	DeployType   string                   `json:"type"`
+	PremineCount string                   `json:"preminecount"`
+	PinCheck     Mrc20DeployQual          `json:"pincheck"`
+	PayCheck     Mrc20DeployPayCheckLower `json:"paycheck"`
 }
 type Mrc20DeployInfo struct {
-	Tick         string          `json:"tick"`
-	TokenName    string          `json:"tokenName"`
-	Decimals     string          `json:"decimals"`
-	AmtPerMint   string          `json:"amtPerMint"`
-	MintCount    int64           `json:"mintCount"`
-	Blockheight  string          `json:"blockheight"`
-	Metadata     string          `json:"metadata"`
-	DeployType   string          `json:"type"`
-	PremineCount int64           `json:"premineCount"`
-	Qual         Mrc20DeployQual `json:"qual"`
-	TotalMinted  int64           `json:"totalMinted"`
-	Mrc20Id      string          `json:"mrc20Id"`
-	PinNumber    int64           `json:"pinNumber"`
-	Chain        string          `json:"chain"`
-	Holders      int64           `json:"holders"`
-	TxCount      int64           `json:"txCount"`
-	MetaId       string          `json:"metaId"`
-	Address      string          `json:"address"`
-	DeployTime   int64           `json:"deployTime"`
+	Tick         string              `json:"tick"`
+	TokenName    string              `json:"tokenName"`
+	Decimals     string              `json:"decimals"`
+	AmtPerMint   string              `json:"amtPerMint"`
+	MintCount    int64               `json:"mintCount"`
+	BeginHeight  string              `json:"beginHeight"`
+	EndHeight    string              `json:"endHeight"`
+	Metadata     string              `json:"metadata"`
+	DeployType   string              `json:"type"`
+	PremineCount int64               `json:"premineCount"`
+	PinCheck     Mrc20DeployQual     `json:"pinCheck"`
+	PayCheck     Mrc20DeployPayCheck `json:"payCheck"`
+	TotalMinted  int64               `json:"totalMinted"`
+	Mrc20Id      string              `json:"mrc20Id"`
+	PinNumber    int64               `json:"pinNumber"`
+	Chain        string              `json:"chain"`
+	Holders      int64               `json:"holders"`
+	TxCount      int64               `json:"txCount"`
+	MetaId       string              `json:"metaId"`
+	Address      string              `json:"address"`
+	DeployTime   int64               `json:"deployTime"`
 }
 
 type Mrc20Shovel struct {
@@ -106,7 +122,8 @@ type Mrc20Shovel struct {
 	Mrc20MintPin string `json:"mrc20MintPin"`
 }
 type Mrc20MintData struct {
-	Id string `json:"id"`
+	Id   string `json:"id"`
+	Vout string `json:"vout"`
 	//Pin string `json:"pin"`
 }
 type Mrc20TranferData struct {

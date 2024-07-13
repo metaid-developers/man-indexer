@@ -19,7 +19,7 @@ import (
 )
 
 func TestGetBlock(t *testing.T) {
-
+	common.InitConfig()
 	chain := &bitcoin.BitcoinChain{}
 	block, err := chain.GetBlock(1)
 	fmt.Println(err)
@@ -68,6 +68,7 @@ func TestAddMempoolPin(t *testing.T) {
 	fmt.Println(err)
 }
 func TestDelMempoolPin(t *testing.T) {
+	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
 	man.DeleteMempoolData(2572919, "btc")
 }
@@ -82,6 +83,7 @@ func TestConfig(t *testing.T) {
 }
 
 func TestGetDbPin(t *testing.T) {
+	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
 	p, err := man.DbAdapter.GetPinByNumberOrId("999")
 	fmt.Println(err)
@@ -114,18 +116,39 @@ func TestMongoGeneratorFind(t *testing.T) {
 	}
 }
 func TestGetSaveData(t *testing.T) {
+	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
-	pinList, _, _, _, _, mrc20List, _, _, err := man.GetSaveData("btc", 652)
+	pinList, _, _, _, _, mrc20List, _, _, err := man.GetSaveData("btc", 2867557)
 	fmt.Println(err, len(pinList), len(mrc20List))
-	man.Mrc20Handle(mrc20List)
+	var testList []*pin.PinInscription
+	for _, mrc20 := range mrc20List {
+		if mrc20.GenesisTransaction == "de9cfc3410653c52b323e9bb5b0ca9209119264c3eac9b9cf614e5415f3d1bf9" {
+			testList = append(testList, mrc20)
+		}
+	}
+	man.Mrc20Handle(testList)
+}
+func TestCatchData(t *testing.T) {
+	common.InitConfig()
+	man.InitAdapter("btc", "mongo", "1", "1")
+	from := 2867541
+	to := 2867557
+	// for i := from; i <= to; i++ {
+	// 	man.DoIndexerRun("btc", int64(i))
+	// }
+	man.DoIndexerRun("btc", int64(from))
+	man.DoIndexerRun("btc", int64(to))
+
 }
 func TestHash(t *testing.T) {
+	common.InitConfig()
 	add := "tb1pss8ce6tgupnhmfj8u9h4saue48upucu04c7549tzal6n67v8njyst7e0fx"
 	h := common.GetMetaIdByAddress(add)
 	fmt.Println(add)
 	fmt.Println(h)
 }
 func TestGetOwner(t *testing.T) {
+	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
 	//txResult, err := man.ChainAdapter.GetTransaction("d8373e66a6852331c667c94bdccdac94b4908b7ca47b35a00d90a76ae29eb015")
 	//fmt.Println(err)
