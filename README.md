@@ -182,17 +182,10 @@ Lists MetaID data in the memory pool, which is automatically deleted after being
 
 ## Basic API
 Here is the deployed public API service: https://man.metaid.io
-|Endpoint|Method|Parameter|Description|
-|---|---|---|---|
-|/api/pin/{numberOrId}|GET|PIN number or PIN id|Get PIN details based on PIN number or PIN id|
-|/api/address/pin/list/{addressType}/{address}|GET|address, addressType: creator (creator), owner (owner)|Get a list of PINs created or owned by the specified address|
-|/api/address/pin/root/{address}|GET|address|Get PIN root based on the specified address|
-|/api/node/child/{pinId}|GET|pinId|Get child nodes based on the specified PIN id|
-|/api/node/parent/{pinId}|GET|pinId|Get parent nodes based on the specified PIN id|
-|/api/info/address/{address}|GET|address|Get MetaID info for the specified address|
-|/api/info/rootId/{rootId}|GET|rootId|Get MetaID info based on the specified rootId|
-|/api/pin/content/{numberOrId}|GET|PIN number or PIN id|Get the content of a PIN based on PIN number or PIN id|
-|/api/getAllPinByParentPath|GET|page, limit, parentPath|Get all PINs based on the specified parentPath|
+1. [JSON API ‐ PIN](https://github.com/metaid-developers/man-indexer/wiki/JSON-API-%E2%80%90-PIN)
+2. [JSON API ‐ MetaID](https://github.com/metaid-developers/man-indexer/wiki/JSON-API-%E2%80%90-MetaID)
+3. [JSON API ‐ Follow](https://github.com/metaid-developers/man-indexer/wiki/JSON-API-%E2%80%90-Follow)
+4. [JSON API ‐ MRC20](https://github.com/metaid-developers/man-indexer/wiki/JSON-API-%E2%80%90-MRC20)
 
 ## generalQuery
 
