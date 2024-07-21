@@ -118,21 +118,22 @@ func TestMongoGeneratorFind(t *testing.T) {
 func TestGetSaveData(t *testing.T) {
 	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
-	pinList, _, _, _, _, mrc20List, _, _, err := man.GetSaveData("btc", 2867557)
+	pinList, _, _, _, _, mrc20List, _, _, err := man.GetSaveData("btc", 2868996)
 	fmt.Println(err, len(pinList), len(mrc20List))
-	var testList []*pin.PinInscription
-	for _, mrc20 := range mrc20List {
-		if mrc20.GenesisTransaction == "de9cfc3410653c52b323e9bb5b0ca9209119264c3eac9b9cf614e5415f3d1bf9" {
-			testList = append(testList, mrc20)
-		}
-	}
-	man.Mrc20Handle(testList)
+	// var testList []*pin.PinInscription
+	// for _, mrc20 := range mrc20List {
+	// 	if mrc20.GenesisTransaction == "3f7f5a5b31b97df8d8c568b649ce8e8f38f39db714a8f52ac104b6d2dd889d45" {
+	// 		testList = append(testList, mrc20)
+	// 	}
+	// }
+	//man.Mrc20Handle(testList)
+	man.Mrc20Handle(mrc20List)
 }
 func TestCatchData(t *testing.T) {
 	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
-	from := 2867541
-	to := 2867557
+	from := 2868128
+	to := 2868128
 	// for i := from; i <= to; i++ {
 	// 	man.DoIndexerRun("btc", int64(i))
 	// }
@@ -142,7 +143,7 @@ func TestCatchData(t *testing.T) {
 }
 func TestHash(t *testing.T) {
 	common.InitConfig()
-	add := "tb1pss8ce6tgupnhmfj8u9h4saue48upucu04c7549tzal6n67v8njyst7e0fx"
+	add := "tb1qtjqupfjej6a9wu94g374fvnlq6ks9v4am7hwtz"
 	h := common.GetMetaIdByAddress(add)
 	fmt.Println(add)
 	fmt.Println(h)
