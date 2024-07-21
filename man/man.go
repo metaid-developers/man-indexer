@@ -523,7 +523,8 @@ func creatFollowData(pinNode *pin.PinInscription, follow bool) (followData *pin.
 	followData = &pin.FollowData{}
 	if follow {
 		followData.MetaId = string(pinNode.ContentBody)
-		followData.FollowMetaId = pinNode.MetaId
+		//followData.FollowMetaId = pinNode.MetaId
+		followData.FollowMetaId = pinNode.CreateMetaId
 		followData.FollowPinId = pinNode.Id
 		followData.FollowTime = pinNode.Timestamp
 		followData.Status = true
