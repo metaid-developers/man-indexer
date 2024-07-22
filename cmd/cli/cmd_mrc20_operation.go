@@ -249,11 +249,10 @@ func mrc20opMint(tickId string, feeRate int64) {
 		fee                    int64  = 0
 		err                    error
 		opRep                  *mrc20_service.Mrc20OpRequest
-		payload                string                      = fmt.Sprintf(`{"id":"%s"}`, tickId)
-		mintPins               []*mrc20_service.MintPin    = make([]*mrc20_service.MintPin, 0)
-		payTos                 []*mrc20_service.PayTo      = make([]*mrc20_service.PayTo, 0)
-		commitUtxos            []*mrc20_service.CommitUtxo = make([]*mrc20_service.CommitUtxo, 0)
-		changeAddress          string                      = wallet.GetAddress()
+		payload                string                   = fmt.Sprintf(`{"id":"%s"}`, tickId)
+		mintPins               []*mrc20_service.MintPin = make([]*mrc20_service.MintPin, 0)
+		payTos                 []*mrc20_service.PayTo   = make([]*mrc20_service.PayTo, 0)
+		changeAddress          string                   = wallet.GetAddress()
 		fetchCommitUtxoFunc    mrc20_service.FetchCommitUtxoFunc
 	)
 
@@ -270,7 +269,6 @@ func mrc20opMint(tickId string, feeRate int64) {
 		MetaIdFlag:    getMetaIdFlag(),
 		Op:            "mint",
 		OpPayload:     payload,
-		CommitUtxos:   commitUtxos,
 		MintPins:      mintPins,
 		PayTos:        payTos,
 		Mrc20OutValue: 546,
@@ -303,7 +301,6 @@ func mrc20opTransfer(tickId, to, amount string, feeRate int64) {
 		toPkScript, _                 = mrc20_service.AddressToPkScript(getNetParams(), to)
 		changeAddress          string = wallet.GetAddress()
 		opRep                  *mrc20_service.Mrc20OpRequest
-		commitUtxos            []*mrc20_service.CommitUtxo    = make([]*mrc20_service.CommitUtxo, 0)
 		transferMrc20s         []*mrc20_service.TransferMrc20 = make([]*mrc20_service.TransferMrc20, 0)
 		mrc20Outs              []*mrc20_service.Mrc20OutInfo  = []*mrc20_service.Mrc20OutInfo{
 			{
@@ -333,7 +330,6 @@ func mrc20opTransfer(tickId, to, amount string, feeRate int64) {
 		MetaIdFlag:     getMetaIdFlag(),
 		Op:             "transfer",
 		OpPayload:      payload,
-		CommitUtxos:    commitUtxos,
 		TransferMrc20s: transferMrc20s,
 		Mrc20Outs:      mrc20Outs,
 		ChangeAddress:  changeAddress,
