@@ -32,6 +32,7 @@ type Mrc20Builder struct {
 	MintPins            []*MintPin
 	mrc20OutValue       int64
 	mrc20OutAddressList []string
+	PayTos              []*PayTo
 
 	//transfer
 	TransferMrc20s []*TransferMrc20
@@ -117,6 +118,11 @@ type CalInput struct {
 	OutTxId    string
 	OutIndex   uint32
 	OutAddress string
+}
+
+type PayTo struct {
+	Amount  int64
+	Address string
 }
 
 func NewMrc20BuilderFromPsbtRaws(net *chaincfg.Params, revealPsbtRaw string) (*Mrc20Builder, error) {
@@ -252,6 +258,14 @@ func (m *Mrc20Builder) buildEmptyRevealPsbt() error {
 			}
 			outputs = append(outputs, mrc20Out)
 		}
+		for _, v := range m.PayTos {
+			out := common.Output{
+				Address: v.Address,
+				Amount:  uint64(v.Amount),
+				//Script:  "",
+			}
+			outputs = append(outputs, out)
+		}
 	} else if m.op == "transfer" {
 		out := common.Output{
 			Address: m.mrc20ChangeAddress,
@@ -360,6 +374,9 @@ func (m *Mrc20Builder) CalRevealPsbtFee(feeRate int64) int64 {
 		for _, v := range m.mrc20OutAddressList {
 			revealOutValues += m.mrc20OutValue
 			_ = v
+		}
+		for _, v := range m.PayTos {
+			revealOutValues += v.Amount
 		}
 	} else if m.op == "transfer" {
 		for _, v := range m.TransferMrc20s {

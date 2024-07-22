@@ -75,8 +75,7 @@ require (
 )
 
 require (
-	github.com/IceflowRE/go-multiprogressbar v0.0.0-20240301202418-a5b650b2970c
-	github.com/btcsuite/btcd/btcec/v2 v2.1.3 // indirect
+	github.com/btcsuite/btcd/btcec/v2 v2.1.3
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/btcsuite/btcd/btcutil/psbt v1.1.9
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
@@ -86,7 +85,6 @@ require (
 	github.com/cockroachdb/pebble v1.1.0
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/metasv/bsvd v0.0.0-20210926134818-129f22d6f7eb
 	github.com/pebbe/zmq4 v1.2.10
 	github.com/schollz/progressbar/v3 v3.14.2
 	github.com/shopspring/decimal v1.4.0
