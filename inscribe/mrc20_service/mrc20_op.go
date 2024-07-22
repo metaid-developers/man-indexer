@@ -148,7 +148,7 @@ func Mrc20Mint(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoF
 	}
 	fee = mrc20Builder.CalRevealPsbtFee(feeRate)
 
-	commitUtxos, err := fetchUtxos(fee)
+	commitUtxos, err := fetchUtxos(fee + 153*mrc20Builder.FeeRate)
 	if err != nil {
 		fmt.Println("Need fee:", fee)
 		return "", "", 0, err
@@ -201,6 +201,7 @@ func Mrc20Transfer(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitU
 		MetaIdData:         metaIdData,
 		CommitUtxos:        opRep.CommitUtxos,
 		TransferMrc20s:     opRep.TransferMrc20s,
+		ChangeAddress:      opRep.ChangeAddress,
 		Mrc20Outs:          opRep.Mrc20Outs,
 		FeeRate:            feeRate,
 		op:                 opRep.Op,
@@ -222,7 +223,7 @@ func Mrc20Transfer(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitU
 	}
 	fee = mrc20Builder.CalRevealPsbtFee(feeRate)
 
-	commitUtxos, err := fetchUtxos(fee)
+	commitUtxos, err := fetchUtxos(fee + 153*mrc20Builder.FeeRate)
 	if err != nil {
 		return "", "", 0, err
 	}
