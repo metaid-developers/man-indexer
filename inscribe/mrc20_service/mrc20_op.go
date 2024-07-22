@@ -19,6 +19,7 @@ type Mrc20OpRequest struct {
 	MintPins            []*MintPin
 	Mrc20OutValue       int64
 	Mrc20OutAddressList []string
+	PayTos              []*PayTo
 
 	//transfer
 	TransferMrc20s []*TransferMrc20
@@ -124,6 +125,7 @@ func Mrc20Mint(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoF
 		MetaIdData:  metaIdData,
 		CommitUtxos: opRep.CommitUtxos,
 		MintPins:    opRep.MintPins,
+		PayTos:      opRep.PayTos,
 		//TransferMrc20s: opRep.TransferMrc20s,
 		FeeRate: feeRate,
 		op:      opRep.Op,

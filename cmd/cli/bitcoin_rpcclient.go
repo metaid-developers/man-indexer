@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/rpcclient"
 )
@@ -46,17 +45,17 @@ func InitBtcRpc(walletName string) {
 	}
 }
 
-func GetBtcUtxo() ([]btcjson.ListUnspentResult, error) {
-	return client.ListUnspent()
-}
-
-func CreateWallet(name string) (*btcjson.CreateWalletResult, error) {
-	return client.CreateWallet(name, rpcclient.WithCreateWalletPassphrase(""))
-}
-
-func CreateAccount(name string) error {
-	return client.CreateNewAccount(name)
-}
+//func GetBtcUtxo() ([]btcjson.ListUnspentResult, error) {
+//	return client.ListUnspent()
+//}
+//
+//func CreateWallet(name string) (*btcjson.CreateWalletResult, error) {
+//	return client.CreateWallet(name, rpcclient.WithCreateWalletPassphrase(""))
+//}
+//
+//func CreateAccount(name string) error {
+//	return client.CreateNewAccount(name)
+//}
 
 func GetNewAddress(accountName string) (string, error) {
 	newAddress, err := client.GetNewAddressType(accountName, "bech32")

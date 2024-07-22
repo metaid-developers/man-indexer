@@ -2,7 +2,6 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"manindexer/common"
 	"manindexer/inscribe/mrc20_service"
 	"manindexer/man"
@@ -22,56 +21,6 @@ func getNetParams() *chaincfg.Params {
 	} else {
 		return &chaincfg.MainNetParams
 	}
-}
-
-func GetBtcUtxoList(address string, needAmount int64) ([]*mrc20_service.CommitUtxo, error) {
-	utxos, err := GetBtcUtxo()
-	if err != nil {
-		return nil, err
-	}
-	list := make([]*mrc20_service.CommitUtxo, 0)
-	totalAmount := int64(0)
-	for _, u := range utxos {
-		//check pin
-		outPoint := fmt.Sprintf("%s:%d", u.TxID, u.Vout)
-		pinInfo, err := man.DbAdapter.GetPinByOutput(outPoint)
-		if err != nil {
-			return nil, err
-		}
-		if pinInfo != nil {
-			continue
-		}
-
-		//check mrc20
-		_, total, err := man.DbAdapter.GetHistoryByTx(u.TxID, int64(u.Vout), 0, 100)
-		if err != nil {
-			return nil, err
-		}
-		if total > 0 {
-			continue
-		}
-		pkScript, err := mrc20_service.AddressToPkScript(getNetParams(), address)
-		if err != nil {
-			return nil, err
-		}
-
-		amountDe := decimal.NewFromFloat(u.Amount)
-		amountDe = amountDe.Mul(decimal.New(1, 8))
-		item := &mrc20_service.CommitUtxo{
-			PrivateKeyHex: wallet.GetPrivateKey(),
-			PkScript:      pkScript,
-			Address:       wallet.GetAddress(),
-			UtxoTxId:      u.TxID,
-			UtxoIndex:     u.Vout,
-			UtxoOutValue:  amountDe.IntPart(),
-		}
-		list = append(list, item)
-		totalAmount += item.UtxoOutValue
-		if totalAmount >= needAmount {
-			break
-		}
-	}
-	return list, nil
 }
 
 func getMrc20Utxos(address, tickId, needAmount string) ([]*mrc20_service.TransferMrc20, error) {
@@ -124,10 +73,11 @@ func getMrc20Utxos(address, tickId, needAmount string) ([]*mrc20_service.Transfe
 	return utxos, nil
 }
 
-func getShovelList(address, tickId string) ([]*mrc20_service.MintPin, error) {
+func getShovels(address, tickId string) ([]*mrc20_service.MintPin, []*mrc20_service.PayTo, error) {
+	payTos := make([]*mrc20_service.PayTo, 0)
 	info, err := man.DbAdapter.GetMrc20TickInfo(tickId, "")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	lv := int(0)
 	path := ""
@@ -149,20 +99,31 @@ func getShovelList(address, tickId string) ([]*mrc20_service.MintPin, error) {
 			path = info.PinCheck.Path
 		}
 	}
+	if info.PayCheck.PayTo != "" {
+		payAddress := info.PayCheck.PayTo
+		payAmount, _ := strconv.ParseInt(info.PayCheck.PayAmount, 10, 64)
+		if payAmount < 546 {
+			payAmount = 546
+		}
+		payTos = append(payTos, &mrc20_service.PayTo{
+			Amount:  payAmount,
+			Address: payAddress,
+		})
+	}
 	count, _ = strconv.ParseInt(info.PinCheck.Count, 10, 64)
 	if count == 0 {
-		return nil, nil
+		return nil, payTos, nil
 	}
 	list, total, err := man.DbAdapter.GetShovelListByAddress(address, tickId, info.PinCheck.Creator, lv, path, query, key, operator, value, 0, 1000)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if count > total {
-		return nil, errors.New("insufficient shovel list")
+		return nil, nil, errors.New("insufficient shovel list")
 	}
 	pkScript, err := mrc20_service.AddressToPkScript(getNetParams(), address)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	shovelList := make([]*mrc20_service.MintPin, 0)
 	for i, v := range list {
@@ -190,5 +151,5 @@ func getShovelList(address, tickId string) ([]*mrc20_service.MintPin, error) {
 			break
 		}
 	}
-	return shovelList, nil
+	return shovelList, payTos, nil
 }

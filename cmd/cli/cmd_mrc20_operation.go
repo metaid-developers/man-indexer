@@ -35,7 +35,7 @@ var mrc20OperationCmd = &cobra.Command{
 			amtPerMint := ""
 			mintCount := ""
 			premineCount := ""
-			blockHeight := ""
+			startBlockHeight := ""
 			qualCreator := ""
 			qualPath := ""
 			qualCount := ""
@@ -98,7 +98,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			premineCount = strings.TrimSpace(input)
 
-			fmt.Print("Enter Qual-Creator : ")
+			fmt.Print("Enter pinCheck-Creator : ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -106,7 +106,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			qualCreator = strings.TrimSpace(input)
 
-			fmt.Print("Enter Qual-Path : ")
+			fmt.Print("Enter pinCheck-Path : ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -114,7 +114,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			qualPath = strings.TrimSpace(input)
 
-			fmt.Print("Enter Qual-Count : ")
+			fmt.Print("Enter pinCheck-Count : ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -122,7 +122,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			qualCount = strings.TrimSpace(input)
 
-			fmt.Print("Enter Qual-Lvl : ")
+			fmt.Print("Enter pinCheck-Lvl : ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -138,7 +138,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			feeRate, _ = strconv.ParseInt(strings.TrimSpace(input), 10, 64)
 
-			mrc20opDeploy(tick, tokenName, decimals, amtPerMint, mintCount, premineCount, blockHeight, qualCreator, qualPath, qualCount, qualLvl, feeRate)
+			mrc20opDeploy(tick, tokenName, decimals, amtPerMint, mintCount, premineCount, startBlockHeight, qualCreator, qualPath, qualCount, qualLvl, feeRate)
 			break
 		case "mint":
 			if len(args) < 3 {
@@ -189,7 +189,7 @@ func mrc20opDeploy(tick, tokenName, decimals, amtPerMint, mintCount, premineCoun
 	}
 
 	fetchCommitUtxoFunc = func(needAmount int64) ([]*mrc20_service.CommitUtxo, error) {
-		return GetBtcUtxoList(wallet.GetAddress(), needAmount)
+		return wallet.GetBtcUtxos(needAmount)
 	}
 
 	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Deploy(opRep, feeRate, fetchCommitUtxoFunc)
@@ -211,27 +211,19 @@ func mrc20opMint(tickId string, feeRate int64) {
 		opRep                  *mrc20_service.Mrc20OpRequest
 		payload                string                      = fmt.Sprintf(`{"id":"%s"}`, tickId)
 		mintPins               []*mrc20_service.MintPin    = make([]*mrc20_service.MintPin, 0)
+		payTos                 []*mrc20_service.PayTo      = make([]*mrc20_service.PayTo, 0)
 		commitUtxos            []*mrc20_service.CommitUtxo = make([]*mrc20_service.CommitUtxo, 0)
 		changeAddress          string                      = wallet.GetAddress()
 		fetchCommitUtxoFunc    mrc20_service.FetchCommitUtxoFunc
 	)
 
-	for _, v := range wallet.GetUtxos() {
-		commitUtxos = append(commitUtxos, &mrc20_service.CommitUtxo{
-			PrivateKeyHex: wallet.GetPrivateKey(),
-			PkScript:      v.ScriptPubKey,
-			Address:       v.Address,
-			UtxoTxId:      v.TxId,
-			UtxoIndex:     v.Vout,
-			UtxoOutValue:  v.Shatoshi,
-		})
-	}
-
-	mintPins, err = getShovelList(wallet.GetAddress(), tickId)
+	mintPins, payTos, err = wallet.GetShovels(wallet.GetAddress(), tickId)
 	if err != nil {
 		fmt.Printf("Mrc20 mint err:%s\n", err.Error())
 		return
 	}
+
+	payload = fmt.Sprintf(`{"id":"%s", "vout":"%d"}`, tickId, len(mintPins)+1)
 
 	opRep = &mrc20_service.Mrc20OpRequest{
 		Net:           getNetParams(),
@@ -240,6 +232,7 @@ func mrc20opMint(tickId string, feeRate int64) {
 		OpPayload:     payload,
 		CommitUtxos:   commitUtxos,
 		MintPins:      mintPins,
+		PayTos:        payTos,
 		Mrc20OutValue: 546,
 		Mrc20OutAddressList: []string{
 			wallet.GetAddress(),
@@ -248,7 +241,7 @@ func mrc20opMint(tickId string, feeRate int64) {
 	}
 
 	fetchCommitUtxoFunc = func(needAmount int64) ([]*mrc20_service.CommitUtxo, error) {
-		return GetBtcUtxoList(wallet.GetAddress(), needAmount)
+		return wallet.GetBtcUtxos(needAmount)
 	}
 
 	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Mint(opRep, feeRate, fetchCommitUtxoFunc)
@@ -283,23 +276,11 @@ func mrc20opTransfer(tickId, to, amount string, feeRate int64) {
 		payload             string = ""
 		fetchCommitUtxoFunc mrc20_service.FetchCommitUtxoFunc
 	)
-	commitUtxos, err = GetBtcUtxoList(wallet.GetAddress(), 0)
 
-	transferMrc20s, err = getMrc20Utxos(wallet.GetAddress(), tickId, amount)
+	transferMrc20s, err = wallet.GetMrc20Utxos(wallet.GetAddress(), tickId, amount)
 	if err != nil {
 		fmt.Printf("Mrc20 transfer err:%s\n", err.Error())
 		return
-	}
-
-	for _, v := range wallet.GetUtxos() {
-		commitUtxos = append(commitUtxos, &mrc20_service.CommitUtxo{
-			PrivateKeyHex: wallet.GetPrivateKey(),
-			PkScript:      v.ScriptPubKey,
-			Address:       v.Address,
-			UtxoTxId:      v.TxId,
-			UtxoIndex:     v.Vout,
-			UtxoOutValue:  v.Shatoshi,
-		})
 	}
 
 	payload, err = mrc20_service.MakeTransferPayload(tickId, transferMrc20s, mrc20Outs)
@@ -319,7 +300,7 @@ func mrc20opTransfer(tickId, to, amount string, feeRate int64) {
 	}
 
 	fetchCommitUtxoFunc = func(needAmount int64) ([]*mrc20_service.CommitUtxo, error) {
-		return GetBtcUtxoList(wallet.GetAddress(), needAmount)
+		return wallet.GetBtcUtxos(needAmount)
 	}
 
 	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Transfer(opRep, feeRate, fetchCommitUtxoFunc)

@@ -29,6 +29,17 @@ func initCliWallet() {
 	} else {
 		fmt.Println("Wallet initialization failed.", err)
 	}
+
+	privateKey, err := DumpPrivKeyHex(address)
+	if err != nil {
+		fmt.Println("Wallet initialization failed.", err)
+		return
+	}
+	wallet = &CliWallet{
+		walletName: WALLETNAME,
+		privateKey: privateKey,
+		address:    address,
+	}
 }
 
 func checkWallet() error {
