@@ -325,7 +325,6 @@ func (s *PsbtBuilder) UpdateAndSignTaprootInput(signIns []*InputSign) error {
 				s.PsbtUpdater.Upsbt.Inputs[v.Index].TaprootKeySpendSig = taprootKeySpendSig
 			}
 
-			fmt.Printf("TaprootWitnessSignature[%d]: %s\n", v.Index, hex.EncodeToString(taprootKeySpendSig))
 			break
 		}
 		//fmt.Printf("index:%d\n, pri:%s\n, pub:%s\n, sigScript: %s\n", v.Index, v.PriHex, publicKey, hex.EncodeToString(sigScript))

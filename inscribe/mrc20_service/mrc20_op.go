@@ -1,6 +1,7 @@
 package mrc20_service
 
 import (
+	"fmt"
 	"github.com/btcsuite/btcd/chaincfg"
 )
 
@@ -28,8 +29,9 @@ type Mrc20OpRequest struct {
 }
 
 type FetchCommitUtxoFunc func(needAmount int64) ([]*CommitUtxo, error)
+type BroadcastFunc func(txHex string) (string, error)
 
-func Mrc20Deploy(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoFunc) (string, string, int64, error) {
+func Mrc20Deploy(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoFunc, broadcastTx BroadcastFunc) (string, string, int64, error) {
 	var (
 		err          error
 		mrc20Builder *Mrc20Builder
@@ -96,12 +98,12 @@ func Mrc20Deploy(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtx
 
 	mrc20Builder.commitTxRaw = commitTxHex
 	mrc20Builder.revealTxRaw = revealTxHex
-	commitTx, revealTx, err = mrc20Builder.Inscribe()
+	commitTx, revealTx, err = mrc20Builder.Inscribe(broadcastTx)
 
 	return commitTx, revealTx, fee, nil
 }
 
-func Mrc20Mint(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoFunc) (string, string, int64, error) {
+func Mrc20Mint(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoFunc, broadcastTx BroadcastFunc) (string, string, int64, error) {
 	var (
 		err          error
 		mrc20Builder *Mrc20Builder
@@ -111,7 +113,7 @@ func Mrc20Mint(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoF
 		path                   = "/ft/mrc20/mint"
 		metaIdData *MetaIdData = &MetaIdData{
 			MetaIDFlag:  opRep.MetaIdFlag,
-			Operation:   "hide",
+			Operation:   "create",
 			Path:        path,
 			Content:     []byte(content),
 			Encryption:  "",
@@ -121,14 +123,14 @@ func Mrc20Mint(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoF
 		commitTx, revealTx string = "", ""
 	)
 	mrc20Builder = &Mrc20Builder{
-		Net:         opRep.Net,
-		MetaIdData:  metaIdData,
-		CommitUtxos: opRep.CommitUtxos,
-		MintPins:    opRep.MintPins,
-		PayTos:      opRep.PayTos,
-		//TransferMrc20s: opRep.TransferMrc20s,
-		FeeRate: feeRate,
-		op:      opRep.Op,
+		Net:           opRep.Net,
+		MetaIdData:    metaIdData,
+		CommitUtxos:   opRep.CommitUtxos,
+		ChangeAddress: opRep.ChangeAddress,
+		MintPins:      opRep.MintPins,
+		PayTos:        opRep.PayTos,
+		FeeRate:       feeRate,
+		op:            opRep.Op,
 
 		mrc20OutValue:       opRep.Mrc20OutValue,
 		mrc20OutAddressList: opRep.Mrc20OutAddressList,
@@ -148,6 +150,7 @@ func Mrc20Mint(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoF
 
 	commitUtxos, err := fetchUtxos(fee)
 	if err != nil {
+		fmt.Println("Need fee:", fee)
 		return "", "", 0, err
 	}
 
@@ -168,12 +171,12 @@ func Mrc20Mint(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoF
 
 	mrc20Builder.commitTxRaw = commitTxHex
 	mrc20Builder.revealTxRaw = revealTxHex
-	commitTx, revealTx, err = mrc20Builder.Inscribe()
+	commitTx, revealTx, err = mrc20Builder.Inscribe(broadcastTx)
 
 	return commitTx, revealTx, fee, nil
 }
 
-func Mrc20Transfer(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoFunc) (string, string, int64, error) {
+func Mrc20Transfer(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtxoFunc, broadcastTx BroadcastFunc) (string, string, int64, error) {
 	var (
 		err          error
 		mrc20Builder *Mrc20Builder
@@ -242,7 +245,7 @@ func Mrc20Transfer(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitU
 	mrc20Builder.commitTxRaw = commitTxHex
 	mrc20Builder.revealTxRaw = revealTxHex
 
-	commitTx, revealTx, err = mrc20Builder.Inscribe()
+	commitTx, revealTx, err = mrc20Builder.Inscribe(broadcastTx)
 
 	return commitTx, revealTx, fee, nil
 }

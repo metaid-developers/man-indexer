@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -21,4 +22,13 @@ func getMrc20Balance() {
 		return
 	}
 
+	mrc20Balances, err := wallet.GetMrc20Balance()
+	if err != nil {
+		fmt.Printf("get mrc20 balance failed: %v\n", err)
+		return
+	}
+
+	for _, v := range mrc20Balances {
+		fmt.Printf("Mrc20Id:%s, TokenName: %s, Balance: %s\n", v.Id, v.Name, v.Balance.String())
+	}
 }

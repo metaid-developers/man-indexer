@@ -3,9 +3,11 @@ package cli
 import (
 	"fmt"
 	"github.com/shopspring/decimal"
+	"go.mongodb.org/mongo-driver/mongo"
 	"manindexer/inscribe/mrc20_service"
 	"manindexer/man"
 	"manindexer/mrc20"
+	"strings"
 )
 
 var (
@@ -49,16 +51,16 @@ func (c *CliWallet) GetBtcUtxos(needAmount int64) ([]*mrc20_service.CommitUtxo, 
 		//check pin
 		outPoint := fmt.Sprintf("%s:%d", u.Txid, int64(u.Vout))
 		pinInfo, err := man.DbAdapter.GetPinByOutput(outPoint)
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), mongo.ErrNoDocuments.Error()) {
 			return nil, err
 		}
-		if pinInfo != nil {
+		if pinInfo != nil && pinInfo.Operation != "hide" {
 			continue
 		}
 
 		//check mrc20
-		_, total, err := man.DbAdapter.GetHistoryByTx(u.Txid, int64(u.Vout), 0, 100)
-		if err != nil {
+		_, total, _ := man.DbAdapter.GetHistoryByTx(u.Txid, int64(u.Vout), 0, 100)
+		if err != nil && !strings.Contains(err.Error(), mongo.ErrNoDocuments.Error()) {
 			return nil, err
 		}
 		if total > 0 {
@@ -69,9 +71,7 @@ func (c *CliWallet) GetBtcUtxos(needAmount int64) ([]*mrc20_service.CommitUtxo, 
 			return nil, err
 		}
 
-		//amountDe := decimal.NewFromFloat(u.Amount)
 		amountDe := decimal.NewFromInt(u.Amount)
-		amountDe = amountDe.Mul(decimal.New(1, 8))
 		item := &mrc20_service.CommitUtxo{
 			PrivateKeyHex: wallet.GetPrivateKey(),
 			PkScript:      pkScript,
@@ -85,6 +85,10 @@ func (c *CliWallet) GetBtcUtxos(needAmount int64) ([]*mrc20_service.CommitUtxo, 
 		if needAmount > 0 && totalAmount >= needAmount {
 			break
 		}
+	}
+	if totalAmount < needAmount {
+		fmt.Printf("utxo amount not enough, need: %d, total: %d\n", needAmount, totalAmount)
+		return nil, fmt.Errorf("utxo amount not enough")
 	}
 	return list, nil
 }
@@ -118,8 +122,8 @@ func (c *CliWallet) GetMrc20Balance() ([]mrc20.Mrc20Balance, error) {
 		return nil, err
 	}
 	fmt.Printf("Total: %d\n", total)
-	for _, v := range list {
-		fmt.Printf("TickId: %s, Balance: %s\n", v.Id, v.Balance)
-	}
+	//for _, v := range list {
+	//	fmt.Printf("TickId: %s, Balance: %s\n", v.Id, v.Balance)
+	//}
 	return list, nil
 }

@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/wire"
 	"manindexer/common"
 	"math"
 	"sort"
@@ -44,18 +46,6 @@ func InitBtcRpc(walletName string) {
 		panic(err)
 	}
 }
-
-//func GetBtcUtxo() ([]btcjson.ListUnspentResult, error) {
-//	return client.ListUnspent()
-//}
-//
-//func CreateWallet(name string) (*btcjson.CreateWalletResult, error) {
-//	return client.CreateWallet(name, rpcclient.WithCreateWalletPassphrase(""))
-//}
-//
-//func CreateAccount(name string) error {
-//	return client.CreateNewAccount(name)
-//}
 
 func GetNewAddress(accountName string) (string, error) {
 	newAddress, err := client.GetNewAddressType(accountName, "bech32")
@@ -145,4 +135,21 @@ func joinWithQuotes(slice []string, separator string) string {
 		quotedSlice[i] = fmt.Sprintf(`"%s"`, str)
 	}
 	return strings.Join(quotedSlice, separator)
+}
+
+func broadcastTx(txHex string) (string, error) {
+	tx := wire.NewMsgTx(wire.TxVersion)
+	txBytes, err := hex.DecodeString(txHex)
+	if err != nil {
+		return "", err
+	}
+	err = tx.Deserialize(bytes.NewReader(txBytes))
+	if err != nil {
+		return "", err
+	}
+	txHash, err := client.SendRawTransaction(tx, false)
+	if err != nil {
+		return "", nil
+	}
+	return txHash.String(), nil
 }

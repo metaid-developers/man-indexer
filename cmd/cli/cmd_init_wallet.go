@@ -44,7 +44,26 @@ func initCliWallet() {
 
 func checkWallet() error {
 	if wallet == nil {
-		return fmt.Errorf("wallet is not initialized")
+		address, err := CreateLegacyWallet(WALLETNAME)
+		if err == nil {
+		} else {
+			fmt.Println("Wallet initialization failed.", err)
+		}
+		if address == "" {
+			return fmt.Errorf("wallet is not initialized")
+		}
+
+		privateKey, err := DumpPrivKeyHex(address)
+		if err != nil {
+			fmt.Println("Wallet initialization failed.", err)
+			return fmt.Errorf("wallet initialization failed:%s", err)
+		}
+		wallet = &CliWallet{
+			walletName: WALLETNAME,
+			privateKey: privateKey,
+			address:    address,
+		}
+
 	}
 	if wallet.GetAddress() == "" {
 		return fmt.Errorf("wallet address is not initialized")
