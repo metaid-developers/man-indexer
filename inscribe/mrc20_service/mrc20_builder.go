@@ -179,7 +179,6 @@ func (m *Mrc20Builder) buildEmptyRevealPsbt() error {
 				//	return errors.New("redeemScript is empty")
 				//}
 			}
-			fmt.Printf("addressClass:%v\n", addressClass)
 
 			inSigner := &common.InputSign{
 				UtxoType:     utxoType,
@@ -223,7 +222,6 @@ func (m *Mrc20Builder) buildEmptyRevealPsbt() error {
 				//	return errors.New("redeemScript is empty")
 				//}
 			}
-			fmt.Printf("addressClass:%v\n", addressClass)
 
 			inSigner := &common.InputSign{
 				UtxoType:     utxoType,
@@ -408,8 +406,6 @@ func (m *Mrc20Builder) CalRevealPsbtFee(feeRate int64) int64 {
 	weight = int64(txBaseSize*3 + txTotalSize)
 	vSize = (weight + (blockchain.WitnessScaleFactor - 1)) / blockchain.WitnessScaleFactor
 	txFee = vSize * feeRate
-	fmt.Printf("weight:%d, vSize:%d, txFee:%d\n", weight, vSize, txFee)
-	fmt.Printf("revealOutValues:%d, totalMinerFee:%d\n", revealOutValues, txFee+revealOutValues)
 	return txFee + revealOutValues
 }
 
@@ -424,10 +420,10 @@ func (m *Mrc20Builder) buildCommitPsbt(commitUtxos []*CommitUtxo) error {
 		totalSenderAmount = btcutil.Amount(0)
 	)
 
-	if commitUtxos == nil {
-		commitUtxos = m.CommitUtxos
+	if commitUtxos != nil {
+		m.CommitUtxos = commitUtxos
 	}
-	for i, u := range commitUtxos {
+	for i, u := range m.CommitUtxos {
 		in := common.Input{
 			OutTxId:  u.UtxoTxId,
 			OutIndex: u.UtxoIndex,
@@ -582,15 +578,30 @@ func (m *Mrc20Builder) signRevealPsbt(mintPins []*MintPin, transferMrc20s []*Tra
 	if transferMrc20s == nil {
 		transferMrc20s = m.TransferMrc20s
 	}
-	if len(mintPins) == 0 && len(transferMrc20s) == 0 {
-		return errors.New("empty mintPins and transferMrc20s")
-	}
 
 	for i, v := range mintPins {
+		utxoType := common.Witness
+		addressClass, err := CheckAddressClass(m.Net, v.Address)
+		if err != nil {
+			return err
+		}
+		if addressClass == txscript.WitnessV1TaprootTy {
+			utxoType = common.Taproot
+		} else if addressClass == txscript.PubKeyHashTy {
+			utxoType = common.NonWitness
+			//if u.OutRaw == "" {
+			//	return errors.New("outRaw is empty")
+			//}
+		} else if addressClass == txscript.ScriptHashTy {
+			//if v.ReeemScript == "" {
+			//	return errors.New("redeemScript is empty")
+			//}
+		}
+
 		inSigner := &common.InputSign{
-			UtxoType: common.Witness,
-			Index:    i,
-			//OutRaw:         "",
+			UtxoType:     utxoType,
+			Index:        i,
+			OutRaw:       v.OutRaw,
 			PkScript:     v.PkScript,
 			RedeemScript: "",
 			Amount:       uint64(v.PinUtxoOutValue),
@@ -603,10 +614,28 @@ func (m *Mrc20Builder) signRevealPsbt(mintPins []*MintPin, transferMrc20s []*Tra
 	}
 
 	for i, v := range transferMrc20s {
+		utxoType := common.Witness
+		addressClass, err := CheckAddressClass(m.Net, v.Address)
+		if err != nil {
+			return err
+		}
+		if addressClass == txscript.WitnessV1TaprootTy {
+			utxoType = common.Taproot
+		} else if addressClass == txscript.PubKeyHashTy {
+			utxoType = common.NonWitness
+			//if u.OutRaw == "" {
+			//	return errors.New("outRaw is empty")
+			//}
+		} else if addressClass == txscript.ScriptHashTy {
+			//if v.ReeemScript == "" {
+			//	return errors.New("redeemScript is empty")
+			//}
+		}
+
 		inSigner := &common.InputSign{
-			UtxoType: common.Witness,
-			Index:    i,
-			//OutRaw:         "",
+			UtxoType:     utxoType,
+			Index:        i,
+			OutRaw:       v.OutRaw,
 			PkScript:     v.PkScript,
 			RedeemScript: "",
 			Amount:       uint64(v.UtxoOutValue),
@@ -695,8 +724,25 @@ func (m *Mrc20Builder) ExtractAllPsbtTransaction() (string, string, error) {
 	return commitTxHex, revealTxHex, nil
 }
 
-func (m *Mrc20Builder) Inscribe() (string, string, error) {
-	return "", "", nil
+func (m *Mrc20Builder) Inscribe(broadcastFunc func(txHex string) (string, error)) (string, string, error) {
+	var (
+		commitTx string = ""
+		revealTx string = ""
+		err      error
+	)
+	if m.commitTxRaw != "" {
+		commitTx, err = broadcastFunc(m.commitTxRaw)
+		if err != nil {
+			return commitTx, revealTx, err
+		}
+	}
+	if m.revealTxRaw != "" {
+		revealTx, err = broadcastFunc(m.revealTxRaw)
+		if err != nil {
+			return commitTx, revealTx, err
+		}
+	}
+	return commitTx, revealTx, nil
 }
 
 func createMetaIdTxCtxData(net *chaincfg.Params, metaIdData *MetaIdData) (*inscriptionTxCtxData, error) {

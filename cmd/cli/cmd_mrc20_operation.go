@@ -4,12 +4,15 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/spf13/cobra"
-	"manindexer/common"
 	"manindexer/inscribe/mrc20_service"
 	"os"
 	"strconv"
 	"strings"
 )
+
+// ./man-cli mrc20op deploy
+// ./man-cli mrc20op mint {tickId} {feeRate}
+// ./man-cli mrc20op transfer {tickId} {to} {amount} {feeRate}
 
 var mrc20OperationCmd = &cobra.Command{
 	Use:   "mrc20op",
@@ -35,11 +38,12 @@ var mrc20OperationCmd = &cobra.Command{
 			amtPerMint := ""
 			mintCount := ""
 			premineCount := ""
-			startBlockHeight := ""
-			qualCreator := ""
-			qualPath := ""
-			qualCount := ""
-			qualLvl := ""
+			beginBlock := ""
+			endBlock := ""
+			pinCheckCreator := ""
+			pinCheckPath := ""
+			pinCheckCount := ""
+			pinCheckLvl := ""
 			feeRate := int64(0)
 			reader := bufio.NewReader(os.Stdin)
 			fmt.Print("Enter tick (): ")
@@ -98,13 +102,29 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			premineCount = strings.TrimSpace(input)
 
+			fmt.Print("Enter Begin block : ")
+			input, err = reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading input:", err)
+				return
+			}
+			beginBlock = strings.TrimSpace(input)
+
+			fmt.Print("Enter End block : ")
+			input, err = reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading input:", err)
+				return
+			}
+			endBlock = strings.TrimSpace(input)
+
 			fmt.Print("Enter pinCheck-Creator : ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
 				return
 			}
-			qualCreator = strings.TrimSpace(input)
+			pinCheckCreator = strings.TrimSpace(input)
 
 			fmt.Print("Enter pinCheck-Path : ")
 			input, err = reader.ReadString('\n')
@@ -112,7 +132,7 @@ var mrc20OperationCmd = &cobra.Command{
 				fmt.Println("Error reading input:", err)
 				return
 			}
-			qualPath = strings.TrimSpace(input)
+			pinCheckPath = strings.TrimSpace(input)
 
 			fmt.Print("Enter pinCheck-Count : ")
 			input, err = reader.ReadString('\n')
@@ -120,7 +140,7 @@ var mrc20OperationCmd = &cobra.Command{
 				fmt.Println("Error reading input:", err)
 				return
 			}
-			qualCount = strings.TrimSpace(input)
+			pinCheckCount = strings.TrimSpace(input)
 
 			fmt.Print("Enter pinCheck-Lvl : ")
 			input, err = reader.ReadString('\n')
@@ -128,7 +148,22 @@ var mrc20OperationCmd = &cobra.Command{
 				fmt.Println("Error reading input:", err)
 				return
 			}
-			qualLvl = strings.TrimSpace(input)
+			pinCheckLvl = strings.TrimSpace(input)
+
+			fmt.Print("Enter payCheck-payTo : ")
+			input, err = reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading input:", err)
+				return
+			}
+			payCheckPayTo := strings.TrimSpace(input)
+			fmt.Print("Enter payCheck-payAmount : ")
+			input, err = reader.ReadString('\n')
+			if err != nil {
+				fmt.Println("Error reading input:", err)
+				return
+			}
+			payCheckPayAmount := strings.TrimSpace(input)
 
 			fmt.Print("Enter FeeRate : ")
 			input, err = reader.ReadString('\n')
@@ -138,7 +173,9 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			feeRate, _ = strconv.ParseInt(strings.TrimSpace(input), 10, 64)
 
-			mrc20opDeploy(tick, tokenName, decimals, amtPerMint, mintCount, premineCount, startBlockHeight, qualCreator, qualPath, qualCount, qualLvl, feeRate)
+			mrc20opDeploy(tick, tokenName,
+				decimals, amtPerMint, mintCount, premineCount, beginBlock, endBlock,
+				pinCheckCreator, pinCheckPath, pinCheckCount, pinCheckLvl, payCheckPayTo, payCheckPayAmount, feeRate)
 			break
 		case "mint":
 			if len(args) < 3 {
@@ -164,11 +201,9 @@ var mrc20OperationCmd = &cobra.Command{
 	},
 }
 
-// ./man-cli mrc20op deploy
-// ./man-cli mrc20op mint {tickId} {feeRate}
-// ./man-cli mrc20op transfer {tickId} {to} {amount} {feeRate}
-
-func mrc20opDeploy(tick, tokenName, decimals, amtPerMint, mintCount, premineCount, blockHeight, qualCreator, qualPath, qualCount, qualLvl string, feeRate int64) {
+func mrc20opDeploy(tick, tokenName string,
+	decimals, amtPerMint, mintCount, premineCount, beginBlock, endBlock string,
+	pinCheckCreator, pinCheckPath, pinCheckCount, pinCheckLvl string, payTo, payAmount string, feeRate int64) {
 	var (
 		commitTxId, revealTxId string = "", ""
 		fee                    int64  = 0
@@ -177,22 +212,27 @@ func mrc20opDeploy(tick, tokenName, decimals, amtPerMint, mintCount, premineCoun
 		payload                string = ""
 		fetchCommitUtxoFunc    mrc20_service.FetchCommitUtxoFunc
 	)
+	payload, _, _ = mrc20_service.MakeDeployPayloadForIdCoins(
+		tick, tokenName, "", payTo, payAmount,
+		mintCount, amtPerMint, premineCount, beginBlock, endBlock, decimals,
+		pinCheckCreator, pinCheckPath, pinCheckCount, pinCheckLvl)
+
 	opRep = &mrc20_service.Mrc20OpRequest{
 		Net:                     getNetParams(),
-		MetaIdFlag:              common.Config.ProtocolID,
+		MetaIdFlag:              getMetaIdFlag(),
 		Op:                      "deploy",
 		OpPayload:               payload,
-		DeployPinOutAddress:     "",
-		DeployPremineOutAddress: "",
+		DeployPinOutAddress:     wallet.GetAddress(),
+		DeployPremineOutAddress: wallet.GetAddress(),
 		Mrc20OutValue:           546,
-		ChangeAddress:           "",
+		ChangeAddress:           wallet.GetAddress(),
 	}
 
 	fetchCommitUtxoFunc = func(needAmount int64) ([]*mrc20_service.CommitUtxo, error) {
 		return wallet.GetBtcUtxos(needAmount)
 	}
 
-	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Deploy(opRep, feeRate, fetchCommitUtxoFunc)
+	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Deploy(opRep, feeRate, fetchCommitUtxoFunc, broadcastTx)
 	if err != nil {
 		fmt.Printf("Mrc20 deploy err:%s\n", err.Error())
 		return
@@ -227,7 +267,7 @@ func mrc20opMint(tickId string, feeRate int64) {
 
 	opRep = &mrc20_service.Mrc20OpRequest{
 		Net:           getNetParams(),
-		MetaIdFlag:    common.Config.ProtocolID,
+		MetaIdFlag:    getMetaIdFlag(),
 		Op:            "mint",
 		OpPayload:     payload,
 		CommitUtxos:   commitUtxos,
@@ -236,15 +276,15 @@ func mrc20opMint(tickId string, feeRate int64) {
 		Mrc20OutValue: 546,
 		Mrc20OutAddressList: []string{
 			wallet.GetAddress(),
+			wallet.GetAddress(),
 		},
 		ChangeAddress: changeAddress,
 	}
-
 	fetchCommitUtxoFunc = func(needAmount int64) ([]*mrc20_service.CommitUtxo, error) {
 		return wallet.GetBtcUtxos(needAmount)
 	}
 
-	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Mint(opRep, feeRate, fetchCommitUtxoFunc)
+	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Mint(opRep, feeRate, fetchCommitUtxoFunc, broadcastTx)
 	if err != nil {
 		fmt.Printf("Mrc20 mint err:%s\n", err.Error())
 		return
@@ -290,7 +330,7 @@ func mrc20opTransfer(tickId, to, amount string, feeRate int64) {
 	}
 	opRep = &mrc20_service.Mrc20OpRequest{
 		Net:            getNetParams(),
-		MetaIdFlag:     common.Config.ProtocolID,
+		MetaIdFlag:     getMetaIdFlag(),
 		Op:             "transfer",
 		OpPayload:      payload,
 		CommitUtxos:    commitUtxos,
@@ -303,7 +343,7 @@ func mrc20opTransfer(tickId, to, amount string, feeRate int64) {
 		return wallet.GetBtcUtxos(needAmount)
 	}
 
-	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Transfer(opRep, feeRate, fetchCommitUtxoFunc)
+	commitTxId, revealTxId, fee, err = mrc20_service.Mrc20Transfer(opRep, feeRate, fetchCommitUtxoFunc, broadcastTx)
 	if err != nil {
 		fmt.Printf("Mrc20 transfer err:%s\n", err.Error())
 		return

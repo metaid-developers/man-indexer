@@ -43,3 +43,59 @@ func MakeTransferPayload(tickId string, transferMrc20s []*TransferMrc20, mrc20Ou
 
 	return payload, nil
 }
+
+type Mrc20DeployData struct {
+	Tick         string      `json:"tick"`
+	TokenName    string      `json:"tokenName"`
+	Decimals     string      `json:"decimals"`
+	AmtPerMint   string      `json:"amtPerMint"`
+	MintCount    string      `json:"mintCount"`
+	PremineCount string      `json:"premineCount"`
+	BeginBlock   string      `json:"beginBlock"`
+	EndBlock     string      `json:"endBlock"`
+	Metadata     string      `json:"metadata"`
+	PinCheck     interface{} `json:"pinCheck"`
+	PayCheck     *PayCheck   `json:"payCheck"`
+}
+
+type PayCheck struct {
+	PayAmount string `json:"payAmount"`
+	PayTo     string `json:"payTo"`
+}
+
+func MakeDeployPayloadForIdCoins(tick, tokenName, metadata, payTo, payAmount, mintCount, amountPerMint, premineCount, beginBlock, endBlock, decimals string,
+	pinCheckCreator, pinCheckPath, pinCheckCount, pinCheckLvl string) (string, *Mrc20DeployData, int64) {
+	var (
+		payload         string           = ""
+		totalSupply     int64            = 0
+		mrc20DeployData *Mrc20DeployData = &Mrc20DeployData{
+			Tick:         tick,
+			TokenName:    tokenName,
+			Decimals:     decimals,
+			AmtPerMint:   amountPerMint,
+			MintCount:    mintCount,
+			PremineCount: premineCount,
+			BeginBlock:   beginBlock,
+			EndBlock:     endBlock,
+			Metadata:     metadata,
+			PinCheck: map[string]interface{}{
+				"creator": pinCheckCreator,
+				"path":    pinCheckPath,
+				"lvl":     pinCheckLvl,
+				"count":   pinCheckCount,
+			},
+			PayCheck: &PayCheck{
+				PayAmount: payAmount,
+				PayTo:     payTo,
+			},
+		}
+	)
+
+	amtPerMintDe, _ := decimal.NewFromString(mrc20DeployData.AmtPerMint)
+	mintCountDe, _ := decimal.NewFromString(mrc20DeployData.MintCount)
+	totalSupply = amtPerMintDe.Mul(mintCountDe).IntPart()
+
+	payloadByte, _ := json.Marshal(mrc20DeployData)
+	payload = string(payloadByte)
+	return payload, mrc20DeployData, totalSupply
+}

@@ -7,7 +7,7 @@ import (
 )
 
 var getBalanceCmd = &cobra.Command{
-	Use:   "balance",
+	Use:   "getbalance",
 	Short: "Display balance for a given address",
 	Long:  `Display balance for a given address`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -36,5 +36,6 @@ func getBalance() (address string, balance int64, err error) {
 	for _, utxo := range utxoList {
 		balance += utxo.Amount
 	}
+	//fmt.Printf("address: %s, balance: %d\n", address, balance)
 	return
 }

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/hex"
 	"errors"
 	"manindexer/common"
 	"manindexer/inscribe/mrc20_service"
@@ -21,6 +22,11 @@ func getNetParams() *chaincfg.Params {
 	} else {
 		return &chaincfg.MainNetParams
 	}
+}
+
+func getMetaIdFlag() string {
+	protocolIDByte, _ := hex.DecodeString(common.Config.ProtocolID)
+	return string(protocolIDByte)
 }
 
 func getMrc20Utxos(address, tickId, needAmount string) ([]*mrc20_service.TransferMrc20, error) {
