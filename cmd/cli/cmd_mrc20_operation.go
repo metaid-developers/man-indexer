@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"manindexer/inscribe/mrc20_service"
+	"manindexer/man"
 	"os"
 	"strconv"
 	"strings"
@@ -47,13 +48,17 @@ var mrc20OperationCmd = &cobra.Command{
 			pinCheckLvl := ""
 			feeRate := int64(0)
 			reader := bufio.NewReader(os.Stdin)
-			fmt.Print("Enter tick (): ")
+			fmt.Print("Enter tick (2-24 characters): ")
 			input, err := reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
 				return
 			}
 			tick = strings.TrimSpace(input)
+			if len(tick) < 2 || len(tick) > 24 {
+				fmt.Println("tick length should be 2-24 characters")
+				return
+			}
 
 			fmt.Print("Enter tokenName: ")
 			input, err = reader.ReadString('\n')
@@ -103,7 +108,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			premineCount = strings.TrimSpace(input)
 
-			fmt.Print("Enter Begin block : ")
+			fmt.Print("Enter Begin block(optional): ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -111,7 +116,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			beginBlock = strings.TrimSpace(input)
 
-			fmt.Print("Enter End block : ")
+			fmt.Print("Enter End block(optional): ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -119,7 +124,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			endBlock = strings.TrimSpace(input)
 
-			fmt.Print("Enter pinCheck-Creator : ")
+			fmt.Print("Enter pinCheck-Creator(optional): ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -127,7 +132,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			pinCheckCreator = strings.TrimSpace(input)
 
-			fmt.Print("Enter pinCheck-Path : ")
+			fmt.Print("Enter pinCheck-Path(optional): ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -135,7 +140,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			pinCheckPath = strings.TrimSpace(input)
 
-			fmt.Print("Enter pinCheck-Count : ")
+			fmt.Print("Enter pinCheck-Count(optional): ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -143,7 +148,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			pinCheckCount = strings.TrimSpace(input)
 
-			fmt.Print("Enter pinCheck-Lvl : ")
+			fmt.Print("Enter pinCheck-Lvl(optional): ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -151,14 +156,14 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			pinCheckLvl = strings.TrimSpace(input)
 
-			fmt.Print("Enter payCheck-payTo : ")
+			fmt.Print("Enter payCheck-payTo(optional): ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
 				return
 			}
 			payCheckPayTo := strings.TrimSpace(input)
-			fmt.Print("Enter payCheck-payAmount : ")
+			fmt.Print("Enter payCheck-payAmount(optional): ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -166,7 +171,7 @@ var mrc20OperationCmd = &cobra.Command{
 			}
 			payCheckPayAmount := strings.TrimSpace(input)
 
-			fmt.Print("Enter FeeRate : ")
+			fmt.Print("Enter FeeRate: ")
 			input, err = reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("Error reading input:", err)
@@ -217,6 +222,12 @@ func mrc20opDeploy(tick, tokenName string,
 		tick, tokenName, "", payTo, payAmount,
 		mintCount, amtPerMint, premineCount, beginBlock, endBlock, decimals,
 		pinCheckCreator, pinCheckPath, pinCheckCount, pinCheckLvl)
+
+	tickInfo, _ := man.DbAdapter.GetMrc20TickInfo("", strings.ToUpper(tick))
+	if tickInfo.Mrc20Id != "" {
+		fmt.Printf("Mrc20 tick:%s already exist\n", tickInfo.Tick)
+		return
+	}
 
 	opRep = &mrc20_service.Mrc20OpRequest{
 		Net:                     getNetParams(),
