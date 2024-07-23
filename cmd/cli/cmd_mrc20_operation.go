@@ -3,11 +3,12 @@ package cli
 import (
 	"bufio"
 	"fmt"
-	"github.com/spf13/cobra"
 	"manindexer/inscribe/mrc20_service"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 // ./man-cli mrc20op deploy
@@ -16,7 +17,7 @@ import (
 
 var mrc20OperationCmd = &cobra.Command{
 	Use:   "mrc20op",
-	Short: "mrc20op is a tool to interact with mrc20 in bitcoin chain",
+	Short: "MRC20 related operation commands,support deploy, mint, transfer",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := checkWallet(); err != nil {

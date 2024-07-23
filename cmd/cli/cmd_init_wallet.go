@@ -15,8 +15,8 @@ var (
 
 var initWalletCmd = &cobra.Command{
 	Use:   "init-wallet",
-	Short: "Init Wallet for CLI",
-	Long:  ``,
+	Short: "Initialize MAN wallet",
+	Long:  `Initialize MAN wallet on the BTC node`,
 	Run: func(cmd *cobra.Command, args []string) {
 		initCliWallet()
 	},

@@ -8,8 +8,8 @@ import (
 
 var getBalanceCmd = &cobra.Command{
 	Use:   "getbalance",
-	Short: "Display balance for a given address",
-	Long:  `Display balance for a given address`,
+	Short: "Display balance",
+	Long:  `Display the balance of the default address`,
 	Run: func(cmd *cobra.Command, args []string) {
 		printBalance()
 	},

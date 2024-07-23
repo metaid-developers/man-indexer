@@ -2,13 +2,14 @@ package cli
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
 var getMrc20BalanceCmd = &cobra.Command{
 	Use:   "mrc20balance",
-	Short: "Display mrc20 balance for a given address",
-	Long:  `Display mrc20 balance for a given address`,
+	Short: "Display the MRC20 balance of the default address",
+	Long:  `Display the MRC20 balance of the default address`,
 	Run: func(cmd *cobra.Command, args []string) {
 		getMrc20Balance()
 	},
