@@ -182,6 +182,36 @@ Lists all blocks with MetaID protocol data in reverse order of block height. Cli
 
 Lists MetaID data in the memory pool, which is automatically deleted after being included in a block.
 
+# Cli-Wallet
+MAN has a built-in BTC wallet that can connect to a BTC node using the command line to create a wallet and generate an address. It supports balance and UTXO queries for this address,
+as well as MRC20 related operation.
+Special note: MAN Wallet requires local node RPC support and authentication information for the node, such as RpcUser and RpcPass.
+## Cli
+Enter the MAN Indexer directory in the terminal and run 
+```
+/man-cli help
+```
+## cli-help
+```
+This is a MAN-CLI, which is a tool to interact with metaid-v2 in bitcoin chain
+Usage:
+  man-cli [flags]
+  man-cli [command]
+
+Available Commands:
+  completion   Generate the autocompletion script for the specified shell
+  getbalance   Display balance
+  help         Help about any command
+  init-wallet  Initialize MAN wallet
+  mrc20balance Display the MRC20 balance of the default address
+  mrc20op      MRC20 related operation commands,support deploy, mint, transfer
+  utxo         Display utxo list
+  version      version subcommand show git version info.
+
+Flags:
+  -h, --help   help for man-cli
+```
+## 
 # JSON API
 
 ## Basic API
