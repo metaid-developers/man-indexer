@@ -51,12 +51,11 @@ func Mrc20Deploy(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtx
 		commitTx, revealTx string = "", ""
 	)
 	mrc20Builder = &Mrc20Builder{
-		Net:            opRep.Net,
-		MetaIdData:     metaIdData,
-		MintPins:       opRep.MintPins,
-		TransferMrc20s: opRep.TransferMrc20s,
-		FeeRate:        feeRate,
-		op:             opRep.Op,
+		Net:           opRep.Net,
+		MetaIdData:    metaIdData,
+		FeeRate:       feeRate,
+		op:            opRep.Op,
+		ChangeAddress: opRep.ChangeAddress,
 
 		mrc20OutValue: opRep.Mrc20OutValue,
 
@@ -76,7 +75,7 @@ func Mrc20Deploy(opRep *Mrc20OpRequest, feeRate int64, fetchUtxos FetchCommitUtx
 	}
 	fee = mrc20Builder.CalRevealPsbtFee(feeRate)
 
-	commitUtxos, err := fetchUtxos(fee)
+	commitUtxos, err := fetchUtxos(fee + 153*mrc20Builder.FeeRate)
 	if err != nil {
 		return "", "", 0, err
 	}
