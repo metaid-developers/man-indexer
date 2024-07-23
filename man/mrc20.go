@@ -17,37 +17,31 @@ import (
 func Mrc20Handle(mrc20List []*pin.PinInscription) {
 	validator := Mrc20Validator{}
 	var mrc20UtxoList []mrc20.Mrc20Utxo
-	var deployList []mrc20.Mrc20DeployInfo
+
 	var mrc20TrasferList []*mrc20.Mrc20Utxo
+	var deployHandleList []*pin.PinInscription
+	var mintHandleList []*pin.PinInscription
+	var transferHandleList []*pin.PinInscription
 	for _, pinNode := range mrc20List {
 		switch pinNode.Path {
 		case "/ft/mrc20/deploy":
-			mrc20Pin, preMineUtxo, info, err := CreateMrc20DeployPin(pinNode, &validator)
-			if err == nil {
-				if mrc20Pin.Mrc20Id != "" {
-					mrc20Pin.Chain = pinNode.ChainName
-					mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
-				}
-
-				if preMineUtxo.Mrc20Id != "" {
-					mrc20UtxoList = append(mrc20UtxoList, preMineUtxo)
-				}
-				if info.Tick != "" && info.Mrc20Id != "" {
-					deployList = append(deployList, info)
-				}
-
-			}
+			deployHandleList = append(deployHandleList, pinNode)
 		case "/ft/mrc20/mint":
-			mrc20Pin, err := CreateMrc20MintPin(pinNode, &validator)
-			if err == nil {
-				mrc20Pin.Chain = pinNode.ChainName
-				mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
-			}
+			mintHandleList = append(mintHandleList, pinNode)
 		case "/ft/mrc20/transfer":
-			transferPinList, _ := CreateMrc20TransferUtxo(pinNode, &validator, false)
-			if len(transferPinList) > 0 {
-				mrc20TrasferList = append(mrc20TrasferList, transferPinList...)
-			}
+			transferHandleList = append(transferHandleList, pinNode)
+		}
+	}
+	//Prioritize handling deploy
+	deployResult := deployHandle(deployHandleList)
+	if len(deployResult) > 0 {
+		mrc20UtxoList = append(mrc20UtxoList, deployResult...)
+	}
+	for _, pinNode := range mintHandleList {
+		mrc20Pin, err := CreateMrc20MintPin(pinNode, &validator)
+		if err == nil {
+			mrc20Pin.Chain = pinNode.ChainName
+			mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
 		}
 	}
 	changedTick := make(map[string]int64)
@@ -59,24 +53,68 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 			}
 		}
 	}
+	mrc20TrasferList = transferHandle(transferHandleList)
 	if len(mrc20TrasferList) > 0 {
-		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
+		//DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
 		for _, item := range mrc20TrasferList {
 			if item.MrcOption != "deploy" {
 				changedTick[item.Mrc20Id] += 1
 			}
 		}
 	}
-
-	if len(deployList) > 0 {
-		DbAdapter.SaveMrc20Tick(deployList)
-	}
 	//update holders,txCount
 	for id, txNum := range changedTick {
 		go DbAdapter.UpdateMrc20TickHolder(id, txNum)
 	}
 }
-
+func transferHandle(transferHandleList []*pin.PinInscription) (mrc20UtxoList []*mrc20.Mrc20Utxo) {
+	validator := Mrc20Validator{}
+	maxTimes := len(transferHandleList)
+	successMap := make(map[string]struct{})
+	for i := 0; i < maxTimes; i++ {
+		if len(successMap) >= maxTimes {
+			break
+		}
+		for _, pinNode := range transferHandleList {
+			if len(successMap) >= maxTimes {
+				break
+			}
+			if _, ok := successMap[pinNode.Id]; ok {
+				continue
+			}
+			transferPinList, _ := CreateMrc20TransferUtxo(pinNode, &validator, false)
+			if len(transferPinList) > 0 {
+				mrc20UtxoList = append(mrc20UtxoList, transferPinList...)
+				successMap[pinNode.Id] = struct{}{}
+				DbAdapter.UpdateMrc20Utxo(mrc20UtxoList, false)
+			}
+		}
+	}
+	return
+}
+func deployHandle(deployHandleList []*pin.PinInscription) (mrc20UtxoList []mrc20.Mrc20Utxo) {
+	var deployList []mrc20.Mrc20DeployInfo
+	validator := Mrc20Validator{}
+	for _, pinNode := range deployHandleList {
+		mrc20Pin, preMineUtxo, info, err := CreateMrc20DeployPin(pinNode, &validator)
+		if err == nil {
+			if mrc20Pin.Mrc20Id != "" {
+				mrc20Pin.Chain = pinNode.ChainName
+				mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
+			}
+			if preMineUtxo.Mrc20Id != "" {
+				mrc20UtxoList = append(mrc20UtxoList, preMineUtxo)
+			}
+			if info.Tick != "" && info.Mrc20Id != "" {
+				deployList = append(deployList, info)
+			}
+		}
+	}
+	if len(deployList) > 0 {
+		DbAdapter.SaveMrc20Tick(deployList)
+	}
+	return
+}
 func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator) (mrc20Utxo mrc20.Mrc20Utxo, preMineUtxo mrc20.Mrc20Utxo, info mrc20.Mrc20DeployInfo, err error) {
 	var df mrc20.Mrc20Deploy
 	err = json.Unmarshal(pinNode.ContentBody, &df)
@@ -116,10 +154,12 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 	info.AmtPerMint = df.AmtPerMint
 	info.PremineCount = premineCount
 	info.MintCount = mintCount
-	info.Blockheight = df.Blockheight
+	info.BeginHeight = df.BeginHeight
+	info.EndHeight = df.EndHeight
 	info.Metadata = df.Metadata
 	info.DeployType = df.DeployType
-	info.Qual = df.Qual
+	info.PinCheck = df.PinCheck
+	info.PayCheck = df.PayCheck
 	info.DeployTime = pinNode.Timestamp
 
 	info.Mrc20Id = pinNode.Id
@@ -178,7 +218,11 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 	mrc20Utxo.PinContent = string(pinNode.ContentBody)
 	mrc20Utxo.Timestamp = pinNode.Timestamp
 	mrc20Utxo.PointValue = pinNode.OutputValue
-	info, shovelList, err1 := validator.Mint(content, pinNode)
+	info, shovelList, toAddress, vout, err1 := validator.Mint(content, pinNode)
+	if toAddress != "" {
+		mrc20Utxo.ToAddress = toAddress
+		mrc20Utxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, vout)
+	}
 	if info != (mrc20.Mrc20DeployInfo{}) {
 		mrc20Utxo.Mrc20Id = info.Mrc20Id
 		mrc20Utxo.Tick = info.Tick
@@ -198,6 +242,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 
 	return
 }
+
 func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Validator, isMempool bool) (mrc20UtxoList []*mrc20.Mrc20Utxo, err error) {
 	var content []mrc20.Mrc20TranferData
 	err = json.Unmarshal(pinNode.ContentBody, &content)

@@ -37,7 +37,7 @@ func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscript
 			return "", 0, errors.New(mrc20.ErrDeployTickNameLength)
 		}
 	}
-	decimals := int64(0)
+	decimals := int64(8)
 	if data.Decimals != "" {
 		decimals, err := strconv.ParseInt(data.Decimals, 10, 64)
 		if err != nil {
@@ -75,6 +75,16 @@ func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscript
 	if premineCount > mintCount {
 		return "", 0, errors.New(mrc20.ErrDeployNum)
 	}
+	if data.PayCheck != (mrc20.Mrc20DeployPayCheckLower{}) {
+		if data.PayCheck.PayAmount == "" || data.PayCheck.PayTo == "" {
+			return "", 0, errors.New(mrc20.ErrDeployNum)
+		}
+		_, err := strconv.ParseInt(data.PayCheck.PayAmount, 10, 64)
+		if err != nil {
+			return "", 0, errors.New(mrc20.ErrDeployNum)
+		}
+	}
+
 	//check tick name
 	//ErrDeployTickExists
 	tickName := strings.ToUpper(data.Tick)
@@ -115,7 +125,7 @@ func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscript
 func getDigitsCount(n int64) int64 {
 	return int64(len(strconv.FormatInt(n, 10)))
 }
-func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.PinInscription) (info mrc20.Mrc20DeployInfo, shovelList []string, err error) {
+func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.PinInscription) (info mrc20.Mrc20DeployInfo, shovelList []string, toAddress string, vout int, err error) {
 	if content.Id == "" {
 		err = errors.New(mrc20.ErrMintTickIdNull)
 		return
@@ -144,42 +154,88 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		err = errors.New(mrc20.ErrMintLimit)
 		return
 	}
-	if info.Qual.Count == "" || info.Qual.Count == "0" {
-		return
-	}
+
 	//count, _ := strconv.ParseInt(info.MintCount, 10, 64)
-	height, _ := strconv.ParseInt(info.Blockheight, 10, 64)
-	if pinNode.GenesisHeight < height {
-		err = errors.New(mrc20.ErrMintHeight)
-		return
+	if info.BeginHeight != "" {
+		beginHeight, e1 := strconv.ParseInt(info.BeginHeight, 10, 64)
+		if e1 != nil || pinNode.GenesisHeight < beginHeight {
+			err = errors.New(mrc20.ErrMintHeight)
+			return
+		}
 	}
-	// if info.Qual.Lv == "0" {
-	// 	return
-	// }
+	if info.EndHeight != "" {
+		endHeight, e1 := strconv.ParseInt(info.EndHeight, 10, 64)
+		if e1 != nil || pinNode.GenesisHeight > endHeight {
+			err = errors.New(mrc20.ErrMintHeight)
+			return
+		}
+	}
+
 	tx, err := ChainAdapter[pinNode.ChainName].GetTransaction(pinNode.GenesisTransaction)
 	if err != nil {
-		log.Println("GetTransaction:", err)
+		log.Println("Mint Validator GetTransaction:", err)
 		return
 	}
 	txb := tx.(*btcutil.Tx)
+	//check vout
+	if content.Vout != "" {
+		mintVout, err1 := strconv.Atoi(content.Vout)
+		if err1 != nil {
+			err = errors.New(mrc20.ErrMintVout)
+			return
+		}
+		if mintVout > len(txb.MsgTx().TxOut) || mintVout < 0 {
+			err = errors.New(mrc20.ErrMintVout)
+			return
+		}
+		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[mintVout].PkScript, ChainParams)
+		if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
+			toAddress = addresses[0].String()
+			vout = mintVout
+		} else {
+			err = errors.New(mrc20.ErrMintVout)
+			return
+		}
+	}
+	if info.PinCheck.Count == "" || info.PinCheck.Count == "0" {
+		return
+	}
 	var inputList []string
 	//Because the PIN has been transferred,
 	//use the output to find the PIN attributes.
-	for i := range txb.MsgTx().TxOut {
+	//pay check
+	findPayCheck := false
+	payAmt := int64(0)
+	if info.PayCheck.PayAmount != "" && info.PayCheck.PayTo != "" {
+		findPayCheck = true
+		payAmt, _ = strconv.ParseInt(info.PayCheck.PayAmount, 10, 64)
+	}
+	isHavePayCheck := false
+	for i, out := range txb.MsgTx().TxOut {
 		s := fmt.Sprintf("%s:%d", txb.Hash().String(), i)
 		tmpId := fmt.Sprintf("%si%d", txb.Hash().String(), i)
 		if tmpId != pinNode.Id {
 			inputList = append(inputList, s)
 		}
+		if findPayCheck {
+			class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams)
+			if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
+				checkAddress := addresses[0].String()
+				if checkAddress == info.PayCheck.PayTo && out.Value >= payAmt {
+					isHavePayCheck = true
+				}
+			}
+		}
+	}
+	if findPayCheck && !isHavePayCheck {
+		err = errors.New(mrc20.ErrMintPayCheck)
+		return
 	}
 	if len(inputList) <= 0 {
 		err = errors.New(mrc20.ErrMintPopNull)
 		return
 	}
-	// fmt.Println(inputList)
 	pinsTmp, err := DbAdapter.GetPinListByOutPutList(inputList)
-	//inputList := []string{content.Pin}
-	//pins, err := DbAdapter.GetPinListByIdList(inputList)
 	if err != nil {
 		log.Println("GetPinListByOutPutList:", err, inputList)
 		return
@@ -195,10 +251,7 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		}
 		pins = append(pins, pinNode)
 	}
-	// if pinNode.Address != pins[0].Address {
-	// 	err = errors.New(mrc20.ErrMintPinOwner)
-	// 	return
-	// }
+
 	var pinIds []string
 	for _, pinNode := range pins {
 		pinIds = append(pinIds, pinNode.Id)
@@ -209,12 +262,12 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	}
 	usedShovels, err := DbAdapter.GetMrc20Shovel(pinIds, content.Id)
 
-	shovelsCount, _ := strconv.Atoi(info.Qual.Count)
+	shovelsCount, _ := strconv.Atoi(info.PinCheck.Count)
 	shovelChcek := true
 	var lvShovelList []string
 	var creatorShovelList []string
-	if info.Qual.Lv != "" {
-		popLimit, _ := strconv.Atoi(info.Qual.Lv)
+	if info.PinCheck.Lv != "" {
+		popLimit, _ := strconv.Atoi(info.PinCheck.Lv)
 		shovelChcek, lvShovelList = lvCheck(usedShovels, pins, shovelsCount, popLimit)
 		if !shovelChcek {
 			err = errors.New(mrc20.ErrMintPopDiff)
@@ -222,8 +275,8 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		}
 	}
 	//creator check
-	if info.Qual.Creator != "" {
-		shovelChcek, creatorShovelList = creatorCheck(usedShovels, pins, shovelsCount, info.Qual.Creator)
+	if info.PinCheck.Creator != "" {
+		shovelChcek, creatorShovelList = creatorCheck(usedShovels, pins, shovelsCount, info.PinCheck.Creator)
 		if !shovelChcek {
 			err = errors.New(mrc20.ErrMintCreator)
 			return
@@ -231,15 +284,15 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	}
 
 	var pathShovelList []string
-	if info.Qual.Path != "" {
-		shovelChcek, pathShovelList = pathCheck(usedShovels, pins, shovelsCount, info.Qual.Path)
+	if info.PinCheck.Path != "" {
+		shovelChcek, pathShovelList = pathCheck(usedShovels, pins, shovelsCount, info.PinCheck.Path)
 		if !shovelChcek {
 			err = errors.New(mrc20.ErrMintPathCheck)
 			return
 		}
 	}
 	var countShovelList []string
-	if info.Qual.Creator == "" && info.Qual.Lv == "" && info.Qual.Path == "" {
+	if info.PinCheck.Creator == "" && info.PinCheck.Lv == "" && info.PinCheck.Path == "" {
 		shovelChcek, countShovelList = onlyCountCheck(usedShovels, pins, shovelsCount)
 		if !shovelChcek {
 			err = errors.New(mrc20.ErrMintCountCheck)
@@ -260,6 +313,7 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 	}
 	return
 }
+
 func lvCheck(usedShovels map[string]mrc20.Mrc20Shovel, pins []*pin.PinInscription, shovelsCount int, popLimit int) (verified bool, shovelList []string) {
 	x := 0
 	for _, pinNode := range pins {

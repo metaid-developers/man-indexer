@@ -60,8 +60,6 @@ func connectMongoDb() {
 	if err = client.Ping(context.Background(), readpref.Primary()); err != nil {
 		log.Panic("ConnectToDB", err)
 		return
-	} else {
-		log.Println("mongodb connected")
 	}
 	mongoClient = client.Database(mg.DbName)
 	createPinsView()

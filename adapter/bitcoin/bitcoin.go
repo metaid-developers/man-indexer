@@ -21,7 +21,7 @@ type BitcoinChain struct {
 	IsTest bool
 }
 
-func init() {
+func (chain *BitcoinChain) InitChain() {
 	btc := common.Config.Btc
 	rpcConfig := &rpcclient.ConnConfig{
 		Host:                 btc.RpcHost,

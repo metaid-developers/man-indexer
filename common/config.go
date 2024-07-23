@@ -85,7 +85,7 @@ type pebble struct {
 	Dir string `toml:"dir"`
 }
 
-func init() {
+func InitConfig() {
 	configMutex.Lock()
 	defer configMutex.Unlock()
 	filePath := "./config.toml"
@@ -169,7 +169,9 @@ func GetFlagConfig() (flagConfig map[string]*string) {
 	flagConfig["mongo_uri"] = flag.String("mongo_uri", "", "mongodb uri")
 	flagConfig["mongo_db_name"] = flag.String("mongo_db_name", "", "mongodb database name")
 	//reindex := flag.String("reindex", "", "reindex block height,from:to")
-	flag.Parse()
+	if !flag.Parsed() {
+		flag.Parse()
+	}
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "args:\n")
 		flag.PrintDefaults()

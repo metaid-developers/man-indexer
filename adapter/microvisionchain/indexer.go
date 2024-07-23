@@ -26,7 +26,7 @@ type Indexer struct {
 	ChainName   string
 }
 
-func init() {
+func (indexer *Indexer) InitIndexer() {
 	PopCutNum = common.Config.Mvc.PopCutNum
 }
 func (indexer *Indexer) GetCurHeight() (height int64) {

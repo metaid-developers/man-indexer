@@ -29,13 +29,18 @@
                   <b>AmtPerMint:</b> {{ $v.AmtPerMint }}<br />
                   <b>MintCount:</b> {{ $v.MintCount }}<br />
                   <b>PremineCount:</b> {{ $v.PremineCount }}<br />
-                  <b>Blockheight:</b> {{ $v.Blockheight }}<br />
-                  <b>Qual:</b> {
-                  creator:"{{ $v.Qual.Creator }}",
-                  lvl:"{{ $v.Qual.Lv }}",
-                  count:"{{ $v.Qual.Count }}",
-                  path:"{{ $v.Qual.Path }}"
+                  <b>BeginHeight:</b> {{ $v.BeginHeight }}<br />
+                  <b>EndHeight:</b> {{ $v.EndHeight }}<br />
+                  <b>PinCheck:</b> {
+                  creator:"{{ $v.PinCheck.Creator }}",
+                  lvl:"{{ $v.PinCheck.Lv }}",
+                  count:"{{ $v.PinCheck.Count }}",
+                  path:"{{ $v.PinCheck.Path }}"
                   }<br />
+                  <b>PayCheck:</b> {
+                    payTo:"{{ $v.PayCheck.PayTo }}",
+                    payAmount:"{{ $v.PayCheck.PayAmount }}"
+                    }<br />
                   <b>TotalMinted:</b> {{ $v.TotalMinted }}
                 </div>
               </div>
@@ -44,8 +49,18 @@
           {{ end }}
         </div>
       </div>
-      <div style="margin-left: 40px;font-size: 18px;">
-        Prev&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Next
+      <div style="margin-left: 40px;font-size: 18px;margin-bottom: 20px;">
+        {{if eq .PrePage 0}}
+        Prev
+        {{else}}
+        <a href="/mrc20/{{.PrePage}}" class="link">Prev</a>
+        {{end}}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        {{if eq .NextPage 0}}
+        Next
+        {{else}}
+        <a href="/mrc20/{{.NextPage}}" class="link">Next</a>
+        {{end}}
       </div>
       <!-- Footer -->
       {{ template "public/footer.html"}}

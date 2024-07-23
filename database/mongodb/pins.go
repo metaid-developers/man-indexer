@@ -123,8 +123,9 @@ func (mg *Mongodb) GetPinListByIdList(idList []string) (pinList []*pin.PinInscri
 }
 func (mg *Mongodb) GetPinListByOutPutList(outputList []string) (pinList []*pin.PinInscription, err error) {
 	filter := bson.M{"output": bson.M{"$in": outputList}}
-	result, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter)
-	if err != nil {
+	result, err1 := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter)
+	if err1 != nil && err1 != mongo.ErrNoDocuments {
+		err = err1
 		return
 	}
 	err = result.All(context.TODO(), &pinList)

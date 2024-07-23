@@ -17,13 +17,14 @@ var (
 
 func main() {
 	banner := `
-    __  ______    _   __
-   /  |/  /   |  / | / /  v0.0.2
-  / /|_/ / /| | /  |/ / 
- / /  / / ___ |/ /|  /  
-/_/  /_/_/  |_/_/ |_/                   
+    __  ___  ___     _   __
+   /  |/  / /   |   / | / / v0.0.2.1
+  / /|_/ / / /| |  /  |/ / 
+ / /  / / / ___ | / /|  /  
+/_/  /_/ /_/  |_|/_/ |_/                   
  `
 	fmt.Println(banner)
+	common.InitConfig()
 	man.InitAdapter(common.Chain, common.Db, common.TestNet, common.Server)
 	log.Printf("ManIndex,chain=%s,test=%s,db=%s,server=%s", common.Chain, common.TestNet, common.Db, common.Server)
 	if common.Server == "1" {

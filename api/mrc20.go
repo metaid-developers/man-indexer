@@ -201,21 +201,21 @@ func getShovelListByAddress(ctx *gin.Context) {
 	key := ""
 	value := ""
 	operator := ""
-	if info.Qual.Lv != "" {
-		lv, _ = strconv.Atoi(info.Qual.Lv)
+	if info.PinCheck.Lv != "" {
+		lv, _ = strconv.Atoi(info.PinCheck.Lv)
 	}
-	if info.Qual.Path != "" {
-		path, query, key, operator, value = mrc20.PathParse(info.Qual.Path)
+	if info.PinCheck.Path != "" {
+		path, query, key, operator, value = mrc20.PathParse(info.PinCheck.Path)
 		if path != "" && query != "" {
 			if key == "" && operator == "" && value == "" {
 				query = query[2 : len(query)-2]
 			}
 		} else if path == "" {
-			path = info.Qual.Path
+			path = info.PinCheck.Path
 		}
 	}
 
-	list, total, err := man.DbAdapter.GetShovelListByAddress(address, tickId, info.Qual.Creator, lv, path, query, key, operator, value, cursor, size)
+	list, total, err := man.DbAdapter.GetShovelListByAddress(address, tickId, info.PinCheck.Creator, lv, path, query, key, operator, value, cursor, size)
 	if err != nil || list == nil {
 		if err == mongo.ErrNoDocuments || len(list) == 0 {
 			ctx.JSON(http.StatusOK, respond.ErrNoDataFound)
