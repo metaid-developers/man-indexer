@@ -32,6 +32,7 @@ var (
 	OptionLimit     []string = []string{"create", "modify", "revoke", "hide"}
 	BarMap          map[string]*progressbar.ProgressBar
 	FirstCompleted  bool
+	IsTestNet       bool = false
 )
 
 const (
@@ -82,8 +83,10 @@ func InitAdapter(chainType, dbType, test, server string) {
 	ChainParams = &chaincfg.MainNetParams
 	if test == "1" {
 		ChainParams = &chaincfg.TestNet3Params
+		IsTestNet = true
 	}
 	if test == "2" {
+		IsTestNet = true
 		ChainParams = &chaincfg.RegressionNetParams
 	}
 	for _, chain := range chainList {
@@ -238,6 +241,7 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	//bar.Add(1)
 	MaxHeight[chainName] = height
 	pinList, protocolsData, metaIdData, pinTreeData, updatedData, mrc20List, followData, infoAdditional, _ := GetSaveData(chainName, height)
+	//pinList, protocolsData, metaIdData, pinTreeData, updatedData, _, followData, infoAdditional, _ := GetSaveData(chainName, height)
 
 	if len(metaIdData) > 0 {
 		err = DbAdapter.BatchUpsertMetaIdInfo(metaIdData)
@@ -270,9 +274,10 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 		DbAdapter.BatchUpsertMetaIdInfoAddition(infoAdditional)
 	}
 	//Handle MRC20 last.
-	if len(mrc20List) > 0 {
+	if len(mrc20List) > 0 && IsTestNet {
 		Mrc20Handle(mrc20List)
 	}
+
 	//}
 	//bar.Finish()
 	if FirstCompleted {
