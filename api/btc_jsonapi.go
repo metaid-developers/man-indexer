@@ -305,7 +305,8 @@ func getPinListByAddress(ctx *gin.Context) {
 		if ok {
 			continue
 		}
-		pinNode.ContentBody = []byte{}
+		pinNode.ContentSummary = string(pinNode.ContentBody)
+		//pinNode.ContentBody = []byte{}
 		pinNode.Preview = common.Config.Web.Host + "/pin/" + pinNode.Id
 		pinNode.Content = common.Config.Web.Host + "/content/" + pinNode.Id
 		pinNode.PopLv, _ = pin.PopLevelCount(pinNode.ChainName, pinNode.Pop)
