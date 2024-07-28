@@ -275,7 +275,7 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	}
 	//Handle MRC20 last.
 	if len(mrc20List) > 0 && IsTestNet {
-		Mrc20Handle(mrc20List)
+		//Mrc20Handle(mrc20List)
 	}
 
 	//}
