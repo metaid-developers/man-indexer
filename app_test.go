@@ -178,3 +178,89 @@ func TestRarityScoreBinary(t *testing.T) {
 	fmt.Println(pin.RarityScoreBinary("btc", str))
 
 }
+func TestMrc721(t *testing.T) {
+	common.InitConfig()
+	man.InitAdapter("btc", "mongo", "2", "1")
+	var pinList []*pin.PinInscription
+	m721 := &man.Mrc721{}
+	collectionStr := `
+	{
+	"name":"fullname01",
+	"desc":"description",
+	"website":"https://the-website-of-the-collection",
+	"cover":"metafile://your-nft-cover-pinid",
+	"metadata":"any data"
+}
+	`
+	pinNode := pin.PinInscription{
+		Operation:   "create",
+		Id:          "collection01",
+		Path:        "/nft/mrc721/test/collection_desc",
+		ContentBody: []byte(collectionStr),
+	}
+	pinList = append(pinList, &pinNode)
+	m721.PinHandle(pinList)
+
+	itemStr := `
+	{
+		"items":
+		[	{
+			"pinid":"itemId01",
+			"name":"itemId01",
+			"desc":"the description of the specific NFT",
+			"cover":"metafile://your-nft-cover-pinid",
+			"metadata":"any arbitrary data you can place here"
+			},
+			{
+			"pinid":"itemId02",
+			"name":"itemId02",
+			"desc":"the description of the specific NFT",
+			"cover":"metafile://your-nft-cover-pinid",
+			"metadata":"any arbitrary data you can place here"
+			}
+		]
+		}
+	`
+	itemStr2 := `
+	{
+		"items":
+		[	{
+			"pinid":"itemId01",
+			"name":"itemId01",
+			"desc":"the description of the specific NFT",
+			"cover":"metafile://your-nft-cover-pinid",
+			"metadata":"any arbitrary data you can place here"
+			},
+			{
+			"pinid":"itemId04",
+			"name":"itemId04",
+			"desc":"the description of the specific NFT",
+			"cover":"metafile://your-nft-cover-pinid",
+			"metadata":"any arbitrary data you can place here"
+			}
+		]
+		}
+	`
+	itemPin := pin.PinInscription{
+		Operation:   "create",
+		Id:          "item01",
+		Path:        "/nft/mrc721/test/item_desc",
+		ContentBody: []byte(itemStr),
+	}
+	itemPin2 := pin.PinInscription{
+		Operation:   "create",
+		Id:          "item01",
+		Path:        "/nft/mrc721/test/item_desc",
+		ContentBody: []byte(itemStr2),
+	}
+	var itemPinList []*pin.PinInscription
+	itemPinList = append(itemPinList, &itemPin)
+	itemPinList = append(itemPinList, &itemPin2)
+	m721.PinHandle(itemPinList)
+
+}
+func TestMrc721Save(t *testing.T) {
+	common.InitConfig()
+	man.InitAdapter("btc", "mongo", "2", "1")
+	man.DoIndexerRun("btc", int64(237))
+}

@@ -247,6 +247,7 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 		err = DbAdapter.BatchUpsertMetaIdInfo(metaIdData)
 		//metaIdData = metaIdData[0:0]
 	}
+	var pinNodeList []*pin.PinInscription
 	if len(pinList) > 0 {
 		DbAdapter.BatchAddPins(pinList)
 		//check transfer in this block
@@ -254,6 +255,7 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 		for _, item := range pinList {
 			p := item.(*pin.PinInscription)
 			idList = append(idList, p.Output)
+			pinNodeList = append(pinNodeList, p)
 		}
 		handleTransfer(chainName, idList)
 	}
@@ -277,7 +279,10 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	if len(mrc20List) > 0 && IsTestNet {
 		//Mrc20Handle(mrc20List)
 	}
-
+	if len(pinNodeList) > 0 {
+		m721 := Mrc721{}
+		m721.PinHandle(pinNodeList)
+	}
 	//}
 	//bar.Finish()
 	if FirstCompleted {
