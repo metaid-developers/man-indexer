@@ -49,7 +49,7 @@ func (m721 *Mrc721) PinHandle(pinList []*pin.PinInscription) {
 		for k := range nameList {
 			keys = append(keys, k)
 		}
-		collectionList, _, err := DbAdapter.GetMrc721CollectionList(keys, false)
+		collectionList, _, err := DbAdapter.GetMrc721CollectionList(keys, 0, 100000, false)
 		if err == nil && len(collectionList) > 0 {
 			for _, cocollection := range collectionList {
 				collections[cocollection.CollectionName] = *cocollection

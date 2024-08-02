@@ -132,13 +132,12 @@ func TestGetSaveData(t *testing.T) {
 func TestCatchData(t *testing.T) {
 	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
-	from := 2868128
-	to := 2868128
+	//from := 2870989
+	//to := 2870990
 	// for i := from; i <= to; i++ {
 	// 	man.DoIndexerRun("btc", int64(i))
 	// }
-	man.DoIndexerRun("btc", int64(from))
-	man.DoIndexerRun("btc", int64(to))
+	man.DoIndexerRun("btc", int64(2871147))
 
 }
 func TestHash(t *testing.T) {

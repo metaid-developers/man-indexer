@@ -100,6 +100,8 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, Mrc20UtxoCollection, "mrc20id_txpoint_verify_1", bson.D{{Key: "mrc20id", Value: 1}, {Key: "txpoint", Value: 1}, {Key: "index", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, Mrc20UtxoMempoolCollection, "mrc20id_txpoint_verify_1", bson.D{{Key: "mrc20id", Value: 1}, {Key: "txpoint", Value: 1}, {Key: "index", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, Mrc20UtxoMempoolCollection, "mrc20id_operationtx_1", bson.D{{Key: "operationtx", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, Mrc20UtxoMempoolCollection, "mrc20balance_1", bson.D{{Key: "toaddress", Value: 1}, {Key: "status", Value: 1}, {Key: "verify", Value: 1}, {Key: "mrcoption", Value: 1}}, false)
+
 	//mrc721
 	createIndexIfNotExists(mongoClient, Mrc721Collection, "collectionname_1", bson.D{{Key: "collectionname", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, Mrc721Collection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)

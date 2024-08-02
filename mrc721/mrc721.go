@@ -49,17 +49,20 @@ type Mrc721ItemDesc struct {
 }
 
 type Mrc721ItemDescPin struct {
-	CollectionPinId string `json:"collectionPinId"`
-	CollectionName  string `json:"collectionName"`
-	ItemPinId       string `json:"itemPinId"`
-	DescPinId       string `json:"descPinId"`
-	Name            string `json:"name"`
-	Desc            string `json:"desc"`
-	Cover           string `json:"cover"`
-	Metadata        string `json:"metaData"`
-	CreateTime      int64  `json:"createTime"`
-	Address         string `json:"address"`
-	Content         []byte `json:"content"`
-	MetaId          string `json:"metaId"`
-	DescAdded       bool   `json:"descadded"`
+	CollectionPinId   string `json:"collectionPinId"`
+	CollectionName    string `json:"collectionName"`
+	ItemPinId         string `json:"itemPinId"`
+	DescPinId         string `json:"descPinId"`
+	Name              string `json:"name"`
+	Desc              string `json:"desc"`
+	Cover             string `json:"cover"`
+	Metadata          string `json:"metaData"`
+	CreateTime        int64  `json:"createTime"`
+	Address           string `json:"address"`
+	Content           []byte `json:"content"`
+	MetaId            string `json:"metaId"`
+	DescAdded         bool   `json:"descadded"`
+	ContentType       string `json:"contentType"`
+	ContentTypeDetect string `json:"contentTypeDetect"`
+	ContentString     string `json:"contentString"`
 }

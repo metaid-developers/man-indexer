@@ -109,6 +109,9 @@ func Start(f embed.FS) {
 	//mrc20
 	r.GET("/mrc20/:page", mrc20List)
 	r.GET("/mrc20/history/:id/:page", mrc20History)
+	//mrc721
+	r.GET("/mrc721/:page", mrc721List)
+	r.GET("/mrc721/item/list/:name/:page", mrc721ItemList)
 	//btc json api
 	btcJsonApi(r)
 	mrc20JsonApi(r)
@@ -391,7 +394,7 @@ func mrc20List(ctx *gin.Context) {
 		return
 	}
 	cousor := (page - 1) * 100
-	_, list, err := man.DbAdapter.GetMrc20TickPageList(cousor, 50, "", "", "")
+	_, list, err := man.DbAdapter.GetMrc20TickPageList(cousor, 100, "", "", "")
 	if err != nil {
 		ctx.String(200, "fail")
 		return
@@ -432,4 +435,55 @@ func mrc20History(ctx *gin.Context) {
 	}
 
 	ctx.HTML(200, "home/mrc20history.html", gin.H{"List": list, "Tick": ctx.Param("id"), "Active": "", "NextPage": nextPage, "PrePage": prePage})
+}
+func mrc721List(ctx *gin.Context) {
+	page, err := strconv.ParseInt(ctx.Param("page"), 10, 64)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	cousor := (page - 1) * 100
+	list, _, err := man.DbAdapter.GetMrc721CollectionList([]string{}, cousor, 100, false)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	prePage := page - 1
+	nextPage := page + 1
+	if len(list) == 0 {
+		nextPage = 0
+	}
+	if prePage <= 0 {
+		prePage = 0
+	}
+	ctx.HTML(200, "home/mrc721.html", gin.H{"List": list, "Active": "mrc721", "NextPage": nextPage, "PrePage": prePage})
+}
+
+// mrc721ItemList
+func mrc721ItemList(ctx *gin.Context) {
+	page, err := strconv.ParseInt(ctx.Param("page"), 10, 64)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+
+	if ctx.Param("name") == "" {
+		ctx.String(200, "fail")
+		return
+	}
+	cousor := (page - 1) * 20
+	list, _, err := man.DbAdapter.GetMrc721ItemList(ctx.Param("name"), []string{}, cousor, 20, false)
+	if err != nil {
+		ctx.String(200, "fail")
+		return
+	}
+	prePage := page - 1
+	nextPage := page + 1
+	if len(list) == 0 {
+		nextPage = 0
+	}
+	if prePage <= 0 {
+		prePage = 0
+	}
+	ctx.HTML(200, "home/mrc721item.html", gin.H{"List": list, "Name": ctx.Param("name"), "Active": "", "NextPage": nextPage, "PrePage": prePage})
 }

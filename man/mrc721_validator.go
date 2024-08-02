@@ -42,7 +42,7 @@ func (validator *Mrc721Validator) Collection(collectionName string, pinNode *pin
 		return
 	}
 	//Check royaltyRate
-	if collection.RoyaltyRate < 5 || collection.RoyaltyRate > 20 {
+	if collection.RoyaltyRate < 0 || collection.RoyaltyRate > 20 {
 		err = errors.New(mrc721.ErrRoyaltyRate)
 		return
 	}
@@ -107,6 +107,9 @@ func (validator *Mrc721Validator) Item(pinNode *pin.PinInscription, curBlockItem
 	mrc721Item.CreateTime = pinNode.Timestamp
 	mrc721Item.ItemPinId = pinNode.Id
 	mrc721Item.MetaId = pinNode.MetaId
+	mrc721Item.ContentType = pinNode.ContentType
+	mrc721Item.ContentTypeDetect = pinNode.ContentTypeDetect
+	mrc721Item.ContentString = pinNode.ContentSummary
 	item = &mrc721Item
 	return
 }

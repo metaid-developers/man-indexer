@@ -87,9 +87,9 @@ type Db interface {
 	//mrc721
 	SaveMrc721Collection(collection *mrc721.Mrc721CollectionDescPin) (err error)
 	GetMrc721Collection(collectionName, pinId string) (data *mrc721.Mrc721CollectionDescPin, err error)
-	GetMrc721CollectionList(nameList []string, cnt bool) (data []*mrc721.Mrc721CollectionDescPin, total int64, err error)
+	GetMrc721CollectionList(nameList []string, cursor int64, size int64, cnt bool) (data []*mrc721.Mrc721CollectionDescPin, total int64, err error)
 	BatchUpdateMrc721CollectionCount(nameList []string) (err error)
 	SaveMrc721Item(itemList []*mrc721.Mrc721ItemDescPin) (err error)
-	GetMrc721ItemList(collectionName string, pinIdList []string, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error)
+	GetMrc721ItemList(collectionName string, pinIdList []string, cursor int64, size int64, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error)
 	UpdateMrc721ItemDesc(itemList []*mrc721.Mrc721ItemDescPin) (err error)
 }

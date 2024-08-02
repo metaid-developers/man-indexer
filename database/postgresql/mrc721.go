@@ -9,7 +9,7 @@ func (pg *Postgresql) GetMrc721Collection(collectionName, pinId string) (data *m
 	return
 }
 
-func (pg *Postgresql) GetMrc721CollectionList(nameList []string, cnt bool) (data []*mrc721.Mrc721CollectionDescPin, total int64, err error) {
+func (pg *Postgresql) GetMrc721CollectionList(nameList []string, cursor int64, size int64, cnt bool) (data []*mrc721.Mrc721CollectionDescPin, total int64, err error) {
 	return
 }
 
@@ -20,7 +20,7 @@ func (pg *Postgresql) BatchUpdateMrc721CollectionCount(nameList []string) (err e
 func (pg *Postgresql) SaveMrc721Item(itemList []*mrc721.Mrc721ItemDescPin) (err error) {
 	return
 }
-func (pg *Postgresql) GetMrc721ItemList(collectionName string, pinIdList []string, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error) {
+func (pg *Postgresql) GetMrc721ItemList(collectionName string, pinIdList []string, cursor int64, size int64, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error) {
 	return
 }
 func (pg *Postgresql) UpdateMrc721ItemDesc(itemList []*mrc721.Mrc721ItemDescPin) (err error) {

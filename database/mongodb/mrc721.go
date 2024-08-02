@@ -30,12 +30,13 @@ func (mg *Mongodb) GetMrc721Collection(collectionName, pinId string) (data *mrc7
 	}
 	return
 }
-func (mg *Mongodb) GetMrc721CollectionList(nameList []string, cnt bool) (data []*mrc721.Mrc721CollectionDescPin, total int64, err error) {
+func (mg *Mongodb) GetMrc721CollectionList(nameList []string, cursor int64, size int64, cnt bool) (data []*mrc721.Mrc721CollectionDescPin, total int64, err error) {
 	filter := bson.D{}
 	if len(nameList) > 0 {
 		filter = append(filter, bson.E{Key: "collectionname", Value: bson.M{"$in": nameList}})
 	}
-	result, err := mongoClient.Collection(Mrc721Collection).Find(context.TODO(), filter)
+	opts := options.Find().SetSkip(cursor).SetLimit(size)
+	result, err := mongoClient.Collection(Mrc721Collection).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return
 	}
@@ -92,7 +93,7 @@ func (mg *Mongodb) SaveMrc721Item(itemList []*mrc721.Mrc721ItemDescPin) (err err
 	_, err = mongoClient.Collection(Mrc721Item).InsertMany(context.TODO(), data, &option)
 	return
 }
-func (mg *Mongodb) GetMrc721ItemList(collectionName string, pinIdList []string, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error) {
+func (mg *Mongodb) GetMrc721ItemList(collectionName string, pinIdList []string, cursor int64, size int64, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error) {
 	if collectionName == "" {
 		return
 	}
@@ -102,8 +103,8 @@ func (mg *Mongodb) GetMrc721ItemList(collectionName string, pinIdList []string, 
 	if len(pinIdList) > 0 {
 		filter = append(filter, bson.E{Key: "itempinid", Value: bson.M{"$in": pinIdList}})
 	}
-
-	result, err := mongoClient.Collection(Mrc721Item).Find(context.TODO(), filter)
+	opts := options.Find().SetSkip(cursor).SetLimit(size)
+	result, err := mongoClient.Collection(Mrc721Item).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return
 	}

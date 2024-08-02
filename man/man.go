@@ -236,6 +236,7 @@ func IndexerRun() {
 
 }
 func DoIndexerRun(chainName string, height int64) (err error) {
+	bT := time.Now()
 	//bar := progressbar.Default(to - from)
 	//for i := from + 1; i <= to; i++ {
 	//bar.Add(1)
@@ -277,9 +278,9 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	}
 	//Handle MRC20 last.
 	if len(mrc20List) > 0 && IsTestNet {
-		//Mrc20Handle(mrc20List)
+		Mrc20Handle(mrc20List)
 	}
-	if len(pinNodeList) > 0 {
+	if len(pinNodeList) > 0 && IsTestNet {
 		m721 := Mrc721{}
 		m721.PinHandle(pinNodeList)
 	}
@@ -288,7 +289,8 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	if FirstCompleted {
 		DeleteMempoolData(height, chainName)
 	}
-
+	eT := time.Since(bT)
+	fmt.Println("Blok(", height, "),PIN NUM:", len(pinList), ",Run time: ", eT)
 	return
 }
 func GetSaveData(chainName string, blockHeight int64) (

@@ -1,0 +1,90 @@
+{{ define "home/mrc721item.html" }}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<!-- Head -->
+{{ template "public/head.html"}}
+<!-- End Head -->
+
+<body>
+  <!-- Header (Topbar) -->
+  {{ template "public/header.html"}}
+  <!-- End Header (Topbar) -->
+
+  <main class="u-main" role="main">
+    <!-- Sidebar -->
+    {{ template "public/aside.html" }}
+    <!-- End Sidebar -->
+    <div class="u-content">
+      <div class="u-body" style="min-height: 500px;">
+        <h2>Name {{.Name}}</h2>
+        <div>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th scope="col">Collection</th>
+                  <th scope="col">FullName</th>
+                  <th scope="col">Address</th>
+                  <th scope="col">Content</th>
+                  <th scope="col">Desc</th>
+                  <th scope="col">CreateTime</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {{ range $i, $v := .List }}
+                <tr>
+                  <td>{{$v.CollectionName}}</td>
+                  <td>{{$v.Name }}</td>
+                  <td> {{$v.Address }}</td>
+                  <td>
+                      {{if eq .ContentTypeDetect "image/png"}}
+                      <div class="img2">
+                        <img src="{{ .ContentString }}" />
+                      </div>
+                      {{else if eq .ContentTypeDetect "image/jpeg"}}
+                      <div class="img2">
+                        <img src="{{ .ContentString }}" />
+                      </div>
+                      {{else}}
+                      <div class="content2">{{ .ContentString }}</div>
+                      {{end}}
+                  </td>
+                  <td>
+                    {{ $v.Desc }}
+                  </td>
+                  <td>
+                    {{$v.CreateTime | formatTime }}
+                  </td>
+                </tr>
+                {{ end }}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div>
+
+      </div>
+      <div style="margin-left: 40px;font-size: 18px;margin-bottom: 20px;">
+        {{if eq .PrePage 0}}
+        Prev
+        {{else}}
+        <a href="/mrc20/history/{{.Tick}}/{{.PrePage}}" class="link">Prev</a>
+        {{end}}
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        {{if eq .NextPage 0}}
+        Next
+        {{else}}
+        <a href="/mrc20/history/{{.Tick}}/{{.NextPage}}" class="link">Next</a>
+        {{end}}
+      </div>
+      <!-- Footer -->
+      {{ template "public/footer.html"}}
+      <!-- End Footer -->
+    </div>
+  </main>
+</body>
+
+</html>
+{{end}}

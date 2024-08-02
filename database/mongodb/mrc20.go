@@ -7,6 +7,7 @@ import (
 	"manindexer/common"
 	"manindexer/mrc20"
 	"manindexer/pin"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -332,11 +333,12 @@ func (mg *Mongodb) GetMempoolHistoryByAddress(tickId string, address string) (li
 	return
 }
 
-func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size int64) (list []mrc20.Mrc20Balance, total int64, err error) {
+func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size int64) (balanceList []mrc20.Mrc20Balance, total int64, err error) {
 	filter := bson.D{
 		{Key: "toaddress", Value: address},
 		{Key: "status", Value: 0},
 		{Key: "verify", Value: true},
+		{Key: "mrcoption", Value: bson.D{{Key: "$ne", Value: "deploy"}}},
 	}
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: filter}},
@@ -344,7 +346,7 @@ func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size i
 			{Key: "_id", Value: "$mrc20id"},
 			{Key: "total", Value: bson.D{{Key: "$sum", Value: "$amtchange"}}},
 		}}},
-		{{Key: "$sort", Value: bson.D{{Key: "timestamp", Value: -1}}}},
+		//{{Key: "$sort", Value: bson.D{{Key: "tick", Value: 1}}}},
 		{{Key: "$skip", Value: cursor}},
 		{{Key: "$limit", Value: size}},
 	}
@@ -361,6 +363,7 @@ func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size i
 		return
 	}
 	var idList []string
+	var list []mrc20.Mrc20Balance
 	for _, result := range results {
 		idList = append(idList, result["_id"].(string))
 		balance := result["total"].(primitive.Decimal128)
@@ -406,7 +409,17 @@ func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size i
 			list = append(list, *v)
 		}
 	}
-
+	//sort
+	sortMap := make(map[string]mrc20.Mrc20Balance)
+	keyList := []string{}
+	for _, item := range list {
+		keyList = append(keyList, item.Name)
+		sortMap[item.Name] = item
+	}
+	sort.Strings(keyList)
+	for _, key := range keyList {
+		balanceList = append(balanceList, sortMap[key])
+	}
 	//count
 	pipelineCount := bson.A{
 		bson.D{{Key: "$match", Value: filter}},
