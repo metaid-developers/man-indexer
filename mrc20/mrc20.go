@@ -29,13 +29,14 @@ const (
 	ErrTranferReqData       = "transfer data error"
 	ErrTranferBalnceErr     = "transfer balance error"
 	ErrTranferBalnceLess    = "insufficient balance for transfer"
+	ErrTranferAmt           = "the amount should be greater than 0"
 )
 
 type Mrc20Utxo struct {
 	Tick        string          `json:"tick"`
 	Mrc20Id     string          `json:"mrc20Id"`
 	TxPoint     string          `json:"txPoint"`
-	PointValue  int64           `json:"pointValue"`
+	PointValue  uint64          `json:"pointValue"`
 	PinId       string          `json:"pinId"`
 	PinContent  string          `json:"pinContent"`
 	Verify      bool            `json:"verify"`
@@ -98,20 +99,20 @@ type Mrc20DeployInfo struct {
 	TokenName    string              `json:"tokenName"`
 	Decimals     string              `json:"decimals"`
 	AmtPerMint   string              `json:"amtPerMint"`
-	MintCount    int64               `json:"mintCount"`
+	MintCount    uint64              `json:"mintCount"`
 	BeginHeight  string              `json:"beginHeight"`
 	EndHeight    string              `json:"endHeight"`
 	Metadata     string              `json:"metadata"`
 	DeployType   string              `json:"type"`
-	PremineCount int64               `json:"premineCount"`
+	PremineCount uint64              `json:"premineCount"`
 	PinCheck     Mrc20DeployQual     `json:"pinCheck"`
 	PayCheck     Mrc20DeployPayCheck `json:"payCheck"`
-	TotalMinted  int64               `json:"totalMinted"`
+	TotalMinted  uint64              `json:"totalMinted"`
 	Mrc20Id      string              `json:"mrc20Id"`
 	PinNumber    int64               `json:"pinNumber"`
 	Chain        string              `json:"chain"`
-	Holders      int64               `json:"holders"`
-	TxCount      int64               `json:"txCount"`
+	Holders      uint64              `json:"holders"`
+	TxCount      uint64              `json:"txCount"`
 	MetaId       string              `json:"metaId"`
 	Address      string              `json:"address"`
 	DeployTime   int64               `json:"deployTime"`
@@ -136,4 +137,10 @@ type Mrc20Balance struct {
 	Name          string          `json:"name"`
 	Balance       decimal.Decimal `json:"balance"`
 	UnsafeBalance decimal.Decimal `json:"unsafeBalance"`
+}
+type Mrc20MempoolBalance struct {
+	Id     string          `json:"id"`
+	Name   string          `json:"name"`
+	Send   decimal.Decimal `json:"send"`
+	Recive decimal.Decimal `json:"recive"`
 }

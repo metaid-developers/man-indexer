@@ -19,26 +19,27 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 	var mrc20UtxoList []mrc20.Mrc20Utxo
 
 	var mrc20TrasferList []*mrc20.Mrc20Utxo
-	var deployHandleList []*pin.PinInscription
+	//var deployHandleList []*pin.PinInscription
 	var mintHandleList []*pin.PinInscription
 	var transferHandleList []*pin.PinInscription
 	for _, pinNode := range mrc20List {
 		switch pinNode.Path {
 		case "/ft/mrc20/deploy":
-			deployHandleList = append(deployHandleList, pinNode)
+			//deployHandleList = append(deployHandleList, pinNode)
+			//Prioritize handling deploy
+			deployResult := deployHandle(pinNode)
+			if len(deployResult) > 0 {
+				mrc20UtxoList = append(mrc20UtxoList, deployResult...)
+			}
 		case "/ft/mrc20/mint":
 			mintHandleList = append(mintHandleList, pinNode)
 		case "/ft/mrc20/transfer":
 			transferHandleList = append(transferHandleList, pinNode)
 		}
 	}
-	//Prioritize handling deploy
-	deployResult := deployHandle(deployHandleList)
-	if len(deployResult) > 0 {
-		mrc20UtxoList = append(mrc20UtxoList, deployResult...)
-	}
+
 	for _, pinNode := range mintHandleList {
-		mrc20Pin, err := CreateMrc20MintPin(pinNode, &validator)
+		mrc20Pin, err := CreateMrc20MintPin(pinNode, &validator, false)
 		if err == nil {
 			mrc20Pin.Chain = pinNode.ChainName
 			mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
@@ -92,24 +93,24 @@ func transferHandle(transferHandleList []*pin.PinInscription) (mrc20UtxoList []*
 	}
 	return
 }
-func deployHandle(deployHandleList []*pin.PinInscription) (mrc20UtxoList []mrc20.Mrc20Utxo) {
+func deployHandle(pinNode *pin.PinInscription) (mrc20UtxoList []mrc20.Mrc20Utxo) {
 	var deployList []mrc20.Mrc20DeployInfo
 	validator := Mrc20Validator{}
-	for _, pinNode := range deployHandleList {
-		mrc20Pin, preMineUtxo, info, err := CreateMrc20DeployPin(pinNode, &validator)
-		if err == nil {
-			if mrc20Pin.Mrc20Id != "" {
-				mrc20Pin.Chain = pinNode.ChainName
-				mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
-			}
-			if preMineUtxo.Mrc20Id != "" {
-				mrc20UtxoList = append(mrc20UtxoList, preMineUtxo)
-			}
-			if info.Tick != "" && info.Mrc20Id != "" {
-				deployList = append(deployList, info)
-			}
+	//for _, pinNode := range deployHandleList {
+	mrc20Pin, preMineUtxo, info, err := CreateMrc20DeployPin(pinNode, &validator)
+	if err == nil {
+		if mrc20Pin.Mrc20Id != "" {
+			mrc20Pin.Chain = pinNode.ChainName
+			mrc20UtxoList = append(mrc20UtxoList, mrc20Pin)
+		}
+		if preMineUtxo.Mrc20Id != "" {
+			mrc20UtxoList = append(mrc20UtxoList, preMineUtxo)
+		}
+		if info.Tick != "" && info.Mrc20Id != "" {
+			deployList = append(deployList, info)
 		}
 	}
+	//}
 	if len(deployList) > 0 {
 		DbAdapter.SaveMrc20Tick(deployList)
 	}
@@ -132,12 +133,16 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 	if err != nil {
 		return
 	}
-
+	if mintCount < 0 {
+		mintCount = int64(0)
+	}
 	amtPerMint, err := strconv.ParseInt(df.AmtPerMint, 10, 64)
 	if err != nil {
 		return
 	}
-
+	if amtPerMint < 0 {
+		amtPerMint = int64(0)
+	}
 	//premineCount
 	if mintCount < premineCount {
 		return
@@ -152,8 +157,8 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 	info.TokenName = df.TokenName
 	info.Decimals = df.Decimals
 	info.AmtPerMint = df.AmtPerMint
-	info.PremineCount = premineCount
-	info.MintCount = mintCount
+	info.PremineCount = uint64(premineCount)
+	info.MintCount = uint64(mintCount)
 	info.BeginHeight = df.BeginHeight
 	info.EndHeight = df.EndHeight
 	info.Metadata = df.Metadata
@@ -177,7 +182,7 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 	mrc20Utxo.TxPoint = pinNode.Output
 	mrc20Utxo.PinContent = string(pinNode.ContentBody)
 	mrc20Utxo.Timestamp = pinNode.Timestamp
-	mrc20Utxo.PointValue = pinNode.OutputValue
+	mrc20Utxo.PointValue = uint64(pinNode.OutputValue)
 	mrc20Utxo.Verify = true
 
 	if premineAddress != "" && premineCount > 0 {
@@ -190,19 +195,19 @@ func CreateMrc20DeployPin(pinNode *pin.PinInscription, validator *Mrc20Validator
 		preMineUtxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, 1)
 		//mrc20Utxo.PinContent = string(pinNode.ContentBody)
 		preMineUtxo.Timestamp = pinNode.Timestamp
-		preMineUtxo.PointValue = pointValue
+		preMineUtxo.PointValue = uint64(pointValue)
 		preMineUtxo.Mrc20Id = info.Mrc20Id
 		preMineUtxo.Tick = info.Tick
 		preMineUtxo.Chain = pinNode.ChainName
 		//preMineUtxo.AmtChange = premineCount * amtPerMint
 		num := strconv.FormatInt(premineCount*amtPerMint, 10)
 		preMineUtxo.AmtChange, _ = decimal.NewFromString(num)
-		info.TotalMinted = premineCount
+		info.TotalMinted = uint64(premineCount)
 	}
 	return
 }
 
-func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) (mrc20Utxo mrc20.Mrc20Utxo, err error) {
+func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator, mempool bool) (mrc20Utxo mrc20.Mrc20Utxo, err error) {
 	var content mrc20.Mrc20MintData
 	err = json.Unmarshal(pinNode.ContentBody, &content)
 	if err != nil {
@@ -217,7 +222,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 	mrc20Utxo.TxPoint = pinNode.Output
 	mrc20Utxo.PinContent = string(pinNode.ContentBody)
 	mrc20Utxo.Timestamp = pinNode.Timestamp
-	mrc20Utxo.PointValue = pinNode.OutputValue
+	mrc20Utxo.PointValue = uint64(pinNode.OutputValue)
 	info, shovelList, toAddress, vout, err1 := validator.Mint(content, pinNode)
 	if toAddress != "" {
 		mrc20Utxo.ToAddress = toAddress
@@ -227,6 +232,11 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 		mrc20Utxo.Mrc20Id = info.Mrc20Id
 		mrc20Utxo.Tick = info.Tick
 	}
+	if mempool {
+		mrc20Utxo.Mrc20Id = info.Mrc20Id
+		mrc20Utxo.AmtChange, _ = decimal.NewFromString(info.AmtPerMint)
+		return
+	}
 	if err1 != nil {
 		mrc20Utxo.Mrc20Id = info.Mrc20Id
 		mrc20Utxo.Verify = false
@@ -235,7 +245,7 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator) 
 		if len(shovelList) > 0 {
 			DbAdapter.AddMrc20Shovel(shovelList, pinNode.Id, mrc20Utxo.Mrc20Id)
 		}
-		DbAdapter.UpdateMrc20TickInfo(info.Mrc20Id, mrc20Utxo.TxPoint, info.TotalMinted+1)
+		DbAdapter.UpdateMrc20TickInfo(info.Mrc20Id, mrc20Utxo.TxPoint, uint64(info.TotalMinted)+1)
 		//mrc20Utxo.AmtChange, _ = strconv.ParseInt(info.AmtPerMint, 10, 64)
 		mrc20Utxo.AmtChange, _ = decimal.NewFromString(info.AmtPerMint)
 	}
@@ -294,7 +304,7 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 		mrc20Utxo.PinContent = string(pinNode.ContentBody)
 		mrc20Utxo.Index = x
 		mrc20Utxo.OperationTx = pinNode.GenesisTransaction
-		mrc20Utxo.PointValue = outputValueList[item.Vout]
+		mrc20Utxo.PointValue = uint64(outputValueList[item.Vout])
 		//mrc20Utxo.AmtChange, _ = strconv.ParseInt(item.Amount, 10, 64)
 		mrc20Utxo.AmtChange, _ = decimal.NewFromString(item.Amount)
 		//outputAmtMap[item.Id] += mrc20Utxo.AmtChange
@@ -335,7 +345,7 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 			mrc20Utxo.Chain = pinNode.ChainName
 			mrc20Utxo.Timestamp = pinNode.Timestamp
 			mrc20Utxo.TxPoint = fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, firstIdx)
-			mrc20Utxo.PointValue = outputValueList[firstIdx]
+			mrc20Utxo.PointValue = uint64(outputValueList[firstIdx])
 			mrc20Utxo.PinContent = string(pinNode.ContentBody)
 			mrc20Utxo.OperationTx = pinNode.GenesisTransaction
 			mrc20Utxo.Index = x
@@ -359,7 +369,7 @@ func sendAllAmountToFirstOutput(pinNode *pin.PinInscription, msg string) (mrc20U
 	idx := 0
 	value := int64(0)
 	for i, out := range txb.MsgTx().TxOut {
-		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams)
+		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams[pinNode.ChainName])
 		if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
 			toAddress = addresses[0].String()
 			idx = i
@@ -403,7 +413,7 @@ func sendAllAmountToFirstOutput(pinNode *pin.PinInscription, msg string) (mrc20U
 				Chain:       pinNode.ChainName,
 				Timestamp:   pinNode.Timestamp,
 				TxPoint:     fmt.Sprintf("%s:%d", pinNode.GenesisTransaction, idx),
-				PointValue:  value,
+				PointValue:  uint64(value),
 				PinContent:  string(pinNode.ContentBody),
 				Index:       0,
 				AmtChange:   item.AmtChange,

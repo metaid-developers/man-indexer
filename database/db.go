@@ -72,7 +72,7 @@ type Db interface {
 	GetMrc20TickPageList(cursor int64, size int64, order string, completed string, orderType string) (total int64, list []mrc20.Mrc20DeployInfo, err error)
 	AddMrc20Shovel(shovelList []string, pinId string, mrc20Id string) (err error)
 	GetMrc20Shovel(shovels []string, mrc20Id string) (data map[string]mrc20.Mrc20Shovel, err error)
-	UpdateMrc20TickInfo(tickId string, txPoint string, minted int64) (err error)
+	UpdateMrc20TickInfo(tickId string, txPoint string, minted uint64) (err error)
 	UpdateMrc20TickHolder(tickId string, txNum int64) (err error)
 	GetMrc20ByAddressAndTick(address string, tickId string) (list []mrc20.Mrc20Utxo, err error)
 	GetMrc20HistoryPageList(tickId string, isPage bool, page int64, size int64) (list []mrc20.Mrc20Utxo, total int64, err error)
@@ -83,7 +83,7 @@ type Db interface {
 	GetHistoryByTx(txId string, index int64, cursor int64, size int64) (list []mrc20.Mrc20Utxo, total int64, err error)
 	GetShovelListByAddress(address string, mrc20Id string, creator string, lv int, path, query, key, operator, value string, cursor int64, size int64) (list []*pin.PinInscription, total int64, err error)
 	GetUsedShovelIdListByAddress(address string, tickId string, cursor int64, size int64) (list []*string, total int64, err error)
-	DeleteMempoolBrc20(txIds []string) (err error)
+	DeleteMempoolMc20(txIds []string) (err error)
 	//mrc721
 	SaveMrc721Collection(collection *mrc721.Mrc721CollectionDescPin) (err error)
 	GetMrc721Collection(collectionName, pinId string) (data *mrc721.Mrc721CollectionDescPin, err error)

@@ -20,10 +20,10 @@ func (m721 *Mrc721) PinHandle(pinList []*pin.PinInscription) {
 	for _, pinNode := range pinList {
 		pathLow := strings.ToLower(pinNode.Path)
 		pathArray := strings.Split(pathLow, "/")
-		if len(pathLow) < 4 {
+		if len(pathLow) < 11 {
 			continue
 		}
-		if pathArray[1] != "nft" || pathArray[2] != "mrc721" {
+		if pathLow[0:11] != "/nft/mrc721" || len(pathArray) < 4 {
 			continue
 		}
 		collectionName := pathArray[3]

@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"manindexer/common"
+
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
@@ -14,7 +16,6 @@ import (
 	"github.com/btcsuite/btcd/mempool"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"manindexer/common"
 )
 
 type Mrc20Builder struct {
@@ -73,7 +74,7 @@ type TransferMrc20 struct {
 	OutRaw        string
 	UtxoTxId      string
 	UtxoIndex     uint32
-	UtxoOutValue  int64
+	UtxoOutValue  uint64
 	Mrc20Amount   string
 	Mrc20TickerId string
 }

@@ -82,11 +82,15 @@ func (chain *MicroVisionChain) GetInitialHeight() (height int64) {
 	return common.Config.Mvc.InitialHeight
 }
 func (chain *MicroVisionChain) GetBestHeight() (height int64) {
-	info, err := client.GetBlockChainInfo()
+	blockhash, err := client.GetBestBlockHash()
 	if err != nil {
 		return
 	}
-	height = int64(info.Blocks)
+	block, err := client.GetBlockVerbose(blockhash)
+	if err != nil {
+		return
+	}
+	height = block.Height
 	//fmt.Println(height)
 	return
 }

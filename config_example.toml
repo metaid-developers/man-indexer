@@ -18,6 +18,7 @@ syncProtocols = ["payLike"]
   key = "likeTo"
 [btc]
 initialHeight = 0
+mrc20Height = 0
 rpcHost = "127.0.0.1:8332"
 rpcUser = "test"
 rpcPass = "test"

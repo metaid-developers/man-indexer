@@ -27,6 +27,7 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.GET("/block/list", blockList)
 	btcGroup.GET("/mempool/list", mempoolList)
 	btcGroup.GET("/node/list", nodeList)
+	btcGroup.GET("/reindex/:chain/:from/:to", reindex)
 
 	btcGroup.GET("/pin/:numberOrId", getPinById)
 	btcGroup.GET("/address/pin/utxo/count/:address", getPinUtxoCountByAddress)
@@ -576,4 +577,14 @@ func getFollowRecord(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", info))
 
+}
+func reindex(ctx *gin.Context) {
+	chain := ctx.Param("chain")
+	from, _ := strconv.ParseInt(ctx.Param("from"), 10, 64)
+	to, _ := strconv.ParseInt(ctx.Param("to"), 10, 64)
+	for i := from; i <= to; i++ {
+		man.DoIndexerRun(chain, i)
+	}
+
+	ctx.String(http.StatusOK, "finish")
 }

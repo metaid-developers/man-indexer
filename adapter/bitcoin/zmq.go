@@ -37,7 +37,7 @@ func (indexer *Indexer) ZmqRun(chanMsg chan pin.MempollChanMsg) {
 		log.Println("ZmqRun:", err)
 	}
 	q.SetSubscribe("rawtx")
-
+	q.SetTcpKeepalive(120)
 	for {
 		msg, _ := q.RecvMessage(0)
 		var msgTx wire.MsgTx

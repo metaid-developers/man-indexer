@@ -24,7 +24,7 @@ func (pg *Postgresql) AddMrc20Shovel(shovelList []string, pinId string, mrc20Id 
 func (pg *Postgresql) GetMrc20Shovel(shovels []string, mrc20Id string) (data map[string]mrc20.Mrc20Shovel, err error) {
 	return
 }
-func (pg *Postgresql) UpdateMrc20TickInfo(tickId string, txPoint string, minted int64) (err error) {
+func (pg *Postgresql) UpdateMrc20TickInfo(tickId string, txPoint string, minted uint64) (err error) {
 	return
 }
 func (pg *Postgresql) UpdateMrc20TickHolder(tickId string, txNum int64) (err error) {
@@ -57,6 +57,6 @@ func (pg *Postgresql) GetShovelListByAddress(address string, mrc20Id string, cre
 func (pg *Postgresql) GetUsedShovelIdListByAddress(address string, tickId string, cursor int64, size int64) (list []*string, total int64, err error) {
 	return
 }
-func (pg *Postgresql) DeleteMempoolBrc20(txIds []string) (err error) {
+func (pg *Postgresql) DeleteMempoolMc20(txIds []string) (err error) {
 	return
 }

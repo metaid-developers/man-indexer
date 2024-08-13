@@ -369,9 +369,14 @@ func (indexer *Indexer) GetBlockTxHash(blockHeight int64) (txhashList []string, 
 	}
 	block := blockMsg.(*wire.MsgBlock)
 	for _, tx := range block.Transactions {
+		//recalculate txhash
+		txHash, err := GetNewHash(tx)
+		if err != nil {
+			continue
+		}
 		for i := range tx.Copy().TxOut {
 			var pinId strings.Builder
-			pinId.WriteString(tx.TxHash().String())
+			pinId.WriteString(txHash)
 			pinId.WriteString("i")
 			pinId.WriteString(strconv.Itoa(i))
 			pinIdList = append(pinIdList, pinId.String())

@@ -17,6 +17,7 @@ var (
 	Db          string
 	Server      string
 	TestNet     string
+	ConfigFile  string
 )
 
 type AllConfig struct {
@@ -51,6 +52,7 @@ type protocolIndex struct {
 }
 type btcConfig struct {
 	InitialHeight   int64  `toml:"initialHeight"`
+	Mrc20Height     int64  `toml:"mrc20Height"`
 	RpcHost         string `toml:"rpcHost"`
 	RpcUser         string `toml:"rpcUser"`
 	RpcPass         string `toml:"rpcPass"`
@@ -61,6 +63,7 @@ type btcConfig struct {
 }
 type mvcConfig struct {
 	InitialHeight   int64  `toml:"initialHeight"`
+	Mrc20Height     int64  `toml:"mrc20Height"`
 	RpcHost         string `toml:"rpcHost"`
 	RpcUser         string `toml:"rpcUser"`
 	RpcPass         string `toml:"rpcPass"`
@@ -88,11 +91,16 @@ type pebble struct {
 func InitConfig() {
 	configMutex.Lock()
 	defer configMutex.Unlock()
+	flagConfig, configFile := GetFlagConfig()
 	filePath := "./config.toml"
+	if configFile != "" {
+		filePath = configFile
+	}
+	ConfigFile = filePath
 	if _, err := toml.DecodeFile(filePath, &Config); err != nil {
 		panic(err)
 	}
-	flagConfig := GetFlagConfig()
+
 	for k, v := range flagConfig {
 		if *v == "" {
 			continue
@@ -146,11 +154,12 @@ func InitConfig() {
 		Config.ProtocolID = "6d6574616964"
 	}
 }
-func GetFlagConfig() (flagConfig map[string]*string) {
+func GetFlagConfig() (flagConfig map[string]*string, configFile string) {
 	chain := flag.String("chain", "btc", "Which chain to perform indexing")
 	db := flag.String("database", "mongo", "Which database to use")
 	testNet := flag.String("test", "", "Connect to testnet")
 	server := flag.String("server", "1", "Run the explorer service")
+	config := flag.String("config", "", "Config file")
 	flagConfig = make(map[string]*string)
 	flagConfig["btc_height"] = flag.String("btc_height", "", "btc starting block height")
 	flagConfig["btc_rpc_host"] = flag.String("btc_rpc_host", "", "btc rpc host")
@@ -180,5 +189,6 @@ func GetFlagConfig() (flagConfig map[string]*string) {
 	Db = *db
 	TestNet = *testNet
 	Server = *server
+	configFile = *config
 	return
 }

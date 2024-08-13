@@ -24,7 +24,7 @@ func (pb *Pebble) AddMrc20Shovel(shovelList []string, pinId string, mrc20Id stri
 func (pb *Pebble) GetMrc20Shovel(shovels []string, mrc20Id string) (data map[string]mrc20.Mrc20Shovel, err error) {
 	return
 }
-func (pb *Pebble) UpdateMrc20TickInfo(tickId string, txPoint string, minted int64) (err error) {
+func (pb *Pebble) UpdateMrc20TickInfo(tickId string, txPoint string, minted uint64) (err error) {
 	return
 }
 func (pb *Pebble) UpdateMrc20TickHolder(tickId string, txNum int64) (err error) {
@@ -57,6 +57,6 @@ func (pb *Pebble) GetShovelListByAddress(address string, mrc20Id string, creator
 func (pb *Pebble) GetUsedShovelIdListByAddress(address string, tickId string, cursor int64, size int64) (list []*string, total int64, err error) {
 	return
 }
-func (pb *Pebble) DeleteMempoolBrc20(txIds []string) (err error) {
+func (pb *Pebble) DeleteMempoolMc20(txIds []string) (err error) {
 	return
 }

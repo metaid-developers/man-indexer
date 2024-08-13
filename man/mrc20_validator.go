@@ -116,7 +116,7 @@ func (validator *Mrc20Validator) Deploy(content []byte, pinNode *pin.PinInscript
 		return "", 0, errors.New("tx error")
 	}
 	toAddress := ""
-	class, addresses, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[1].PkScript, ChainParams)
+	class, addresses, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[1].PkScript, ChainParams[pinNode.ChainName])
 	if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
 		toAddress = addresses[0].String()
 	}
@@ -184,11 +184,11 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 			err = errors.New(mrc20.ErrMintVout)
 			return
 		}
-		if mintVout > len(txb.MsgTx().TxOut) || mintVout < 0 {
+		if mintVout > (len(txb.MsgTx().TxOut)-1) || mintVout < 0 {
 			err = errors.New(mrc20.ErrMintVout)
 			return
 		}
-		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[mintVout].PkScript, ChainParams)
+		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[mintVout].PkScript, ChainParams[pinNode.ChainName])
 		if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
 			toAddress = addresses[0].String()
 			vout = mintVout
@@ -210,6 +210,9 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 		findPayCheck = true
 		payAmt, _ = strconv.ParseInt(info.PayCheck.PayAmount, 10, 64)
 	}
+	if payAmt < 0 {
+		payAmt = int64(0)
+	}
 	isHavePayCheck := false
 	for i, out := range txb.MsgTx().TxOut {
 		s := fmt.Sprintf("%s:%d", txb.Hash().String(), i)
@@ -218,7 +221,7 @@ func (validator *Mrc20Validator) Mint(content mrc20.Mrc20MintData, pinNode *pin.
 			inputList = append(inputList, s)
 		}
 		if findPayCheck {
-			class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams)
+			class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams[pinNode.ChainName])
 			if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
 				checkAddress := addresses[0].String()
 				if checkAddress == info.PayCheck.PayTo && out.Value >= payAmt {
@@ -537,6 +540,11 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 		}
 		//amt, _ := strconv.ParseInt(item.Amount, 10, 64)
 		amt, _ := decimal.NewFromString(item.Amount)
+		if amt.Cmp(decimal.Zero) == -1 || amt.Cmp(decimal.Zero) == 0 {
+			err = errors.New(mrc20.ErrTranferAmt)
+			msg = mrc20.ErrTranferAmt
+			return
+		}
 		outMap[item.Id] = outMap[item.Id].Add(amt)
 
 		tick, err1 := DbAdapter.GetMrc20TickInfo(item.Id, "")
@@ -568,7 +576,7 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 		return
 	}
 	for _, item := range content {
-		class, _, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[item.Vout].PkScript, ChainParams)
+		class, _, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[item.Vout].PkScript, ChainParams[pinNode.ChainName])
 		if class.String() == "nulldata" || class.String() == "nonstandard" {
 			msg = "Incorrect vout target for the transfer"
 			err = errors.New("valueErr")
@@ -608,7 +616,7 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 	toAddress = make(map[int]string)
 	firstIdx = -1
 	for i, out := range txb.MsgTx().TxOut {
-		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams)
+		class, addresses, _, _ := txscript.ExtractPkScriptAddrs(out.PkScript, ChainParams[pinNode.ChainName])
 		if class.String() != "nulldata" && class.String() != "nonstandard" && len(addresses) > 0 {
 			toAddress[i] = addresses[0].String()
 			if firstIdx < 0 {

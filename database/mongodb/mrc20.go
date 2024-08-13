@@ -127,7 +127,7 @@ func (mg *Mongodb) GetMrc20Shovel(shovels []string, mrc20Id string) (data map[st
 	}
 	return
 }
-func (mg *Mongodb) UpdateMrc20TickInfo(mrc20Id string, txPoint string, minted int64) (err error) {
+func (mg *Mongodb) UpdateMrc20TickInfo(mrc20Id string, txPoint string, minted uint64) (err error) {
 	//Check if already counted
 	utxoFilter := bson.M{"txpoint": txPoint}
 	var utxo mrc20.Mrc20Utxo
@@ -148,7 +148,7 @@ func (mg *Mongodb) UpdateMrc20TickHolder(tickId string, txNum int64) (err error)
 	return
 }
 func getHolderCount(tickId string) (count int64) {
-	filter := bson.D{{Key: "mrc20id", Value: tickId}, {Key: "verify", Value: true}, {Key: "mrcoption", Value: bson.D{{Key: "$ne", Value: "deploy"}}}}
+	filter := bson.D{{Key: "mrc20id", Value: tickId}, {Key: "status", Value: 0}, {Key: "verify", Value: true}, {Key: "mrcoption", Value: bson.D{{Key: "$ne", Value: "deploy"}}}}
 	match := bson.D{{Key: "$match", Value: filter}}
 	project := bson.D{{Key: "$project", Value: bson.D{{Key: "toaddress", Value: true}}}}
 	groupStage := bson.D{
@@ -283,30 +283,45 @@ func (mg *Mongodb) GetHistoryByAddress(tickId string, address string, cursor int
 	}
 	total, err = mongoClient.Collection(Mrc20UtxoCollection).CountDocuments(context.TODO(), filter)
 	//if query status is 0 && verify is true,search mempool
-	if status == "0" && verify == "true" {
-		mempoolList, mempoolTotal, err1 := mg.GetMempoolHistoryByAddress(tickId, address)
-		if err1 != nil {
-			return
-		}
-		if mempoolTotal > 0 {
-			total -= mempoolTotal
-		}
-		if len(mempoolList) > 0 {
-			key := make(map[string]struct{})
-			for _, item := range mempoolList {
-				k := fmt.Sprintf("%s-%d", item.TxPoint, item.Index)
-				key[k] = struct{}{}
-			}
-			var newList []mrc20.Mrc20Utxo
-			for _, item := range list {
-				k := fmt.Sprintf("%s-%d", item.TxPoint, item.Index)
-				if _, ok := key[k]; !ok {
-					newList = append(newList, item)
-				}
-			}
-			list = newList
-		}
+	//if status == "0" && verify == "true" {
+	mempoolList, mempoolTotal, err1 := mg.GetMempoolHistoryByAddress(tickId, address)
+	if err1 != nil {
+		return
 	}
+
+	if mempoolTotal > 0 {
+		total -= int64(len(list))
+	}
+
+	if len(mempoolList) > 0 {
+		memMap := make(map[string]mrc20.Mrc20Utxo, len(mempoolList))
+		for _, item := range mempoolList {
+			k := fmt.Sprintf("%s-%d", item.TxPoint, item.Index)
+			memMap[k] = item
+		}
+		var newList []mrc20.Mrc20Utxo
+		for _, item := range list {
+			// if item.MrcOption == "mint" {
+			// 	newList = append(newList, item)
+			// 	continue
+			// }
+			//transfer data
+			k := fmt.Sprintf("%s-%d", item.TxPoint, item.Index)
+			_, existed := memMap[k]
+			if !existed {
+				newList = append(newList, item)
+			}
+		}
+		for _, item := range mempoolList {
+			if item.Status == -1 {
+				continue
+			}
+			newList = append(newList, item)
+		}
+		list = newList
+		total += int64(len(list))
+	}
+	//}
 	return
 }
 
@@ -316,7 +331,7 @@ func (mg *Mongodb) GetMempoolHistoryByAddress(tickId string, address string) (li
 	filter := bson.D{
 		{Key: "mrc20id", Value: tickId},
 		{Key: "toaddress", Value: address},
-		{Key: "status", Value: -1},
+		//{Key: "status", Value: -1}, //add mint,mint status = 0
 		{Key: "amtchange", Value: bson.D{
 			{Key: "$gt", Value: 0},
 		}},
@@ -347,8 +362,8 @@ func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size i
 			{Key: "total", Value: bson.D{{Key: "$sum", Value: "$amtchange"}}},
 		}}},
 		//{{Key: "$sort", Value: bson.D{{Key: "tick", Value: 1}}}},
-		{{Key: "$skip", Value: cursor}},
-		{{Key: "$limit", Value: size}},
+		//{{Key: "$skip", Value: cursor}},
+		//{{Key: "$limit", Value: size}},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -362,89 +377,70 @@ func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size i
 	if err = cursora.All(ctx, &results); err != nil {
 		return
 	}
+	total = int64(len(results))
 	var idList []string
-	var list []mrc20.Mrc20Balance
+	balanceMap := make(map[string]*mrc20.Mrc20Balance)
 	for _, result := range results {
 		idList = append(idList, result["_id"].(string))
 		balance := result["total"].(primitive.Decimal128)
 		balanceDecimal, _ := decimal.NewFromString(balance.String())
 		b := mrc20.Mrc20Balance{Id: result["_id"].(string), Balance: balanceDecimal}
 		//fmt.Printf("Category: %v, Total: %v\n", result["_id"], result["total"])
-		list = append(list, b)
+		//list = append(list, b)
+		balanceMap[b.Id] = &b
+	}
+	//mempool data
+	mempoolData, err := getMempoolMrc20BalanceByAddress(address)
+	if err == nil && len(mempoolData) > 0 {
+		for id, balance := range mempoolData {
+			if _, ok := balanceMap[id]; ok {
+				balanceMap[id].Balance = balanceMap[id].Balance.Sub(balance.Send)
+				balanceMap[id].UnsafeBalance = balance.Recive
+			} else {
+				balanceMap[id] = &mrc20.Mrc20Balance{
+					Id:            balance.Id,
+					Name:          balance.Name,
+					UnsafeBalance: balance.Recive,
+				}
+				idList = append(idList, id)
+				total += 1
+			}
+		}
 	}
 	if len(idList) <= 0 {
 		return
 	}
+
 	tickFilter := bson.M{"mrc20id": bson.M{"$in": idList}}
 	ret, err := mongoClient.Collection(Mrc20TickCollection).Find(context.TODO(), tickFilter)
 	var tickList []mrc20.Mrc20DeployInfo
 	if err = ret.All(ctx, &tickList); err != nil {
 		return
 	}
-	m := make(map[string]string)
+	var nameList []string
+	nameMap := make(map[string]string, len(tickList))
 	for _, tick := range tickList {
-		m[tick.Mrc20Id] = tick.Tick
-	}
-	listMap := make(map[string]*mrc20.Mrc20Balance, len(list))
-	for i := range list {
-		if v, ok := m[list[i].Id]; ok {
-			list[i].Name = v
-		}
-		listMap[list[i].Id] = &list[i]
-	}
-	//mempool data
-	mempoolData, err := mg.GetMempoolMrc20BalanceByAddress(address)
-	if err == nil && len(mempoolData) > 0 {
-		for id, balance := range mempoolData {
-			if _, ok := listMap[id]; ok {
-				listMap[id].Balance = listMap[id].Balance.Add(balance.Balance)
-				listMap[id].UnsafeBalance = balance.UnsafeBalance
-			} else {
-				listMap[id] = balance
-				total += 1
-			}
-		}
-		list = []mrc20.Mrc20Balance{}
-		for _, v := range listMap {
-			list = append(list, *v)
+		//setName
+		if v, ok := balanceMap[tick.Mrc20Id]; ok {
+			v.Name = tick.Tick
+			nameList = append(nameList, tick.Tick)
+			nameMap[tick.Tick] = tick.Mrc20Id
 		}
 	}
 	//sort
-	sortMap := make(map[string]mrc20.Mrc20Balance)
-	keyList := []string{}
-	for _, item := range list {
-		keyList = append(keyList, item.Name)
-		sortMap[item.Name] = item
+	sort.Strings(nameList)
+	if len(nameList) > int(cursor+size) {
+		nameList = nameList[cursor:size]
 	}
-	sort.Strings(keyList)
-	for _, key := range keyList {
-		balanceList = append(balanceList, sortMap[key])
-	}
-	//count
-	pipelineCount := bson.A{
-		bson.D{{Key: "$match", Value: filter}},
-		bson.D{{Key: "$group", Value: bson.D{
-			{Key: "_id", Value: "$mrc20id"},
-			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
-		}}},
-		bson.D{{Key: "$count", Value: "total"}},
-	}
-	cursorb, err := mongoClient.Collection(Mrc20UtxoCollection).Aggregate(ctx, pipelineCount)
-	if err != nil {
-		return
-	}
-	defer cursorb.Close(ctx)
-	var results2 []bson.M
-	if err = cursorb.All(ctx, &results2); err != nil {
-		return
-	}
-	if len(results2) > 0 {
-		total += int64(results2[0]["total"].(int32))
+	for _, name := range nameList {
+		if id, ok := nameMap[name]; ok {
+			balanceList = append(balanceList, *balanceMap[id])
+		}
 	}
 	return
 }
-func (mg *Mongodb) GetMempoolMrc20BalanceByAddress(address string) (balanceMap map[string]*mrc20.Mrc20Balance, err error) {
-	balanceMap = make(map[string]*mrc20.Mrc20Balance)
+func getMempoolMrc20BalanceByAddress(address string) (balanceMap map[string]*mrc20.Mrc20MempoolBalance, err error) {
+	balanceMap = make(map[string]*mrc20.Mrc20MempoolBalance)
 	filter := bson.D{
 		{Key: "toaddress", Value: address},
 		{Key: "verify", Value: true},
@@ -459,20 +455,14 @@ func (mg *Mongodb) GetMempoolMrc20BalanceByAddress(address string) (balanceMap m
 		return
 	}
 	for _, utxo := range list {
-		if v, ok := balanceMap[utxo.Mrc20Id]; ok {
-			if utxo.Status == 0 {
-				v.UnsafeBalance = v.UnsafeBalance.Add(utxo.AmtChange)
-			} else {
-				v.Balance = v.Balance.Sub(utxo.AmtChange)
-			}
-		} else {
-			b := mrc20.Mrc20Balance{Id: utxo.Mrc20Id, Name: utxo.Tick}
-			if utxo.Status == 0 {
-				b.UnsafeBalance = utxo.AmtChange
-			} else {
-				b.Balance = utxo.AmtChange.Neg()
-			}
+		if _, ok := balanceMap[utxo.Mrc20Id]; !ok {
+			b := mrc20.Mrc20MempoolBalance{Id: utxo.Mrc20Id, Name: utxo.Tick}
 			balanceMap[utxo.Mrc20Id] = &b
+		}
+		if utxo.Status == 0 {
+			balanceMap[utxo.Mrc20Id].Recive = balanceMap[utxo.Mrc20Id].Recive.Add(utxo.AmtChange)
+		} else {
+			balanceMap[utxo.Mrc20Id].Send = balanceMap[utxo.Mrc20Id].Send.Add(utxo.AmtChange)
 		}
 	}
 	return
@@ -527,7 +517,7 @@ func (mg *Mongodb) GetShovelListByAddress(address string, mrc20Id string, creato
 			return
 		}
 		filter = append(filter, bson.E{Key: "id", Value: pinId})
-	} else if path != "" {
+	} else if path != "" && path != "/" {
 		pathArr := strings.Split(path, "/")
 		//Wildcard
 		if pathArr[len(pathArr)-1] == "*" {
@@ -601,11 +591,11 @@ func (mg *Mongodb) GetUsedShovelIdListByAddress(address string, tickId string, c
 	total, err = mongoClient.Collection(PinsCollection).CountDocuments(context.TODO(), filter)
 	return
 }
-func (mg *Mongodb) DeleteMempoolBrc20(txIds []string) (err error) {
+func (mg *Mongodb) DeleteMempoolMc20(txIds []string) (err error) {
 	filter := bson.M{"operationtx": bson.M{"$in": txIds}}
 	_, err = mongoClient.Collection(Mrc20UtxoMempoolCollection).DeleteMany(context.TODO(), filter)
 	if err != nil {
-		log.Println("DeleteMempoolBrc20 err", err)
+		log.Println("DeleteMempoolMc20 err", err)
 	}
 	return
 }
