@@ -257,38 +257,40 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 	var content []mrc20.Mrc20TranferData
 	err = json.Unmarshal(pinNode.ContentBody, &content)
 	if err != nil {
-		mrc20UtxoList = sendAllAmountToFirstOutput(pinNode, "Transfer JSON format error")
+		mrc20UtxoList = sendAllAmountToFirstOutput(pinNode, "Transfer JSON format error", isMempool)
 		return
 	}
 	//check
-	toAddress, utxoList, outputValueList, msg, firstIdx, err1 := validator.Transfer(content, pinNode)
+	toAddress, utxoList, outputValueList, msg, firstIdx, err1 := validator.Transfer(content, pinNode, isMempool)
 	//if err1 != nil && err1.Error() != "valueErr" {
 	if err1 != nil {
-		mrc20UtxoList = sendAllAmountToFirstOutput(pinNode, msg)
+		mrc20UtxoList = sendAllAmountToFirstOutput(pinNode, msg, isMempool)
 		return
 	}
 	address := make(map[string]string)
 	name := make(map[string]string)
 	inputAmtMap := make(map[string]decimal.Decimal)
-
+	var spendUtxoList []*mrc20.Mrc20Utxo
 	for _, utxo := range utxoList {
 		address[utxo.Mrc20Id] = utxo.ToAddress
 		name[utxo.Mrc20Id] = utxo.Tick
 		//Spent the input UTXO
 		//amt := utxo.AmtChange * -1
-		amt := utxo.AmtChange.Mul(decimal.NewFromInt(-1))
-		mrc20Utxo := mrc20.Mrc20Utxo{TxPoint: utxo.TxPoint, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1, AmtChange: amt}
-		if isMempool {
-			mrc20Utxo = *utxo
-			mrc20Utxo.Status = -1
-			mrc20Utxo.OperationTx = pinNode.GenesisTransaction
-		}
-		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
+		//amt := utxo.AmtChange.Mul(decimal.NewFromInt(-1))
+		//amt := utxo.AmtChange
+		//mrc20Utxo := mrc20.Mrc20Utxo{TxPoint: utxo.TxPoint, Index: utxo.Index, Mrc20Id: utxo.Mrc20Id, Verify: true, Status: -1, AmtChange: amt}
+		//if isMempool {
+		mrc20Utxo := *utxo
+		mrc20Utxo.Status = -1
+		//}
+		mrc20Utxo.OperationTx = pinNode.GenesisTransaction
+		spendUtxoList = append(spendUtxoList, &mrc20Utxo)
 		//inputAmtMap[utxo.Mrc20Id] += utxo.AmtChange
 		inputAmtMap[utxo.Mrc20Id] = inputAmtMap[utxo.Mrc20Id].Add(utxo.AmtChange)
 	}
 	outputAmtMap := make(map[string]decimal.Decimal)
 	x := 0
+	var reciveUtxoList []*mrc20.Mrc20Utxo
 	for _, item := range content {
 		mrc20Utxo := mrc20.Mrc20Utxo{}
 		mrc20Utxo.Mrc20Id = item.Id
@@ -310,29 +312,32 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 		//outputAmtMap[item.Id] += mrc20Utxo.AmtChange
 		outputAmtMap[item.Id] = outputAmtMap[item.Id].Add(mrc20Utxo.AmtChange)
 		mrc20Utxo.Timestamp = pinNode.Timestamp
-		mrc20UtxoList = append(mrc20UtxoList, &mrc20Utxo)
+		reciveUtxoList = append(reciveUtxoList, &mrc20Utxo)
 		x += 1
 	}
 	//Check if the input exceeds the output.
 	for id, inputAmt := range inputAmtMap {
 		//inputAmt > outputAmtMap[id]
 		if inputAmt.Compare(outputAmtMap[id]) == 1 {
-			if !isMempool {
-				find := false
-				for _, utxo := range mrc20UtxoList {
-					vout := strings.Split(utxo.TxPoint, ":")[1]
-					if utxo.Mrc20Id == id && utxo.ToAddress == toAddress[0] && vout == "0" {
-						//utxo.AmtChange += (inputAmt - outputAmtMap[id])
-						diff := inputAmt.Sub(outputAmtMap[id])
-						utxo.AmtChange = utxo.AmtChange.Add(diff)
-						utxo.Msg = "The total input amount is greater than the output amount"
-						find = true
-					}
-				}
-				if find {
-					continue
-				}
-			}
+			//if !isMempool {
+			// find := false
+			// for _, utxo := range mrc20UtxoList {
+			// 	vout := strings.Split(utxo.TxPoint, ":")[1]
+			// 	if utxo.Mrc20Id == id && utxo.ToAddress == toAddress[0] && vout == "0" {
+			// 		//utxo.AmtChange += (inputAmt - outputAmtMap[id])
+
+			// 		diff := inputAmt.Sub(outputAmtMap[id])
+			// 		fmt.Println("2===>", diff, utxo.AmtChange)
+			// 		utxo.AmtChange = utxo.AmtChange.Add(diff)
+
+			// 		utxo.Msg = "The total input amount is greater than the output amount"
+			// 		find = true
+			// 	}
+			// }
+			// if find {
+			// 	continue
+			// }
+			//}
 			mrc20Utxo := mrc20.Mrc20Utxo{}
 			mrc20Utxo.Mrc20Id = id
 			mrc20Utxo.Tick = name[id]
@@ -356,9 +361,11 @@ func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Valida
 			x += 1
 		}
 	}
+	mrc20UtxoList = append(mrc20UtxoList, spendUtxoList...)
+	mrc20UtxoList = append(mrc20UtxoList, reciveUtxoList...)
 	return
 }
-func sendAllAmountToFirstOutput(pinNode *pin.PinInscription, msg string) (mrc20UtxoList []*mrc20.Mrc20Utxo) {
+func sendAllAmountToFirstOutput(pinNode *pin.PinInscription, msg string, isMempool bool) (mrc20UtxoList []*mrc20.Mrc20Utxo) {
 	tx, err := ChainAdapter[pinNode.ChainName].GetTransaction(pinNode.GenesisTransaction)
 	if err != nil {
 		log.Println("GetTransaction:", err)
@@ -385,7 +392,7 @@ func sendAllAmountToFirstOutput(pinNode *pin.PinInscription, msg string) (mrc20U
 		s := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 		inputList = append(inputList, s)
 	}
-	list, err := DbAdapter.GetMrc20UtxoByOutPutList(inputList)
+	list, err := DbAdapter.GetMrc20UtxoByOutPutList(inputList, isMempool)
 	if err != nil {
 		//log.Println("GetMrc20UtxoByOutPutList:", err)
 		return

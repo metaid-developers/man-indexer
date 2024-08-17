@@ -139,8 +139,8 @@ type Mrc20Balance struct {
 	UnsafeBalance decimal.Decimal `json:"unsafeBalance"`
 }
 type Mrc20MempoolBalance struct {
-	Id     string          `json:"id"`
-	Name   string          `json:"name"`
-	Send   decimal.Decimal `json:"send"`
-	Recive decimal.Decimal `json:"recive"`
+	Id        string          `json:"id"`
+	Name      string          `json:"name"`
+	SpendUtxo []string        `json:"send"`
+	Recive    decimal.Decimal `json:"recive"`
 }

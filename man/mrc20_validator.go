@@ -521,7 +521,7 @@ func countLeadingZeros(str string) int {
 	}
 	return count
 }
-func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinNode *pin.PinInscription) (toAddress map[int]string, utxoList []*mrc20.Mrc20Utxo, outputValueList []int64, msg string, firstIdx int, err error) {
+func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinNode *pin.PinInscription, isMempool bool) (toAddress map[int]string, utxoList []*mrc20.Mrc20Utxo, outputValueList []int64, msg string, firstIdx int, err error) {
 	if len(content) <= 0 {
 		err = errors.New(mrc20.ErrTranferReqData)
 		msg = mrc20.ErrTranferReqData
@@ -588,9 +588,9 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 		s := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
 		inputList = append(inputList, s)
 	}
-	list, err := DbAdapter.GetMrc20UtxoByOutPutList(inputList)
+	list, err := DbAdapter.GetMrc20UtxoByOutPutList(inputList, isMempool)
 	if err != nil {
-		//log.Println("GetMrc20UtxoByOutPutList:", err)
+		log.Println("GetMrc20UtxoByOutPutList:", err, isMempool)
 		return
 	}
 	inMap := make(map[string]decimal.Decimal)

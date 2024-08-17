@@ -20,6 +20,7 @@ func (mm *ManMempool) CheckMempoolHadle(chainName string, list []interface{}) {
 	var mrc20TrasferList []*mrc20.Mrc20Utxo
 	var mrc20MintList []*mrc20.Mrc20Utxo
 	mrc20Validator := Mrc20Validator{}
+
 	for _, pinNode := range pins {
 		err := ManValidator(pinNode)
 		if err != nil {
@@ -44,18 +45,19 @@ func (mm *ManMempool) CheckMempoolHadle(chainName string, list []interface{}) {
 			//}
 		}
 	}
-	if len(mrc20TrasferList) > 0 {
-		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, true)
-	}
-	if len(mrc20MintList) > 0 {
-		DbAdapter.UpdateMrc20Utxo(mrc20MintList, true)
-	}
 	//check mrc20 native transaction
-	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
+	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList, true)
 	if err == nil && len(mrc20transferCheck) > 0 {
 		mrc20NativeTrasferList := IndexerAdapter[chainName].CatchMempoolNativeMrc20Transfer(list, mrc20transferCheck, mrc20TransferPinTx)
 		if len(mrc20NativeTrasferList) > 0 {
 			DbAdapter.UpdateMrc20Utxo(mrc20NativeTrasferList, true)
 		}
 	}
+	if len(mrc20TrasferList) > 0 {
+		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, true)
+	}
+	if len(mrc20MintList) > 0 {
+		DbAdapter.UpdateMrc20Utxo(mrc20MintList, true)
+	}
+
 }

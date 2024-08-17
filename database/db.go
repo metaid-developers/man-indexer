@@ -76,7 +76,7 @@ type Db interface {
 	UpdateMrc20TickHolder(tickId string, txNum int64) (err error)
 	GetMrc20ByAddressAndTick(address string, tickId string) (list []mrc20.Mrc20Utxo, err error)
 	GetMrc20HistoryPageList(tickId string, isPage bool, page int64, size int64) (list []mrc20.Mrc20Utxo, total int64, err error)
-	GetMrc20UtxoByOutPutList(outputList []string) (list []*mrc20.Mrc20Utxo, err error)
+	GetMrc20UtxoByOutPutList(outputList []string, isMempool bool) (list []*mrc20.Mrc20Utxo, err error)
 	UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo, isMempool bool) (err error)
 	GetHistoryByAddress(tickId string, address string, cursor int64, size int64, status string, verify string) (list []mrc20.Mrc20Utxo, total int64, err error)
 	GetMrc20BalanceByAddress(address string, cursor int64, size int64) (list []mrc20.Mrc20Balance, total int64, err error)

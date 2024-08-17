@@ -169,7 +169,8 @@ func (indexer *Indexer) createMrc20NativeTransfer(tx *wire.MsgTx, blockHeight in
 				send.Status = -1
 				send.OperationTx = tx.TxHash().String()
 				mrc20Utxolist = append(mrc20Utxolist, &send)
-				key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
+				//key := fmt.Sprintf("%s-%s", send.Mrc20Id, send.TxPoint)
+				key := send.Mrc20Id
 				_, find := keyMap[key]
 				if find {
 					//keyMap[key].AmtChange += send.AmtChange
@@ -183,6 +184,7 @@ func (indexer *Indexer) createMrc20NativeTransfer(tx *wire.MsgTx, blockHeight in
 					recive.TxPoint = fmt.Sprintf("%s:%d", tx.TxHash().String(), 0)
 					recive.Timestamp = blockTime
 					recive.Chain = "btc"
+					recive.Msg = "native-transfer"
 					recive.OperationTx = tx.TxHash().String()
 					keyMap[key] = &recive
 				}

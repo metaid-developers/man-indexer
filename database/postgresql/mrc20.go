@@ -36,7 +36,7 @@ func (pg *Postgresql) GetMrc20ByAddressAndTick(address string, tickId string) (l
 func (pg *Postgresql) GetMrc20HistoryPageList(tickId string, isPage bool, page int64, size int64) (list []mrc20.Mrc20Utxo, total int64, err error) {
 	return
 }
-func (pg *Postgresql) GetMrc20UtxoByOutPutList(outputList []string) (list []*mrc20.Mrc20Utxo, err error) {
+func (pg *Postgresql) GetMrc20UtxoByOutPutList(outputList []string, isMempool bool) (list []*mrc20.Mrc20Utxo, err error) {
 	return
 }
 func (pg *Postgresql) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo, isMempool bool) (err error) {

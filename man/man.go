@@ -255,7 +255,9 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	//for i := from + 1; i <= to; i++ {
 	//bar.Add(1)
 	MaxHeight[chainName] = height
-	pinList, protocolsData, metaIdData, pinTreeData, updatedData, mrc20List, followData, infoAdditional, _ := GetSaveData(chainName, height)
+	pinList, protocolsData, metaIdData, pinTreeData,
+		updatedData, mrc20List, txInList, mrc20TransferPinTx,
+		followData, infoAdditional, _ := GetSaveData(chainName, height)
 	//pinList, protocolsData, metaIdData, pinTreeData, updatedData, _, followData, infoAdditional, _ := GetSaveData(chainName, height)
 
 	if len(metaIdData) > 0 {
@@ -294,6 +296,16 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	if len(mrc20List) > 0 && height >= Mrc20HeightLimit[chainName] {
 		Mrc20Handle(mrc20List)
 	}
+	if height >= Mrc20HeightLimit[chainName] {
+		//check mrc20 transfer
+		mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList, false)
+		if err == nil && len(mrc20transferCheck) > 0 {
+			mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(height, mrc20transferCheck, mrc20TransferPinTx)
+			if len(mrc20TrasferList) > 0 {
+				DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
+			}
+		}
+	}
 	if len(pinNodeList) > 0 && height >= Mrc20HeightLimit[chainName] {
 		m721 := Mrc721{}
 		m721.PinHandle(pinNodeList)
@@ -314,11 +326,14 @@ func GetSaveData(chainName string, blockHeight int64) (
 	pinTreeData []interface{},
 	updatedData []*pin.PinInscription,
 	mrc20List []*pin.PinInscription,
+	txInList []string,
+	mrc20TransferPinTx map[string]struct{},
 	followData []*pin.FollowData,
 	infoAdditional []*pin.MetaIdInfoAdditional,
 	err error) {
 	metaIdData = make(map[string]*pin.MetaIdInfo)
-	pins, txInList := IndexerAdapter[chainName].CatchPins(blockHeight)
+	var pins []*pin.PinInscription
+	pins, txInList = IndexerAdapter[chainName].CatchPins(blockHeight)
 	//check transfer
 	handleTransfer(chainName, txInList)
 	// transferCheck, err := DbAdapter.GetPinListByOutPutList(txInList)
@@ -332,7 +347,7 @@ func GetSaveData(chainName string, blockHeight int64) (
 	// }
 
 	//pin validator
-	mrc20TransferPinTx := make(map[string]struct{})
+	mrc20TransferPinTx = make(map[string]struct{})
 	for _, pinNode := range pins {
 		err := ManValidator(pinNode)
 		if err != nil {
@@ -355,13 +370,13 @@ func GetSaveData(chainName string, blockHeight int64) (
 		}
 	}
 	//check mrc20 transfer
-	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList)
-	if err == nil && len(mrc20transferCheck) > 0 {
-		mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(blockHeight, mrc20transferCheck, mrc20TransferPinTx)
-		if len(mrc20TrasferList) > 0 {
-			DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
-		}
-	}
+	// mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList, false)
+	// if err == nil && len(mrc20transferCheck) > 0 {
+	// 	mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(blockHeight, mrc20transferCheck, mrc20TransferPinTx)
+	// 	if len(mrc20TrasferList) > 0 {
+	// 		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
+	// 	}
+	// }
 
 	handlePathAndOperation(&pinList, &metaIdData, &pinTreeData, &updatedData, &followData, &infoAdditional)
 	createPinNumber(&pinList)

@@ -18,3 +18,4 @@ cmd/man-cli
 config_regtest.toml
 config_mainnet.toml
 config_testnet.toml
+config_testnet_local.toml

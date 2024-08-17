@@ -10,11 +10,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -201,13 +198,26 @@ func (mg *Mongodb) GetMrc20HistoryPageList(tickId string, isPage bool, page int6
 	total, err = mongoClient.Collection(Mrc20UtxoCollection).CountDocuments(context.TODO(), filter)
 	return
 }
-func (mg *Mongodb) GetMrc20UtxoByOutPutList(outputList []string) (list []*mrc20.Mrc20Utxo, err error) {
+func (mg *Mongodb) GetMrc20UtxoByOutPutList(outputList []string, isMempool bool) (list []*mrc20.Mrc20Utxo, err error) {
 	filter := bson.M{"txpoint": bson.M{"$in": outputList}, "status": 0, "verify": true}
 	result, err := mongoClient.Collection(Mrc20UtxoCollection).Find(context.TODO(), filter, nil)
-	if err != nil {
+	if err != nil && err != mongo.ErrNoDocuments {
 		return
 	}
 	err = result.All(context.TODO(), &list)
+	if err != nil {
+		return
+	}
+	if isMempool {
+		var list2 []*mrc20.Mrc20Utxo
+		result2, err2 := mongoClient.Collection(Mrc20UtxoMempoolCollection).Find(context.TODO(), filter, nil)
+		if err2 == nil {
+			result2.All(context.TODO(), &list2)
+		}
+		if len(list2) > 0 {
+			list = append(list, list2...)
+		}
+	}
 	return
 }
 func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo, isMempool bool) (err error) {
@@ -219,28 +229,27 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo, isMempool bool) (err
 	for _, info := range list {
 		filter := bson.D{{Key: "txpoint", Value: info.TxPoint}, {Key: "index", Value: info.Index}, {Key: "mrc20id", Value: info.Mrc20Id}, {Key: "verify", Value: info.Verify}}
 		var updateInfo bson.D
-		if info.Status == -1 && !isMempool {
-			updateInfo = append(updateInfo, bson.E{Key: "status", Value: -1})
-			//updateInfo = append(updateInfo, bson.E{Key: "amtchange", Value: info.AmtChange})
-		} else {
-			updateInfo = append(updateInfo, bson.E{Key: "amtchange", Value: info.AmtChange})
-			updateInfo = append(updateInfo, bson.E{Key: "blockheight", Value: info.BlockHeight})
-			updateInfo = append(updateInfo, bson.E{Key: "msg", Value: info.Msg})
-			updateInfo = append(updateInfo, bson.E{Key: "fromaddress", Value: info.FromAddress})
-			updateInfo = append(updateInfo, bson.E{Key: "mrc20id", Value: info.Mrc20Id})
-			updateInfo = append(updateInfo, bson.E{Key: "mrcoption", Value: info.MrcOption})
-			updateInfo = append(updateInfo, bson.E{Key: "status", Value: info.Status})
-			updateInfo = append(updateInfo, bson.E{Key: "tick", Value: info.Tick})
-			updateInfo = append(updateInfo, bson.E{Key: "toaddress", Value: info.ToAddress})
-			updateInfo = append(updateInfo, bson.E{Key: "txpoint", Value: info.TxPoint})
-			updateInfo = append(updateInfo, bson.E{Key: "pointvalue", Value: info.PointValue})
-			updateInfo = append(updateInfo, bson.E{Key: "verify", Value: info.Verify})
-			updateInfo = append(updateInfo, bson.E{Key: "chain", Value: info.Chain})
-			updateInfo = append(updateInfo, bson.E{Key: "index", Value: info.Index})
-			updateInfo = append(updateInfo, bson.E{Key: "timestamp", Value: info.Timestamp})
-			updateInfo = append(updateInfo, bson.E{Key: "operationtx", Value: info.OperationTx})
+		//if info.Status == -1 {
+		//	updateInfo = append(updateInfo, bson.E{Key: "status", Value: -1})
+		//} else {
+		updateInfo = append(updateInfo, bson.E{Key: "amtchange", Value: info.AmtChange})
+		updateInfo = append(updateInfo, bson.E{Key: "blockheight", Value: info.BlockHeight})
+		updateInfo = append(updateInfo, bson.E{Key: "msg", Value: info.Msg})
+		updateInfo = append(updateInfo, bson.E{Key: "fromaddress", Value: info.FromAddress})
+		updateInfo = append(updateInfo, bson.E{Key: "mrc20id", Value: info.Mrc20Id})
+		updateInfo = append(updateInfo, bson.E{Key: "mrcoption", Value: info.MrcOption})
+		updateInfo = append(updateInfo, bson.E{Key: "status", Value: info.Status})
+		updateInfo = append(updateInfo, bson.E{Key: "tick", Value: info.Tick})
+		updateInfo = append(updateInfo, bson.E{Key: "toaddress", Value: info.ToAddress})
+		updateInfo = append(updateInfo, bson.E{Key: "txpoint", Value: info.TxPoint})
+		updateInfo = append(updateInfo, bson.E{Key: "pointvalue", Value: info.PointValue})
+		updateInfo = append(updateInfo, bson.E{Key: "verify", Value: info.Verify})
+		updateInfo = append(updateInfo, bson.E{Key: "chain", Value: info.Chain})
+		updateInfo = append(updateInfo, bson.E{Key: "index", Value: info.Index})
+		updateInfo = append(updateInfo, bson.E{Key: "timestamp", Value: info.Timestamp})
+		updateInfo = append(updateInfo, bson.E{Key: "operationtx", Value: info.OperationTx})
 
-		}
+		//}
 		update := bson.D{{Key: "$set", Value: updateInfo}}
 		m := mongo.NewUpdateOneModel()
 		m.SetFilter(filter).SetUpdate(update).SetUpsert(true)
@@ -355,77 +364,48 @@ func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size i
 		{Key: "verify", Value: true},
 		{Key: "mrcoption", Value: bson.D{{Key: "$ne", Value: "deploy"}}},
 	}
-	pipeline := mongo.Pipeline{
-		{{Key: "$match", Value: filter}},
-		{{Key: "$group", Value: bson.D{
-			{Key: "_id", Value: "$mrc20id"},
-			{Key: "total", Value: bson.D{{Key: "$sum", Value: "$amtchange"}}},
-		}}},
-		//{{Key: "$sort", Value: bson.D{{Key: "tick", Value: 1}}}},
-		//{{Key: "$skip", Value: cursor}},
-		//{{Key: "$limit", Value: size}},
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	cursora, err := mongoClient.Collection(Mrc20UtxoCollection).Aggregate(ctx, pipeline)
-	if err != nil {
+	opts := options.Find().SetSort(bson.D{{Key: "tick", Value: 1}})
+	result, err := mongoClient.Collection(Mrc20UtxoCollection).Find(context.TODO(), filter, opts)
+	if err != nil && err != mongo.ErrNoDocuments {
 		return
 	}
-	defer cursora.Close(ctx)
-	var results []bson.M
-	if err = cursora.All(ctx, &results); err != nil {
-		return
-	}
-	total = int64(len(results))
-	var idList []string
-	balanceMap := make(map[string]*mrc20.Mrc20Balance)
-	for _, result := range results {
-		idList = append(idList, result["_id"].(string))
-		balance := result["total"].(primitive.Decimal128)
-		balanceDecimal, _ := decimal.NewFromString(balance.String())
-		b := mrc20.Mrc20Balance{Id: result["_id"].(string), Balance: balanceDecimal}
-		//fmt.Printf("Category: %v, Total: %v\n", result["_id"], result["total"])
-		//list = append(list, b)
-		balanceMap[b.Id] = &b
+	var list []*mrc20.Mrc20Utxo
+	if err != mongo.ErrNoDocuments {
+		err = result.All(context.TODO(), &list)
+		if err != nil {
+			return
+		}
 	}
 	//mempool data
-	mempoolData, err := getMempoolMrc20BalanceByAddress(address)
+	mempoolData, err := getMempoolMrc20UtxoByAddress(address)
 	if err == nil && len(mempoolData) > 0 {
-		for id, balance := range mempoolData {
-			if _, ok := balanceMap[id]; ok {
-				balanceMap[id].Balance = balanceMap[id].Balance.Sub(balance.Send)
-				balanceMap[id].UnsafeBalance = balance.Recive
-			} else {
-				balanceMap[id] = &mrc20.Mrc20Balance{
-					Id:            balance.Id,
-					Name:          balance.Name,
-					UnsafeBalance: balance.Recive,
-				}
-				idList = append(idList, id)
-				total += 1
-			}
-		}
-	}
-	if len(idList) <= 0 {
-		return
-	}
-
-	tickFilter := bson.M{"mrc20id": bson.M{"$in": idList}}
-	ret, err := mongoClient.Collection(Mrc20TickCollection).Find(context.TODO(), tickFilter)
-	var tickList []mrc20.Mrc20DeployInfo
-	if err = ret.All(ctx, &tickList); err != nil {
-		return
+		list = append(list, mempoolData...)
 	}
 	var nameList []string
-	nameMap := make(map[string]string, len(tickList))
-	for _, tick := range tickList {
-		//setName
-		if v, ok := balanceMap[tick.Mrc20Id]; ok {
-			v.Name = tick.Tick
-			nameList = append(nameList, tick.Tick)
-			nameMap[tick.Tick] = tick.Mrc20Id
+	balanceMap := make(map[string]*mrc20.Mrc20Balance)
+	for _, utxo := range list {
+		if balance, ok := balanceMap[utxo.Tick]; ok {
+			if utxo.BlockHeight == -1 {
+				balance.UnsafeBalance = balance.UnsafeBalance.Add(utxo.AmtChange)
+			} else {
+				balance.Balance = balance.Balance.Add(utxo.AmtChange)
+			}
+		} else {
+			balanceMap[utxo.Tick] = &mrc20.Mrc20Balance{
+				Id:   utxo.Mrc20Id,
+				Name: utxo.Tick,
+			}
+			if utxo.BlockHeight == -1 {
+				balanceMap[utxo.Tick].UnsafeBalance = utxo.AmtChange
+			} else {
+				balanceMap[utxo.Tick].Balance = utxo.AmtChange
+			}
+			nameList = append(nameList, utxo.Tick)
+			total += 1
 		}
+	}
+	if len(nameList) <= 0 {
+		return
 	}
 	//sort
 	sort.Strings(nameList)
@@ -433,8 +413,8 @@ func (mg *Mongodb) GetMrc20BalanceByAddress(address string, cursor int64, size i
 		nameList = nameList[cursor:size]
 	}
 	for _, name := range nameList {
-		if id, ok := nameMap[name]; ok {
-			balanceList = append(balanceList, *balanceMap[id])
+		if balance, ok := balanceMap[name]; ok {
+			balanceList = append(balanceList, *balance)
 		}
 	}
 	return
@@ -461,8 +441,34 @@ func getMempoolMrc20BalanceByAddress(address string) (balanceMap map[string]*mrc
 		}
 		if utxo.Status == 0 {
 			balanceMap[utxo.Mrc20Id].Recive = balanceMap[utxo.Mrc20Id].Recive.Add(utxo.AmtChange)
-		} else {
-			balanceMap[utxo.Mrc20Id].Send = balanceMap[utxo.Mrc20Id].Send.Add(utxo.AmtChange)
+		} else if utxo.BlockHeight > 0 && utxo.Status == -1 {
+			id := fmt.Sprintf("%s:%d", utxo.TxPoint, utxo.Index)
+			balanceMap[utxo.Mrc20Id].SpendUtxo = append(balanceMap[utxo.Mrc20Id].SpendUtxo, id)
+		}
+	}
+	return
+}
+func getMempoolMrc20UtxoByAddress(address string) (list []*mrc20.Mrc20Utxo, err error) {
+	filter := bson.D{
+		{Key: "toaddress", Value: address},
+		{Key: "verify", Value: true},
+	}
+	result, err := mongoClient.Collection(Mrc20UtxoMempoolCollection).Find(context.TODO(), filter)
+	if err != nil {
+		return
+	}
+	var tmpList []*mrc20.Mrc20Utxo
+	err = result.All(context.TODO(), &tmpList)
+	if err != nil {
+		return
+	}
+
+	for _, utxo := range tmpList {
+		if utxo.Status == 0 && utxo.BlockHeight == -1 {
+			list = append(list, utxo)
+		} else if utxo.BlockHeight > 0 && utxo.Status == -1 {
+			utxo.AmtChange = utxo.AmtChange.Neg()
+			list = append(list, utxo)
 		}
 	}
 	return

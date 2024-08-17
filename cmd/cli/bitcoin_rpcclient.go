@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/wire"
 	"manindexer/common"
 	"math"
 	"sort"
 	"strings"
+
+	"github.com/btcsuite/btcd/wire"
 
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/rpcclient"
