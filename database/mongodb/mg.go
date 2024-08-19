@@ -29,6 +29,7 @@ const (
 	Mrc20UtxoCollection           string = "mrc20utxos"
 	Mrc20UtxoMempoolCollection    string = "mrc20utxosmempool"
 	Mrc20TickCollection           string = "mrc20ticks"
+	Mrc20UtxoView                 string = "mrc20utxoview"
 	//Mrc20MintShovel               string = "mrc20shovel"
 	Mrc721Collection string = "mrc721collection"
 	Mrc721Item       string = "mrc721item"
@@ -65,6 +66,7 @@ func connectMongoDb() {
 	}
 	mongoClient = client.Database(mg.DbName)
 	createPinsView()
+	createMrc20UtxoView()
 	createIndexIfNotExists(mongoClient, PinsCollection, "id_1", bson.D{{Key: "id", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, PinsCollection, "output_1", bson.D{{Key: "output", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "path_1", bson.D{{Key: "path", Value: 1}}, false)
@@ -225,6 +227,22 @@ func createPinsView() {
 			PinsCollection,
 			bson.A{
 				bson.D{{Key: "$unionWith", Value: MempoolPinsCollection}},
+			},
+		)
+	}
+}
+func createMrc20UtxoView() {
+	views, err := mongoClient.ListCollectionNames(context.Background(), bson.M{"name": Mrc20UtxoView})
+	if err != nil {
+		return
+	}
+	if len(views) == 0 {
+		mongoClient.CreateView(
+			context.Background(),
+			Mrc20UtxoView,
+			Mrc20UtxoCollection,
+			bson.A{
+				bson.D{{Key: "$unionWith", Value: Mrc20UtxoMempoolCollection}},
 			},
 		)
 	}

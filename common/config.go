@@ -143,11 +143,13 @@ func InitConfig() {
 	if TestNet == "1" {
 		Config.Btc.PopCutNum = 17
 		Config.Mvc.PopCutNum = 8
-		Config.ProtocolID = "746573746964"
+		//Config.ProtocolID = "746573746964"
+		Config.ProtocolID = "6d6574616964"
 	} else if TestNet == "2" {
 		Config.Btc.PopCutNum = 0
 		Config.Mvc.PopCutNum = 0
-		Config.ProtocolID = "746573746964"
+		//Config.ProtocolID = "746573746964"
+		Config.ProtocolID = "6d6574616964"
 	} else if TestNet == "0" {
 		Config.Btc.PopCutNum = 21
 		Config.Mvc.PopCutNum = 12

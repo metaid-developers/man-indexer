@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -227,6 +228,9 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo, isMempool bool) (err
 		collection = Mrc20UtxoMempoolCollection
 	}
 	for _, info := range list {
+		if info.AmtChange.Cmp(decimal.Zero) == -1 {
+			continue
+		}
 		filter := bson.D{{Key: "txpoint", Value: info.TxPoint}, {Key: "index", Value: info.Index}, {Key: "mrc20id", Value: info.Mrc20Id}, {Key: "verify", Value: info.Verify}}
 		var updateInfo bson.D
 		//if info.Status == -1 {
@@ -477,7 +481,7 @@ func (mg *Mongodb) GetHistoryByTx(txId string, index int64, cursor int64, size i
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetSkip(cursor).SetLimit(size)
 	txpoint := fmt.Sprintf("%s:%d", txId, index)
 	filter := bson.M{"txpoint": txpoint}
-	result, err := mongoClient.Collection(Mrc20UtxoCollection).Find(context.TODO(), filter, opts)
+	result, err := mongoClient.Collection(Mrc20UtxoView).Find(context.TODO(), filter, opts)
 	if err != nil {
 		return
 	}
@@ -485,7 +489,7 @@ func (mg *Mongodb) GetHistoryByTx(txId string, index int64, cursor int64, size i
 	if err != nil {
 		return
 	}
-	total, err = mongoClient.Collection(Mrc20UtxoCollection).CountDocuments(context.TODO(), filter)
+	total, err = mongoClient.Collection(Mrc20UtxoView).CountDocuments(context.TODO(), filter)
 	return
 }
 func (mg *Mongodb) GetShovelListByAddress(address string, mrc20Id string, creator string, lv int, path, query, key, operator, value string, cursor int64, size int64) (list []*pin.PinInscription, total int64, err error) {
