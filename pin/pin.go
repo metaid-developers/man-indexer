@@ -151,3 +151,7 @@ type MemPoolTrasferPin struct {
 	InTime      int64  `json:"inTime"`
 	TxHash      string `json:"txHash"`
 }
+type ZmqReciveTx struct {
+	Tx     string `json:"tx"`
+	InTime int64  `json:"inTime"`
+}

@@ -60,3 +60,6 @@ func (pg *Postgresql) GetUsedShovelIdListByAddress(address string, tickId string
 func (pg *Postgresql) DeleteMempoolMc20(txIds []string) (err error) {
 	return
 }
+func (pg *Postgresql) CheckOperationtx(operationtx string, isMempool bool) (data *mrc20.Mrc20Utxo, err error) {
+	return
+}

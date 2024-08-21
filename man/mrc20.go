@@ -14,7 +14,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func Mrc20Handle(mrc20List []*pin.PinInscription) {
+func Mrc20Handle(chainName string, height int64, mrc20List []*pin.PinInscription, mrc20TransferPinTx map[string]struct{}, txInList []string, isMempool bool) {
 	validator := Mrc20Validator{}
 	var mrc20UtxoList []mrc20.Mrc20Utxo
 
@@ -54,6 +54,17 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 			}
 		}
 	}
+
+	//CatchNativeMrc20Transfer
+	handleNativTransfer(chainName, height, mrc20TransferPinTx, txInList, isMempool)
+	// mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList, isMempool)
+	// if err == nil && len(mrc20transferCheck) > 0 {
+	// 	mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(height, mrc20transferCheck, mrc20TransferPinTx)
+	// 	if len(mrc20TrasferList) > 0 {
+	// 		DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, isMempool)
+	// 	}
+	// }
+
 	mrc20TrasferList = transferHandle(transferHandleList)
 	if len(mrc20TrasferList) > 0 {
 		//DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
@@ -63,9 +74,20 @@ func Mrc20Handle(mrc20List []*pin.PinInscription) {
 			}
 		}
 	}
+	//CatchNativeMrc20Transfer Agin
+	handleNativTransfer(chainName, height, mrc20TransferPinTx, txInList, isMempool)
 	//update holders,txCount
 	for id, txNum := range changedTick {
 		go DbAdapter.UpdateMrc20TickHolder(id, txNum)
+	}
+}
+func handleNativTransfer(chainName string, height int64, mrc20TransferPinTx map[string]struct{}, txInList []string, isMempool bool) {
+	mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList, isMempool)
+	if err == nil && len(mrc20transferCheck) > 0 {
+		mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(height, mrc20transferCheck, mrc20TransferPinTx)
+		if len(mrc20TrasferList) > 0 {
+			DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, isMempool)
+		}
 	}
 }
 func transferHandle(transferHandleList []*pin.PinInscription) (mrc20UtxoList []*mrc20.Mrc20Utxo) {
@@ -254,6 +276,12 @@ func CreateMrc20MintPin(pinNode *pin.PinInscription, validator *Mrc20Validator, 
 }
 
 func CreateMrc20TransferUtxo(pinNode *pin.PinInscription, validator *Mrc20Validator, isMempool bool) (mrc20UtxoList []*mrc20.Mrc20Utxo, err error) {
+	//Check if it has been processed
+	find, err1 := DbAdapter.CheckOperationtx(pinNode.GenesisTransaction, isMempool)
+	if err1 != nil || find != nil {
+		return
+	}
+
 	var content []mrc20.Mrc20TranferData
 	err = json.Unmarshal(pinNode.ContentBody, &content)
 	if err != nil {

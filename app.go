@@ -7,7 +7,6 @@ import (
 	"manindexer/api"
 	"manindexer/common"
 	"manindexer/man"
-	"strings"
 	"time"
 )
 
@@ -32,11 +31,11 @@ func main() {
 		go api.Start(f)
 	}
 	go man.ZmqRun()
-	chainList := strings.Split(common.Chain, ",")
-	for _, chainName := range chainList {
-		mm := man.ManMempool{}
-		go mm.CheckMempool(chainName)
-	}
+	// chainList := strings.Split(common.Chain, ",")
+	// for _, chainName := range chainList {
+	// 	mm := man.ManMempool{}
+	// 	go mm.CheckMempool(chainName)
+	// }
 	for {
 		man.IndexerRun()
 		man.CheckNewBlock()

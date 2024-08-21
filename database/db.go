@@ -84,6 +84,7 @@ type Db interface {
 	GetShovelListByAddress(address string, mrc20Id string, creator string, lv int, path, query, key, operator, value string, cursor int64, size int64) (list []*pin.PinInscription, total int64, err error)
 	GetUsedShovelIdListByAddress(address string, tickId string, cursor int64, size int64) (list []*string, total int64, err error)
 	DeleteMempoolMc20(txIds []string) (err error)
+	CheckOperationtx(operationtx string, isMempool bool) (data *mrc20.Mrc20Utxo, err error)
 	//mrc721
 	SaveMrc721Collection(collection *mrc721.Mrc721CollectionDescPin) (err error)
 	GetMrc721Collection(collectionName, pinId string) (data *mrc721.Mrc721CollectionDescPin, err error)
@@ -92,4 +93,8 @@ type Db interface {
 	SaveMrc721Item(itemList []*mrc721.Mrc721ItemDescPin) (err error)
 	GetMrc721ItemList(collectionName string, pinIdList []string, cursor int64, size int64, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error)
 	UpdateMrc721ItemDesc(itemList []*mrc721.Mrc721ItemDescPin) (err error)
+	//zmqTx
+	SaveZmqReciveTx(data *pin.ZmqReciveTx) (err error)
+	GetOneZmqTx(tx string) (data *pin.ZmqReciveTx, err error)
+	DeleteZmqTx(txList []string) (err error)
 }

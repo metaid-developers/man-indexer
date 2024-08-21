@@ -18,6 +18,7 @@ import (
 )
 
 const (
+	ZmqReciveTx                   string = "zmqrecivetx"
 	PinsCollection                string = "pins"
 	PinsView                      string = "pinsview"
 	MempoolPinsCollection         string = "mempoolpins"
@@ -67,6 +68,8 @@ func connectMongoDb() {
 	mongoClient = client.Database(mg.DbName)
 	createPinsView()
 	createMrc20UtxoView()
+	createIndexIfNotExists(mongoClient, ZmqReciveTx, "tx_1", bson.D{{Key: "tx", Value: 1}}, true)
+
 	createIndexIfNotExists(mongoClient, PinsCollection, "id_1", bson.D{{Key: "id", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, PinsCollection, "output_1", bson.D{{Key: "output", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "path_1", bson.D{{Key: "path", Value: 1}}, false)

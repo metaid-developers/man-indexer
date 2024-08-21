@@ -609,3 +609,18 @@ func (mg *Mongodb) DeleteMempoolMc20(txIds []string) (err error) {
 	}
 	return
 }
+func (mg *Mongodb) CheckOperationtx(operationtx string, isMempool bool) (data *mrc20.Mrc20Utxo, err error) {
+	filter := bson.M{"operationtx": operationtx}
+	collection := Mrc20UtxoCollection
+	if isMempool {
+		collection = Mrc20UtxoMempoolCollection
+	}
+	err = mongoClient.Collection(collection).FindOne(context.TODO(), filter).Decode(&data)
+	if err == mongo.ErrNoDocuments {
+		err = nil
+	}
+	if err != nil {
+		log.Println("CheckOperationtx err", err)
+	}
+	return
+}

@@ -44,6 +44,12 @@ func (indexer *Indexer) ZmqRun(chanMsg chan pin.MempollChanMsg) {
 		if err := msgTx.Deserialize(bytes.NewReader([]byte(msg[1]))); err != nil {
 			continue
 		}
+		find, _ := (*indexer.DbAdapter).GetOneZmqTx(msgTx.TxHash().String())
+		if find != nil {
+			continue
+		}
+		zmqTx := &pin.ZmqReciveTx{Tx: msgTx.TxHash().String(), InTime: time.Now().Unix()}
+		(*indexer.DbAdapter).SaveZmqReciveTx(zmqTx)
 		pinInscriptions := indexer.CatchPinsByTx(&msgTx, 0, 0, "", "", 0)
 		if len(pinInscriptions) > 0 {
 			chanMsg <- pin.MempollChanMsg{PinList: pinInscriptions, Tx: &msgTx}

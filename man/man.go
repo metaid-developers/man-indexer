@@ -206,6 +206,7 @@ func DeleteMempoolData(bestHeight int64, chainName string) {
 	txList, pinIdList := IndexerAdapter[chainName].GetBlockTxHash(bestHeight)
 	DbAdapter.DeleteMempoolInscription(pinIdList)
 	DbAdapter.DeleteMempoolMc20(txList)
+	DbAdapter.DeleteZmqTx(txList)
 }
 func getSyncHeight(chainName string) (from, to int64) {
 	if MaxHeight[chainName] <= 0 {
@@ -241,7 +242,7 @@ func IndexerRun() {
 			continue
 		}
 		BarMap[chainName] = progressbar.Default(to-from, "["+chainName+"]")
-		for i := from; i <= to; i++ {
+		for i := from + 1; i <= to; i++ {
 			DoIndexerRun(chainName, i)
 			BarMap[chainName].Add(1)
 		}
@@ -293,19 +294,10 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 		DbAdapter.BatchUpsertMetaIdInfoAddition(infoAdditional)
 	}
 	//Handle MRC20 last.
-	if len(mrc20List) > 0 && height >= Mrc20HeightLimit[chainName] {
-		Mrc20Handle(mrc20List)
-	}
 	if height >= Mrc20HeightLimit[chainName] {
-		//check mrc20 transfer
-		mrc20transferCheck, err := DbAdapter.GetMrc20UtxoByOutPutList(txInList, false)
-		if err == nil && len(mrc20transferCheck) > 0 {
-			mrc20TrasferList := IndexerAdapter[chainName].CatchNativeMrc20Transfer(height, mrc20transferCheck, mrc20TransferPinTx)
-			if len(mrc20TrasferList) > 0 {
-				DbAdapter.UpdateMrc20Utxo(mrc20TrasferList, false)
-			}
-		}
+		Mrc20Handle(chainName, height, mrc20List, mrc20TransferPinTx, txInList, false)
 	}
+
 	if len(pinNodeList) > 0 && height >= Mrc20HeightLimit[chainName] {
 		m721 := Mrc721{}
 		m721.PinHandle(pinNodeList)

@@ -60,3 +60,6 @@ func (pb *Pebble) GetUsedShovelIdListByAddress(address string, tickId string, cu
 func (pb *Pebble) DeleteMempoolMc20(txIds []string) (err error) {
 	return
 }
+func (pb *Pebble) CheckOperationtx(operationtx string, isMempool bool) (data *mrc20.Mrc20Utxo, err error) {
+	return
+}

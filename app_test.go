@@ -45,7 +45,9 @@ func TestGetBlock(t *testing.T) {
 	}
 }
 func TestGetPin(t *testing.T) {
-	txId := "793e32472f85e94cae3ea552c320c362137a84b864d6cda6f342864375f4dbcf"
+	common.InitConfig()
+	man.InitAdapter("btc", "mongo", "1", "1")
+	txId := "95abc6fda259c4700d19897d4fd2f2b686504f7fa0a3bb224af743e0473df64a"
 	chain := &bitcoin.BitcoinChain{}
 	txret, err := chain.GetTransaction(txId)
 	if err != nil {
@@ -127,7 +129,7 @@ func TestGetSaveData(t *testing.T) {
 	// 	}
 	// }
 	//man.Mrc20Handle(testList)
-	man.Mrc20Handle(mrc20List)
+	//man.Mrc20Handle(mrc20List)
 }
 func TestCatchData(t *testing.T) {
 	common.InitConfig()
@@ -261,12 +263,12 @@ func TestMrc721(t *testing.T) {
 func TestMrc721Save(t *testing.T) {
 	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
-	man.DoIndexerRun("btc", int64(2873384))
+	man.DoIndexerRun("btc", int64(2874040))
 }
 func TestMempoolTransfer(t *testing.T) {
 	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
-	txId := "8e0c4f2be0a8324cc4acbbe245f8d0dcbfffac74bed06ff335d03f225713a2c0"
+	txId := "d076a9f456535b82cf2c8f9c9c59a7516dc040652f8ef41acd7c839bb98fdd4b"
 	chain := &bitcoin.BitcoinChain{}
 	txret, err := chain.GetTransaction(txId)
 	if err != nil {

@@ -40,7 +40,7 @@ func TestCatchMvcData(t *testing.T) {
 }
 func TestMvcGetSaveData(t *testing.T) {
 	man.InitAdapter("mvc", "mongo", "1", "1")
-	pinList, _, _, _, _, _, _, _, err := man.GetSaveData("mvc", 91722)
+	pinList, _, _, _, _, _, _, _, _, _, err := man.GetSaveData("mvc", 91722)
 	fmt.Println(err, len(pinList))
 }
 func TestGetBestHeight(t *testing.T) {
