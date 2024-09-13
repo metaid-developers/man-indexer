@@ -129,3 +129,6 @@ func (pg *Postgresql) GetMempoolTransferById(pinId string) (result *pin.MemPoolT
 func (pg *Postgresql) GetDataValueByMetaIdList(list []string) (result []*pin.MetaIdDataValue, err error) {
 	return
 }
+func (pg *Postgresql) GetPinCheckListByIdList(idList []string) (result map[string]*pin.PinStatus, err error) {
+	return
+}

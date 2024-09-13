@@ -21,7 +21,11 @@
         <div class="img2">
           <p><img src="{{ .ContentSummary }}" /></p>
         </div>
-        {{else if eq .ContentTypeDetect "image/jpeg"}}
+        {{else if eq .ContentTypeDetect "image/jpeg" }}
+        <div class="img2">
+          <p><img src="{{ .ContentSummary }}" /></p>
+        </div>
+        {{else if eq .ContentType "image/jpeg;binary" }}
         <div class="img2">
           <p><img src="{{ .ContentSummary }}" /></p>
         </div>

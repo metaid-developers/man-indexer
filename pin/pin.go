@@ -150,8 +150,18 @@ type MemPoolTrasferPin struct {
 	ToAddress   string `json:"toAddress"`
 	InTime      int64  `json:"inTime"`
 	TxHash      string `json:"txHash"`
+	Output      string `json:"output"`
 }
 type ZmqReciveTx struct {
 	Tx     string `json:"tx"`
 	InTime int64  `json:"inTime"`
+}
+type PinStatus struct {
+	Where               string `json:"where"`
+	Address             string `json:"address"`
+	MetaId              string `json:"metaId"`
+	Creator             string `json:"creator"`
+	Transfer            bool   `json:"transfer"`
+	Output              string `json:"output"`
+	TransferFromAddress string `json:"transferFromAddress"`
 }

@@ -24,6 +24,7 @@ func btcJsonApi(r *gin.Engine) {
 	btcGroup.Use(CorsMiddleware())
 	btcGroup.GET("/metaid/list", metaidList)
 	btcGroup.GET("/pin/list", pinList)
+	btcGroup.POST("/pin/check", pinCheck)
 	btcGroup.GET("/block/list", blockList)
 	btcGroup.GET("/mempool/list", mempoolList)
 	btcGroup.GET("/node/list", nodeList)
@@ -490,6 +491,30 @@ func getDataValueByMetaIdList(ctx *gin.Context) {
 		return
 	}
 	result, err := man.DbAdapter.GetDataValueByMetaIdList(q.List)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)
+		} else {
+			ctx.JSON(http.StatusOK, respond.ErrServiceError)
+		}
+		return
+	}
+	ctx.JSON(http.StatusOK, respond.ApiSuccess(1, "ok", result))
+
+}
+
+type pinChecktQuery struct {
+	PinList []string `json:"pinList"`
+}
+
+// pinCheck
+func pinCheck(ctx *gin.Context) {
+	var q pinChecktQuery
+	if err := ctx.BindJSON(&q); err != nil {
+		ctx.JSON(http.StatusOK, respond.ErrParameterError)
+		return
+	}
+	result, err := man.DbAdapter.GetPinCheckListByIdList(q.PinList)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			ctx.JSON(http.StatusOK, respond.ErrNoResultFound)

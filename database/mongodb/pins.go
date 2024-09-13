@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"manindexer/common"
 	"manindexer/pin"
 	"strconv"
 	"strings"
@@ -62,6 +63,7 @@ func (mg *Mongodb) UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo)
 		var updateInfo bson.D
 		updateInfo = append(updateInfo, bson.E{Key: "istransfered", Value: true})
 		updateInfo = append(updateInfo, bson.E{Key: "address", Value: info.Address})
+		updateInfo = append(updateInfo, bson.E{Key: "metaid", Value: common.GetMetaIdByAddress(info.Address)})
 		updateInfo = append(updateInfo, bson.E{Key: "location", Value: info.Location})
 		updateInfo = append(updateInfo, bson.E{Key: "offset", Value: info.Offset})
 		updateInfo = append(updateInfo, bson.E{Key: "output", Value: info.Output})
@@ -442,5 +444,72 @@ func (mg *Mongodb) GetMempoolTransfer(address string, act string) (list []*pin.M
 }
 func (mg *Mongodb) GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasferPin, err error) {
 	err = mongoClient.Collection(MempoolTransferPinsCollection).FindOne(context.TODO(), bson.M{"pinid": pinId}).Decode(&result)
+	return
+}
+func (mg *Mongodb) GetPinCheckListByIdList(idList []string) (result map[string]*pin.PinStatus, err error) {
+	result = make(map[string]*pin.PinStatus)
+	for _, pinId := range idList {
+		result[pinId] = &pin.PinStatus{}
+	}
+	//get block status
+	filter := bson.M{"id": bson.M{"$in": idList}}
+	ret, err := mongoClient.Collection(PinsCollection).Find(context.TODO(), filter)
+	if err != nil && err != mongo.ErrNoDocuments {
+		return
+	}
+	var blockPinList []*pin.PinInscription
+	err = ret.All(context.TODO(), &blockPinList)
+	if err != nil {
+		return
+	}
+	for _, pinNode := range blockPinList {
+		result[pinNode.Id].Where = "block"
+		result[pinNode.Id].Address = pinNode.Address
+		result[pinNode.Id].Creator = pinNode.CreateAddress
+		result[pinNode.Id].Output = pinNode.Output
+		result[pinNode.Id].MetaId = pinNode.MetaId
+		if pinNode.IsTransfered {
+			result[pinNode.Id].Transfer = true
+		}
+	}
+	//get mempool status
+	retMem, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), filter)
+	if err != nil && err != mongo.ErrNoDocuments {
+		return
+	}
+	var mempoolPinList []*pin.PinInscription
+	err = retMem.All(context.TODO(), &mempoolPinList)
+	if err != nil {
+		return
+	}
+	for _, pinNode := range mempoolPinList {
+		result[pinNode.Id].Where = "mempool"
+		result[pinNode.Id].Address = pinNode.Address
+		result[pinNode.Id].Creator = pinNode.CreateAddress
+		result[pinNode.Id].Output = pinNode.Output
+		result[pinNode.Id].MetaId = pinNode.MetaId
+		if pinNode.IsTransfered {
+			result[pinNode.Id].Transfer = true
+		}
+	}
+	//get transfer
+	filter2 := bson.M{"pinid": bson.M{"$in": idList}}
+	retTransfer, err := mongoClient.Collection(MempoolTransferPinsCollection).Find(context.TODO(), filter2)
+	if err != nil && err != mongo.ErrNoDocuments {
+		return
+	}
+	var transferPinList []*pin.MemPoolTrasferPin
+	err = retTransfer.All(context.TODO(), &transferPinList)
+	if err != nil {
+		return
+	}
+	for _, pinNode := range transferPinList {
+		result[pinNode.PinId].Where = "mempool"
+		result[pinNode.PinId].Address = pinNode.ToAddress
+		result[pinNode.PinId].Output = pinNode.Output
+		result[pinNode.PinId].MetaId = common.GetMetaIdByAddress(pinNode.ToAddress)
+		result[pinNode.PinId].Transfer = true
+		result[pinNode.PinId].TransferFromAddress = pinNode.FromAddress
+	}
 	return
 }

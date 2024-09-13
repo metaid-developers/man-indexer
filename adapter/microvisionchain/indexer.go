@@ -153,7 +153,8 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 			if pinInscription == nil {
 				continue
 			}
-			address, outIdx, locationIdx := indexer.GetPinOwner(msgTx, i-1)
+			//address, outIdx, locationIdx := indexer.GetPinOwner(msgTx, i-1)
+			address, outIdx, locationIdx := indexer.GetPinOwner(msgTx, 0)
 			//recalculate txhash
 			txHash, err := GetNewHash(msgTx)
 			if err != nil {

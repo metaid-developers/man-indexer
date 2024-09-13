@@ -576,6 +576,11 @@ func (validator *Mrc20Validator) Transfer(content []mrc20.Mrc20TranferData, pinN
 		return
 	}
 	for _, item := range content {
+		if item.Vout >= len(txb.MsgTx().TxOut) {
+			msg = "Incorrect vout target for the transfer"
+			err = errors.New("valueErr")
+			return
+		}
 		class, _, _, _ := txscript.ExtractPkScriptAddrs(txb.MsgTx().TxOut[item.Vout].PkScript, ChainParams[pinNode.ChainName])
 		if class.String() == "nulldata" || class.String() == "nonstandard" {
 			msg = "Incorrect vout target for the transfer"

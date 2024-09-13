@@ -152,7 +152,7 @@ func InitConfig() {
 		Config.ProtocolID = "6d6574616964"
 	} else if TestNet == "0" {
 		Config.Btc.PopCutNum = 21
-		Config.Mvc.PopCutNum = 12
+		Config.Mvc.PopCutNum = 21
 		Config.ProtocolID = "6d6574616964"
 	}
 }

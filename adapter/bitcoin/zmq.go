@@ -94,6 +94,7 @@ func (indexer *Indexer) TransferCheck(tx *wire.MsgTx) (transferPinList []*pin.Pi
 			continue
 		}
 		transferPin.Address = info.Address
+		transferPin.Output = info.Output
 		transferPinList = append(transferPinList, &transferPin)
 	}
 	return

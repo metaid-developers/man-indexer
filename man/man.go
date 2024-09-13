@@ -114,12 +114,12 @@ func InitAdapter(chainType, dbType, test, server string) {
 				ChainName:   chain,
 			}
 			//Mrc20HeightLimit[chain] = common.Config.Mvc.Mrc20Height
-			if IsTestNet {
-				Mrc20HeightLimit[chain] = int64(0)
-			} else {
-				Mrc20HeightLimit[chain] = int64(581676)
-			}
-
+			// if IsTestNet {
+			// 	Mrc20HeightLimit[chain] = int64(0)
+			// } else {
+			// 	Mrc20HeightLimit[chain] = int64(581676)
+			// }
+			Mrc20HeightLimit[chain] = int64(86500)
 		}
 		ChainAdapter[chain].InitChain()
 		IndexerAdapter[chain].InitIndexer()
@@ -183,6 +183,7 @@ func handleMempoolTransferPin(pinNode *pin.PinInscription) {
 		ToAddress:   pinNode.Address,
 		InTime:      pinNode.Timestamp,
 		TxHash:      pinNode.GenesisTransaction,
+		Output:      pinNode.Output,
 	}
 	DbAdapter.AddMempoolTransfer(&transferPin)
 }
@@ -209,6 +210,13 @@ func DeleteMempoolData(bestHeight int64, chainName string) {
 	DbAdapter.DeleteZmqTx(txList)
 }
 func getSyncHeight(chainName string) (from, to int64) {
+	//initialHeight := ChainAdapter[chainName].GetInitialHeight()
+	var initialHeight int64
+	if chainName == "mvc" {
+		initialHeight = int64(86500)
+	} else if chainName == "btc" {
+		initialHeight = int64(844446)
+	}
 	if MaxHeight[chainName] <= 0 {
 		var err error
 		MaxHeight[chainName], err = DbAdapter.GetMaxHeight(chainName)
@@ -217,7 +225,7 @@ func getSyncHeight(chainName string) (from, to int64) {
 		}
 	}
 	bestHeight := ChainAdapter[chainName].GetBestHeight()
-	if MaxHeight[chainName] >= bestHeight {
+	if MaxHeight[chainName] >= bestHeight || initialHeight > bestHeight {
 		return
 	}
 	/*
@@ -225,7 +233,7 @@ func getSyncHeight(chainName string) (from, to int64) {
 			Number = DbAdapter.GetMaxNumber()
 		}
 	*/
-	initialHeight := ChainAdapter[chainName].GetInitialHeight()
+
 	if MaxHeight[chainName] < initialHeight {
 		from = initialHeight
 	} else {
@@ -299,8 +307,8 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	}
 
 	if len(pinNodeList) > 0 && height >= Mrc20HeightLimit[chainName] {
-		m721 := Mrc721{}
-		m721.PinHandle(pinNodeList)
+		// m721 := Mrc721{}
+		// m721.PinHandle(pinNodeList)
 	}
 	//}
 	//bar.Finish()

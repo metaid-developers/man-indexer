@@ -41,6 +41,7 @@ type Db interface {
 	GetPinByOutput(output string) (pinInscription *pin.PinInscription, err error)
 	GetPinByMeatIdOrId(key string) (pinInscription *pin.PinInscription, err error)
 	GetPinListByIdList(idList []string) (pinList []*pin.PinInscription, err error)
+	GetPinCheckListByIdList(idList []string) (result map[string]*pin.PinStatus, err error)
 	GetPinListByOutPutList(outputList []string) (pinList []*pin.PinInscription, err error)
 	Count() (count pin.PinCount)
 	GetChildNodeById(pinId string) (pins []*pin.PinInscription, err error)

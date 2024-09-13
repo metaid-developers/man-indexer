@@ -590,3 +590,6 @@ func (pb *Pebble) GetMempoolTransfer(address string, act string) (list []*pin.Me
 func (pb *Pebble) GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasferPin, err error) {
 	return
 }
+func (pb *Pebble) GetPinCheckListByIdList(idList []string) (result map[string]*pin.PinStatus, err error) {
+	return
+}

@@ -156,6 +156,8 @@ func (indexer *Indexer) ZmqRun(chanMsg chan pin.MempollChanMsg) {
 			if err := msgTx.Deserialize(bytes.NewReader([]byte(recvmsg))); err != nil {
 				continue
 			}
+			newHash, _ := GetNewHash(&msgTx)
+			log.Println("TxHash:", newHash)
 			pinInscriptions := indexer.CatchPinsByTx(&msgTx, 0, 0, "", "", 0)
 			if len(pinInscriptions) > 0 {
 				chanMsg <- pin.MempollChanMsg{PinList: pinInscriptions, Tx: msgTx}
