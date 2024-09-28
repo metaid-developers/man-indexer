@@ -363,7 +363,7 @@ func (mg *Mongodb) GetAllPinByPath(page, limit int64, path string, metaidList []
 		filter = bson.M{"path": bson.M{"$in": pathList}, "metaid": bson.M{"$in": metaidList}}
 	}
 	cursor := (page - 1) * limit
-	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "number", Value: -1}}).SetSkip(cursor).SetLimit(limit)
+	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}, {Key: "_id", Value: -1}}).SetSkip(cursor).SetLimit(limit)
 	//mempoolResult, err := mongoClient.Collection(MempoolPinsCollection).Find(context.TODO(), filter, opts)
 	result, err := mongoClient.Collection(PinsView).Find(context.TODO(), filter, opts)
 	if err != nil && err != mongo.ErrNoDocuments {

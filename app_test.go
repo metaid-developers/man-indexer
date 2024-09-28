@@ -263,7 +263,7 @@ func TestMrc721(t *testing.T) {
 func TestMrc721Save(t *testing.T) {
 	common.InitConfig()
 	man.InitAdapter("btc", "mongo", "1", "1")
-	man.DoIndexerRun("btc", int64(2874040))
+	man.DoIndexerRun("btc", int64(3005945))
 }
 func TestMempoolTransfer(t *testing.T) {
 	common.InitConfig()

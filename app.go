@@ -37,8 +37,8 @@ func main() {
 	// 	go mm.CheckMempool(chainName)
 	// }
 	for {
-		man.IndexerRun()
-		man.CheckNewBlock()
+		// man.IndexerRun()
+		// man.CheckNewBlock()
 		time.Sleep(time.Second * 10)
 	}
 }

@@ -210,13 +210,19 @@ func DeleteMempoolData(bestHeight int64, chainName string) {
 	DbAdapter.DeleteZmqTx(txList)
 }
 func getSyncHeight(chainName string) (from, to int64) {
-	//initialHeight := ChainAdapter[chainName].GetInitialHeight()
+	//mvc testnet 102000
+	//btc testnet 2874000
 	var initialHeight int64
-	if chainName == "mvc" {
-		initialHeight = int64(86500)
-	} else if chainName == "btc" {
-		initialHeight = int64(844446)
+	if IsTestNet {
+		initialHeight = ChainAdapter[chainName].GetInitialHeight()
+	} else {
+		if chainName == "mvc" {
+			initialHeight = int64(86500)
+		} else if chainName == "btc" {
+			initialHeight = int64(844446)
+		}
 	}
+
 	if MaxHeight[chainName] <= 0 {
 		var err error
 		MaxHeight[chainName], err = DbAdapter.GetMaxHeight(chainName)
