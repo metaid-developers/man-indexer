@@ -34,6 +34,9 @@ const (
 	//Mrc20MintShovel               string = "mrc20shovel"
 	Mrc721Collection string = "mrc721collection"
 	Mrc721Item       string = "mrc721item"
+	//MetaAccess
+	AccessControlCollection string = "accesscontrol"
+	AccessPassCollection    string = "accesspass"
 )
 
 var (
@@ -114,6 +117,19 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, Mrc721Item, "collectionname_1", bson.D{{Key: "collectionname", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, Mrc721Item, "collectionname_itempinid_1", bson.D{{Key: "collectionname", Value: 1}, {Key: "itempinid", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, Mrc721Item, "itempinid_descadded_1", bson.D{{Key: "itempinid", Value: 1}, {Key: "descadded", Value: 1}}, false)
+	//meatAccess
+	createIndexIfNotExists(mongoClient, AccessControlCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, AccessControlCollection, "address_1", bson.D{{Key: "address", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, AccessControlCollection, "metaid_1", bson.D{{Key: "metaid", Value: 1}}, false)
+
+	createIndexIfNotExists(mongoClient, AccessPassCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, AccessPassCollection, "creatoraddress_1", bson.D{{Key: "creatoraddress", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, AccessPassCollection, "creatormetaid_1", bson.D{{Key: "creatormetaid", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, AccessPassCollection, "buyeraddress_1", bson.D{{Key: "buyeraddress", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, AccessPassCollection, "buyermetaid_1", bson.D{{Key: "buyermetaid", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, AccessPassCollection, "controlid_1", bson.D{{Key: "controlid", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, AccessPassCollection, "contentpinid_buyeraddress_1", bson.D{{Key: "contentpinid", Value: 1}, {Key: "buyeraddress", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, AccessPassCollection, "controlpath_buyeraddress_1", bson.D{{Key: "controlpath", Value: 1}, {Key: "buyeraddress", Value: 1}}, false)
 }
 
 func (mg *Mongodb) Count() (count pin.PinCount) {

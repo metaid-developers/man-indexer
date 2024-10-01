@@ -315,6 +315,11 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 		// m721 := Mrc721{}
 		// m721.PinHandle(pinNodeList)
 	}
+	//Handle MetaAccess
+	if len(pinNodeList) > 0 {
+		access := MetaAccess{}
+		access.PinHandle(pinNodeList)
+	}
 	//}
 	//bar.Finish()
 	if FirstCompleted {

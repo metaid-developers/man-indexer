@@ -1,6 +1,7 @@
 package database
 
 import (
+	"manindexer/metaaccess"
 	"manindexer/mrc20"
 	"manindexer/mrc721"
 	"manindexer/pin"
@@ -98,4 +99,9 @@ type Db interface {
 	SaveZmqReciveTx(data *pin.ZmqReciveTx) (err error)
 	GetOneZmqTx(tx string) (data *pin.ZmqReciveTx, err error)
 	DeleteZmqTx(txList []string) (err error)
+	//metaAccess
+	BatchSaveAccesscontrol(list []*metaaccess.AccessControl) (err error)
+	GetControlById(pinId string) (data *metaaccess.AccessControl, err error)
+	BatchSaveAccessPass(passList []*metaaccess.AccessPassData) (err error)
+	CheckAccessPass(buyerAddress string, contentPinId string, controlPath string) (data *metaaccess.AccessPassData, err error)
 }

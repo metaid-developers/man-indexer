@@ -29,12 +29,17 @@ type AllConfig struct {
 	MongoDb    mongoConfig
 	Pebble     pebble
 	Web        webConfig
+	MetaSo     metasoConfig
 }
 type syncConfig struct {
 	SyncAllData   bool     `toml:"syncAllData"`
 	SyncProtocols []string `toml:"syncProtocols"`
 	SyncBeginTime string   `toml:"syncBeginTime"`
 	SyncEndTime   string   `toml:"syncEndTime"`
+}
+type metasoConfig struct {
+	Pubkey string `toml:"pubkey"`
+	Prikey string `toml:"prikey"`
 }
 type protocols struct {
 	Key     string          `toml:"key"`
