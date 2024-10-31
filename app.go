@@ -7,6 +7,7 @@ import (
 	"manindexer/api"
 	"manindexer/common"
 	"manindexer/man"
+	"manindexer/metaso"
 	"time"
 )
 
@@ -31,6 +32,10 @@ func main() {
 		go api.Start(f)
 	}
 	go man.ZmqRun()
+	if common.ModuleExist("metaso") {
+		ms := metaso.MetaSo{}
+		go ms.Synchronization()
+	}
 	// chainList := strings.Split(common.Chain, ",")
 	// for _, chainName := range chainList {
 	// 	mm := man.ManMempool{}

@@ -24,6 +24,7 @@ type AllConfig struct {
 	ProtocolID string `toml:"protocolID"`
 	Sync       syncConfig
 	Protocols  map[string]protocols
+	Module     []string `toml:"module"`
 	Btc        btcConfig
 	Mvc        mvcConfig
 	MongoDb    mongoConfig
@@ -197,5 +198,14 @@ func GetFlagConfig() (flagConfig map[string]*string, configFile string) {
 	TestNet = *testNet
 	Server = *server
 	configFile = *config
+	return
+}
+func ModuleExist(module string) (exist bool) {
+	for _, item := range Config.Module {
+		if item == module {
+			exist = true
+			return
+		}
+	}
 	return
 }

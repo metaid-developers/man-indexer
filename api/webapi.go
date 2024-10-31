@@ -9,6 +9,7 @@ import (
 	"log"
 	"manindexer/common"
 	"manindexer/man"
+	"manindexer/metaso"
 	"manindexer/pin"
 	"net/http"
 	"strconv"
@@ -116,6 +117,11 @@ func Start(f embed.FS) {
 	btcJsonApi(r)
 	mrc20JsonApi(r)
 	metaAccessJsonApi(r)
+	if common.ModuleExist("metaso") {
+		log.Println("use metaso api")
+		metaso.Api(r)
+	}
+
 	log.Println("Server Start", common.Config.Web.Port)
 	if common.Config.Web.KeyFile != "" && common.Config.Web.PemFile != "" {
 		r.RunTLS(common.Config.Web.Port, common.Config.Web.PemFile, common.Config.Web.KeyFile)

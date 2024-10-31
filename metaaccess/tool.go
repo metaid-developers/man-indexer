@@ -64,7 +64,7 @@ func hexDecode(str string) (data []byte, err error) {
 }
 func GenKeyPair() (privateKey string, publicKey string, e error) {
 	curve := ecdh.P256()
-	// A 生成自己的私钥
+	// A generates its own private key
 	privKeyA, err := curve.GenerateKey(rand.Reader)
 	if err != nil {
 		return
@@ -75,7 +75,7 @@ func GenKeyPair() (privateKey string, publicKey string, e error) {
 }
 func GetAesContent(content string, p1 string) (aesContent string, err error) {
 	payload := []byte(content)
-	// 使用 P1 加密 Payload
+	// Encrypt the payload using P1.
 	P1, err := hexDecode(p1)
 	if err != nil {
 		return
