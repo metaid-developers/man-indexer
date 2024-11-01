@@ -13,15 +13,15 @@ import (
 )
 
 func (metaso *MetaSo) getLastPayLike() (pinList []*Tweet, err error) {
-	last, err := metaso.getLastId()
+	last, err := mongodb.GetSyncLastId("tweetlike")
 	if err != nil {
 		return
 	}
 	filter := bson.D{
 		{Key: "path", Value: "/protocols/paylike"},
 	}
-	if last.TweetLike != primitive.NilObjectID {
-		filter = append(filter, bson.E{Key: "_id", Value: bson.D{{Key: "$gt", Value: last.TweetLike}}})
+	if last != primitive.NilObjectID {
+		filter = append(filter, bson.E{Key: "_id", Value: bson.D{{Key: "$gt", Value: last}}})
 	}
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
@@ -84,11 +84,11 @@ func (metaso *MetaSo) synchTweetLike() (err error) {
 	}
 	var lastId primitive.ObjectID
 	for _, pinNode := range pinList {
-		if compareObjectIDs(pinNode.MogoID, lastId) > 0 {
+		if mongodb.CompareObjectIDs(pinNode.MogoID, lastId) > 0 {
 			lastId = pinNode.MogoID
 		}
 	}
-	metaso.updateSyncLog("tweetlike", lastId)
+	mongodb.UpdateSyncLastIdLog("tweetlike", lastId)
 	list, err := metaso.getSynchTweetLike(pinList)
 	if len(list) <= 0 {
 		return

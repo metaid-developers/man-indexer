@@ -1,6 +1,6 @@
 package postgresql
 
-import "manindexer/metaaccess"
+import "manindexer/basicprotocols/metaaccess"
 
 func (pg *Postgresql) BatchSaveAccesscontrol(list []*metaaccess.AccessControl) (err error) {
 	return

@@ -7,9 +7,10 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"manindexer/basicprotocols/metaname"
+	"manindexer/basicprotocols/metaso"
 	"manindexer/common"
 	"manindexer/man"
-	"manindexer/metaso"
 	"manindexer/pin"
 	"net/http"
 	"strconv"
@@ -120,6 +121,10 @@ func Start(f embed.FS) {
 	if common.ModuleExist("metaso") {
 		log.Println("use metaso api")
 		metaso.Api(r)
+	}
+	if common.ModuleExist("metaname") {
+		log.Println("use metaname api")
+		metaname.Api(r)
 	}
 
 	log.Println("Server Start", common.Config.Web.Port)

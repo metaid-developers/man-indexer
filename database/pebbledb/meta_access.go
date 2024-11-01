@@ -1,6 +1,6 @@
 package pebbledb
 
-import "manindexer/metaaccess"
+import "manindexer/basicprotocols/metaaccess"
 
 func (pb *Pebble) BatchSaveAccesscontrol(list []*metaaccess.AccessControl) (err error) {
 	return

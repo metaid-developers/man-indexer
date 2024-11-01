@@ -3,7 +3,7 @@ package man
 import (
 	"encoding/json"
 	"errors"
-	"manindexer/metaaccess"
+	"manindexer/basicprotocols/metaaccess"
 	"manindexer/pin"
 	"strconv"
 )

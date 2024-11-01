@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"manindexer/api"
+	"manindexer/basicprotocols/metaname"
+	"manindexer/basicprotocols/metaso"
 	"manindexer/common"
 	"manindexer/man"
-	"manindexer/metaso"
+
 	"time"
 )
 
@@ -36,6 +38,11 @@ func main() {
 		ms := metaso.MetaSo{}
 		go ms.Synchronization()
 	}
+	if common.ModuleExist("metaname") {
+		mn := metaname.MetaName{}
+		go mn.Synchronization()
+	}
+
 	// chainList := strings.Split(common.Chain, ",")
 	// for _, chainName := range chainList {
 	// 	mm := man.ManMempool{}

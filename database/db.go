@@ -1,7 +1,7 @@
 package database
 
 import (
-	"manindexer/metaaccess"
+	"manindexer/basicprotocols/metaaccess"
 	"manindexer/mrc20"
 	"manindexer/mrc721"
 	"manindexer/pin"

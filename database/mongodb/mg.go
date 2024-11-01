@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -37,6 +39,7 @@ const (
 	//MetaAccess
 	AccessControlCollection string = "accesscontrol"
 	AccessPassCollection    string = "accesspass"
+	SyncLastIdLog           string = "sync_lastid_log"
 )
 
 var (
@@ -265,4 +268,36 @@ func createMrc20UtxoView() {
 			},
 		)
 	}
+}
+
+func UpdateSyncLastIdLog(key string, id primitive.ObjectID) (err error) {
+	filter := bson.D{{Key: "key", Value: key}}
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "lastid", Value: id},
+		}},
+	}
+	updateOpts := options.Update().SetUpsert(true)
+	_, err = mongoClient.Collection(SyncLastIdLog).UpdateOne(context.TODO(), filter, update, updateOpts)
+
+	return
+}
+
+type LastIdLog struct {
+	Key    string             `bson:"key"`
+	LastId primitive.ObjectID `bson:"lastid"`
+}
+
+func GetSyncLastId(key string) (lastId primitive.ObjectID, err error) {
+	filter := bson.D{{Key: "key", Value: key}}
+	var res LastIdLog
+	err = mongoClient.Collection(SyncLastIdLog).FindOne(context.TODO(), filter, nil).Decode(&res)
+	if err == mongo.ErrNoDocuments {
+		err = nil
+	}
+	lastId = res.LastId
+	return
+}
+func CompareObjectIDs(id1, id2 primitive.ObjectID) int {
+	return bytes.Compare(id1[:], id2[:])
 }

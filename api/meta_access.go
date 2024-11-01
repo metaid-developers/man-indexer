@@ -2,9 +2,9 @@ package api
 
 import (
 	"manindexer/api/respond"
+	"manindexer/basicprotocols/metaaccess"
 	"manindexer/common"
 	"manindexer/man"
-	"manindexer/metaaccess"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

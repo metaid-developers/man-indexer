@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	"context"
-	"manindexer/metaaccess"
+	"manindexer/basicprotocols/metaaccess"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"

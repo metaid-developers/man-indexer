@@ -1,7 +1,7 @@
 package man
 
 import (
-	"manindexer/metaaccess"
+	"manindexer/basicprotocols/metaaccess"
 	"manindexer/pin"
 )
 
