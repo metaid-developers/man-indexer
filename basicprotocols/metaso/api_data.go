@@ -59,3 +59,26 @@ func getInfo(pinId string) (tweet *Tweet, comments []*TweetComment, like []*Twee
 	}
 	return
 }
+func getBlockInfo(height int64, host string, cursor int64, size int64, orderby string) (list []*HostData, err error) {
+	var filter primitive.D
+	if height > 0 {
+		filter = bson.D{{Key: "blockHeight", Value: height}}
+	} else {
+		filter = bson.D{{Key: "host", Value: host}}
+	}
+	if orderby == "" {
+		orderby = "txCount"
+	}
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: orderby, Value: -1}})
+	findOptions.SetSkip(cursor).SetLimit(size)
+	result, err := mongoClient.Collection(HostDataCollection).Find(context.TODO(), filter, findOptions)
+	if err != nil {
+		return
+	}
+	err = result.All(context.TODO(), &list)
+	if err == mongo.ErrNoDocuments {
+		err = nil
+	}
+	return
+}

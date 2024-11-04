@@ -26,7 +26,7 @@ func (metaso *MetaSo) getLastPayComment() (pinList []*Tweet, err error) {
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
 	findOptions.SetLimit(500)
-	result, err := mongoClient.Collection(mongodb.PinsCollection).Find(context.TODO(), filter)
+	result, err := mongoClient.Collection(mongodb.PinsCollection).Find(context.TODO(), filter, findOptions)
 	if err != nil {
 		return
 	}

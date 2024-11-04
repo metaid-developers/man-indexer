@@ -26,6 +26,7 @@ const (
 	TweetCountCollection   string = "metaso_tweet_count"
 	TweetLikeCollection    string = "metaso_tweet_like"
 	TweetCommentCollection string = "metaso_sync_comment"
+	HostDataCollection     string = "host_data"
 )
 
 func connectMongoDb() {
@@ -61,19 +62,22 @@ func createIndex(mongoClient *mongo.Database) {
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCollection, "creatormetaid_1", bson.D{{Key: "creatormetaid", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCollection, "number_1", bson.D{{Key: "number", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCollection, "operation_1", bson.D{{Key: "operation", Value: 1}}, false)
-
+	//payLike
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetLikeCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetLikeCollection, "liketopinid_1", bson.D{{Key: "liketopinid", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetLikeCollection, "createaddress_1", bson.D{{Key: "createaddress", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetLikeCollection, "createmetaid_1", bson.D{{Key: "createmetaid", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetLikeCollection, "islike_1", bson.D{{Key: "islike", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetLikeCollection, "timestamp_1", bson.D{{Key: "timestamp", Value: 1}}, false)
-
+	//comment
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCommentCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCommentCollection, "commentpinid_1", bson.D{{Key: "commentpinid", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCommentCollection, "createaddress_1", bson.D{{Key: "createaddress", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCommentCollection, "createmetaid_1", bson.D{{Key: "createmetaid", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCommentCollection, "islike_1", bson.D{{Key: "islike", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, TweetCommentCollection, "timestamp_1", bson.D{{Key: "timestamp", Value: 1}}, false)
-
+	//hostData
+	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "host_height_1", bson.D{{Key: "host", Value: 1}, {Key: "blockHeight", Value: 1}}, true)
+	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "host_1", bson.D{{Key: "host", Value: 1}}, false)
+	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "height_1", bson.D{{Key: "blockHeight", Value: 1}}, false)
 }

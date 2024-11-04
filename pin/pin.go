@@ -1,5 +1,10 @@
 package pin
 
+import (
+	"regexp"
+	"strings"
+)
+
 const (
 	ProtocolID string = "746573746964" //testid(HEX16)
 	//ProtocolID    string = "6d6574616964" //metaid
@@ -47,6 +52,7 @@ type PinInscription struct {
 	//Mrc20Minted        bool   `json:"mrc20Minted"`  //true Consumed
 	//Mrc20MintPin       string `json:"mrc20MintPin"` //mrc20 mint pin id
 	Mrc20MintId []string `json:"mrc20MintId"`
+	Host        string   `json:"host"`
 }
 type PinTransferInfo struct {
 	Address     string `json:"address"`
@@ -164,4 +170,14 @@ type PinStatus struct {
 	Transfer            bool   `json:"transfer"`
 	Output              string `json:"output"`
 	TransferFromAddress string `json:"transferFromAddress"`
+}
+
+func ValidHostPath(input string) (bool, string, string) {
+	pattern := `^[a-f0-9]{16}:/.*$`
+	matched, _ := regexp.MatchString(pattern, input)
+	if matched {
+		parts := strings.SplitN(input, ":", 2)
+		return true, parts[0], parts[1]
+	}
+	return false, "", input
 }

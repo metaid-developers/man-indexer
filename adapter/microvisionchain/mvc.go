@@ -133,3 +133,34 @@ func (chain *MicroVisionChain) GetCreatorAddress(txHashStr string, idx uint32, n
 func (chain *MicroVisionChain) GetMempoolTransactionList() (list []interface{}, err error) {
 	return
 }
+
+func (chain *MicroVisionChain) GetTxSizeAndFees(txHash string) (fee int64, size int64, blockHash string, err error) {
+	hash, err := chainhash.NewHashFromStr(txHash)
+	if err != nil {
+		return
+	}
+	tx, err := client.GetRawTransactionVerbose(hash)
+	if err != nil {
+		return
+	}
+	var inputAmount int64
+	for _, vin := range tx.Vin {
+		inputTxHash, err := chainhash.NewHashFromStr(vin.Txid)
+		if err != nil {
+			continue
+		}
+		inputTx, err := client.GetRawTransactionVerbose(inputTxHash)
+		if err != nil {
+			continue
+		}
+		inputAmount += int64(inputTx.Vout[vin.Vout].Value * 1e8)
+	}
+	var outputAmount int64
+	for _, vout := range tx.Vout {
+		outputAmount += int64(vout.Value * 1e8)
+	}
+	fee = inputAmount - outputAmount
+	size = int64(tx.Size)
+	blockHash = tx.BlockHash
+	return
+}

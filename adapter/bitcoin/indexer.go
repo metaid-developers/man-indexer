@@ -284,6 +284,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 			}
 			popLv, _ := pin.PopLevelCount(indexer.ChainName, pop)
 			creator := chain.GetCreatorAddress(msgTx.TxIn[0].PreviousOutPoint.Hash.String(), msgTx.TxIn[0].PreviousOutPoint.Index, indexer.ChainParams)
+			_, host, path := pin.ValidHostPath(pinInscription.Path)
 			pinInscriptions = append(pinInscriptions, &pin.PinInscription{
 				//Pin:                pinInscription,
 				ChainName:          indexer.ChainName,
@@ -304,7 +305,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				TxIndex:            txIndex,
 				Operation:          pinInscription.Operation,
 				Location:           fmt.Sprintf("%s:%d:%d", txHash, outIdx, locationIdx),
-				Path:               pinInscription.Path,
+				Path:               path,
 				OriginalPath:       pinInscription.Path,
 				ParentPath:         pinInscription.ParentPath,
 				Encryption:         pinInscription.Encryption,
@@ -318,6 +319,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 				PopLv:              popLv,
 				DataValue:          pin.RarityScoreBinary(indexer.ChainName, pop),
 				Mrc20MintId:        []string{},
+				Host:               host,
 			})
 			haveOpReturn = true
 			break
@@ -364,6 +366,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 		}
 		popLv, _ := pin.PopLevelCount(indexer.ChainName, pop)
 		creator := chain.GetCreatorAddress(v.PreviousOutPoint.Hash.String(), v.PreviousOutPoint.Index, indexer.ChainParams)
+		_, host, path := pin.ValidHostPath(pinInscription.Path)
 		pinInscriptions = append(pinInscriptions, &pin.PinInscription{
 			//Pin:                pinInscription,
 			ChainName:          indexer.ChainName,
@@ -384,7 +387,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 			TxIndex:            txIndex,
 			Operation:          pinInscription.Operation,
 			Location:           fmt.Sprintf("%s:%d:%d", msgTx.TxHash().String(), outIdx, locationIdx),
-			Path:               pinInscription.Path,
+			Path:               path,
 			OriginalPath:       pinInscription.Path,
 			ParentPath:         pinInscription.ParentPath,
 			Encryption:         pinInscription.Encryption,
@@ -398,6 +401,7 @@ func (indexer *Indexer) CatchPinsByTx(msgTx *wire.MsgTx, blockHeight int64, time
 			PopLv:              popLv,
 			DataValue:          pin.RarityScoreBinary(indexer.ChainName, pop),
 			Mrc20MintId:        []string{},
+			Host:               host,
 		})
 	}
 	return

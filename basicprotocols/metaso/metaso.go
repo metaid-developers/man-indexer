@@ -87,3 +87,11 @@ type PinComment struct {
 	Content     string `json:"content" bson:"content"`
 	ContentType string `json:"contentType" bson:"contenttype"`
 }
+type HostData struct {
+	Host        string `json:"host" bson:"host"`
+	BlockHeight int64  `json:"blockHeight" bson:"blockHeight"`
+	BlockHash   string `json:"blockHash" bson:"blockHash"`
+	TxCount     int64  `json:"txCount" bson:"txCount"`
+	TxSize      int64  `json:"txSize" bson:"txSize"`
+	TxFee       int64  `json:"txFee" bson:"txFee"`
+}

@@ -13,6 +13,11 @@ func Api(r *gin.Engine) {
 	accessGroup.GET("/newest", newest)
 	accessGroup.GET("/hot", hot)
 	accessGroup.GET("/info", info)
+	hostGroup := r.Group("/host")
+	hostGroup.Use(CorsMiddleware())
+	hostGroup.GET("/block/sync-newest", syncNewest)
+	hostGroup.GET("/block/info", blockInfo)
+	hostGroup.GET("/info", hostInfo)
 }
 func CorsMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
@@ -94,4 +99,50 @@ func info(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, ApiSuccess(1, "ok", gin.H{"tweet": tweet, "comments": comments, "like": like}))
+}
+func syncNewest(ctx *gin.Context) {
+	_, height := getSyncHeight()
+	ctx.JSON(http.StatusOK, ApiSuccess(1, "ok", height))
+}
+func blockInfo(ctx *gin.Context) {
+	height, err := strconv.ParseInt(ctx.Query("height"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "query height error"))
+		return
+	}
+	cursor, err := strconv.ParseInt(ctx.Query("cursor"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "query cursor error"))
+		return
+	}
+	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "query size error"))
+		return
+	}
+
+	list, err := getBlockInfo(height, "", cursor, size, ctx.Query("orderby"))
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "service exception"))
+		return
+	}
+	ctx.JSON(http.StatusOK, ApiSuccess(1, "ok", list))
+}
+func hostInfo(ctx *gin.Context) {
+	cursor, err := strconv.ParseInt(ctx.Query("cursor"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "query cursor error"))
+		return
+	}
+	size, err := strconv.ParseInt(ctx.Query("size"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "query size error"))
+		return
+	}
+	list, err := getBlockInfo(0, ctx.Query("host"), cursor, size, ctx.Query("orderby"))
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "service exception"))
+		return
+	}
+	ctx.JSON(http.StatusOK, ApiSuccess(1, "ok", list))
 }
