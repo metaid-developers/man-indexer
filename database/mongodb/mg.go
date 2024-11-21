@@ -122,6 +122,7 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, AccessControlCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, AccessControlCollection, "address_1", bson.D{{Key: "address", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, AccessControlCollection, "metaid_1", bson.D{{Key: "metaid", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, AccessControlCollection, "controlpins_1", bson.D{{Key: "controlpins", Value: 1}}, false)
 
 	createIndexIfNotExists(mongoClient, AccessPassCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, AccessPassCollection, "creatoraddress_1", bson.D{{Key: "creatoraddress", Value: 1}}, false)

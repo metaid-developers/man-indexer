@@ -5,7 +5,7 @@ import "manindexer/basicprotocols/metaaccess"
 func (pb *Pebble) BatchSaveAccesscontrol(list []*metaaccess.AccessControl) (err error) {
 	return
 }
-func (pb *Pebble) GetControlById(pinId string) (data *metaaccess.AccessControl, err error) {
+func (pb *Pebble) GetControlById(pinId string, isContentId bool) (data *metaaccess.AccessControl, err error) {
 	return
 }
 func (pb *Pebble) BatchSaveAccessPass(passList []*metaaccess.AccessPassData) (err error) {

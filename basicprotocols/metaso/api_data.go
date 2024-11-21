@@ -2,6 +2,8 @@ package metaso
 
 import (
 	"context"
+	"manindexer/database/mongodb"
+	"manindexer/pin"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -9,8 +11,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func getNewest(lastId string, size int64, listType string) (list []*Tweet, total int64, err error) {
+func getNewest(lastId string, size int64, listType string, metaid string, followed string) (list []*Tweet, total int64, err error) {
 	filter := bson.D{}
+	totalFilter := bson.D{}
 	if lastId != "" {
 		var objectId primitive.ObjectID
 		objectId, err = primitive.ObjectIDFromHex(lastId)
@@ -19,10 +22,22 @@ func getNewest(lastId string, size int64, listType string) (list []*Tweet, total
 		}
 		filter = append(filter, bson.E{Key: "_id", Value: bson.D{{Key: "$lt", Value: objectId}}})
 	}
+	if metaid != "" && followed == "1" {
+		followList, err1 := getAddressFollowing(metaid)
+		if err1 != nil || len(followList) == 0 {
+			err = nil
+			return
+		}
+		totalFilter = append(totalFilter, bson.E{Key: "createmetaid", Value: bson.D{{Key: "$in", Value: followList}}})
+		filter = append(filter, bson.E{Key: "createmetaid", Value: bson.D{{Key: "$in", Value: followList}}})
+	} else if metaid != "" && followed == "" {
+		filter = append(filter, bson.E{Key: "createmetaid", Value: metaid})
+		totalFilter = append(totalFilter, bson.E{Key: "createmetaid", Value: metaid})
+	}
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: listType, Value: -1}})
 	findOptions.SetLimit(size)
-	result, err := mongoClient.Collection(TweetCollection).Find(context.TODO(), filter, findOptions)
+	result, err := mongoClient.Collection(BuzzView).Find(context.TODO(), filter, findOptions)
 	if err != nil {
 		return
 	}
@@ -31,22 +46,36 @@ func getNewest(lastId string, size int64, listType string) (list []*Tweet, total
 		err = nil
 	}
 	for _, item := range list {
-		item.ContentBody = nil
 		item.Content = string(item.ContentBody)
+		item.ContentBody = nil
 	}
-	total, err = mongoClient.Collection(TweetCollection).CountDocuments(context.TODO(), bson.D{})
+	total, err = mongoClient.Collection(BuzzView).CountDocuments(context.TODO(), totalFilter)
 	return
 }
-
+func getAddressFollowing(metaid string) (list []string, err error) {
+	filterA := bson.M{"followmetaid": metaid, "status": true}
+	result, err := mongoClient.Collection(mongodb.FollowCollection).Find(context.TODO(), filterA)
+	if err != nil {
+		return
+	}
+	var followData []*pin.FollowData //pin.FollowData
+	err = result.All(context.TODO(), &followData)
+	for _, item := range followData {
+		list = append(list, item.MetaId)
+	}
+	return
+}
 func getInfo(pinId string) (tweet *Tweet, comments []*TweetComment, like []*TweetLike, err error) {
 	filter := bson.D{{Key: "id", Value: pinId}}
-	err = mongoClient.Collection(TweetCollection).FindOne(context.TODO(), filter, nil).Decode(&tweet)
+	err = mongoClient.Collection(BuzzView).FindOne(context.TODO(), filter, nil).Decode(&tweet)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			err = nil
 		}
 		return
 	}
+	tweet.Content = string(tweet.ContentBody)
+	tweet.ContentBody = nil
 	filter2 := bson.D{{Key: "commentpinid", Value: pinId}}
 	result, err := mongoClient.Collection(TweetCommentCollection).Find(context.TODO(), filter2)
 	if err == nil {

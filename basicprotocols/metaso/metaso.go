@@ -95,3 +95,11 @@ type HostData struct {
 	TxSize      int64  `json:"txSize" bson:"txSize"`
 	TxFee       int64  `json:"txFee" bson:"txFee"`
 }
+
+type PayBuzz struct {
+	PublicContent  string   `json:"publicContent"`
+	EncryptContent string   `json:"encryptContent"`
+	ContentType    string   `json:"contentType"`
+	PublicFiles    []string `json:"publicFiles"`
+	EncryptFiles   []string `json:"encryptFiles"`
+}

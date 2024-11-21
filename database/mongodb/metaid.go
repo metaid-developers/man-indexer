@@ -64,6 +64,10 @@ func (mg *Mongodb) GetMetaIdInfo(address string, mempool bool, metaid string) (i
 			info.Bio = mempoolInfo.Bio
 			unconfirmedList = append(unconfirmedList, "bio")
 		}
+		if mempoolInfo.Background != "" {
+			info.Background = mempoolInfo.Background
+			unconfirmedList = append(unconfirmedList, "background")
+		}
 	}
 	if len(unconfirmedList) > 0 {
 		unconfirmed = strings.Join(unconfirmedList, ",")
@@ -87,6 +91,8 @@ func findMetaIdInfoInMempool(key string, value string) (info pin.MetaIdInfo, err
 			info.Avatar = fmt.Sprintf("/content/%s", pin.Id)
 		} else if pin.OriginalPath == "/info/bid" {
 			info.Bio = string(pin.ContentBody)
+		} else if pin.Path == "/info/background" {
+			info.Background = fmt.Sprintf("/content/%s", pin.Id)
 		}
 	}
 	return
@@ -141,6 +147,9 @@ func (mg *Mongodb) BatchUpsertMetaIdInfo(infoList map[string]*pin.MetaIdInfo) (e
 		}
 		if len(info.SoulbondToken) > 0 {
 			updateInfo = append(updateInfo, bson.E{Key: "soulbondtoken", Value: info.SoulbondToken})
+		}
+		if info.Background != "" {
+			updateInfo = append(updateInfo, bson.E{Key: "background", Value: info.Background})
 		}
 		update := bson.D{{Key: "$set", Value: updateInfo}}
 		m := mongo.NewUpdateOneModel()

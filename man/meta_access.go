@@ -14,13 +14,15 @@ func (ma *MetaAccess) PinHandle(pinList []*pin.PinInscription) {
 	var passList []*metaaccess.AccessPassData
 	for _, pinNode := range pinList {
 		switch pinNode.Path {
-		case "/protocols/metaaccess/accesscontrol":
+		case "/metaaccess/accesscontrol":
 			data, err := ma.AccessControlHandle(pinNode)
+			//fmt.Println(err)
 			if err == nil {
 				controlList = append(controlList, &data)
 			}
-		case "/protocols/metaaccess/accesspass":
+		case "/metaaccess/accesspass":
 			data, err := ma.AccessPassHandle(pinNode)
+			//fmt.Println(err)
 			if err == nil {
 				for _, item := range data {
 					passList = append(passList, &item)

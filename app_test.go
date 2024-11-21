@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"manindexer/adapter/bitcoin"
+	"manindexer/basicprotocols/metaaccess"
 	"manindexer/common"
 	"manindexer/database"
 	"manindexer/database/mongodb"
@@ -281,4 +282,28 @@ func TestMempoolTransfer(t *testing.T) {
 
 	list = append(list, tx.MsgTx())
 	mm.CheckMempoolHadle("btc", list)
+}
+func TestCreateMetaId(t *testing.T) {
+	fmt.Println(common.GetMetaIdByAddress("a"))
+}
+func TestEcdh(t *testing.T) {
+	content := []byte(`oWg+H3pEuwqgFeLwTyQvch3h3jNpv4FTPutTQGw9C9aqGzyzrK5alIjpqW1fpxAkUYP5H9YGaMHII3UPNveox4jDEVyXQKnAukpD5Pn5Au11mGUISptLLh7kk1+k3L5uqhuXOm7JwiUY5oJ0yMtEjEgcjhmvfnFl/NWtjnUGQ0/4wCBUaRIgRFWotcR99gYKv2KmyOahj1ks0Jk2PhLV6uvoMHmaQTmy9RMVd8a8bFKP2ej2HaCyFADO24yyMrGt3iYe+Bjv3kU6Kd77vU5T+t+WfO2o1wrSct0HSD9hojEcGVavvlIbLszOAP9NYHLVx0XuMm/wjisM83g9wGloYh7AQHlkfTIQJlygxCQdA6qx/Kwtr/join1VFiAylaHr24DkAPZt/eYUn6sPoDpXFdfEmeSlFBjha2mwVLXjdikWcFYf81aNhAS1dSqw4tE47ZJ1nKeZBAacJ3D24ttod4VYbza89oYERAGEFCcX5/pxm87AMoQye0Pyb4YEExOSRcbY2Exf7DXK7WEr`)
+	prikey := "5a34bc2e4edecd778faa6ed8dd38537f3152dec479ef95d0d608f388c3aa7aed"
+	creatorPubkey := "04788e92954b89ecd4a149d2e3b2eca5ce58613ce712ad0901e56466a639f5e87d93c44fd2cf3b874ea2c5b963ceec5cb2f03e7c5a8f2b50462dfe7b63282c5a48"
+	key := `1Pu9/39TWhjctvE6zXBlToqSQrp1djWfSBsNrIz4e50F4Nx43bnsf0H6Hd5fSO5FkAYS0lXQ9CZCuIGA4XrNagBBGX3gwHmS9ZSRda3pBIo=`
+	r, f, err := metaaccess.DecryptionPin(content, [][]byte{}, prikey, creatorPubkey, key)
+	fmt.Println(err, r, f)
+	// publicKey := "03e090905baad30b208f29d57319a6fa9d2acc3578f2ac9152ebcacf9b3581f63a"
+	// timestamp := int64(1731825669)
+	// address := "2N1qfdmWkeREeoSbvco4zg2T1QunZZwc6ee"
+	// sign := "6592346e329b5a86060a1c3a82e382e2a2ffd3168219dcd03921f7d1a4c9e96b"
+	// err := metaaccess.CheckSign(publicKey, prikey, timestamp, address, sign)
+	// fmt.Println(err)
+}
+func TestXxx(t *testing.T) {
+	//var rePubkey *ecdh.PublicKey
+	creatorPubkey := "04782a9b4046f88a8fd717ed4bdf632aca5bcef29b7547506c2a58aef2e47fbc5ad87e7796361773c5deb511eb26e6c65819aabb1d2272aa3a1bd4a1d0107935d6"
+	rePubkey, err := metaaccess.BuildPublicKey(creatorPubkey)
+	fmt.Println(err)
+	fmt.Println(rePubkey.Bytes())
 }

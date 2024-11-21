@@ -27,7 +27,7 @@ var (
 	//Number          int64    = 0
 	MaxHeight       map[string]int64
 	CurBlockHeight  map[string]int64
-	BaseFilter      []string = []string{"/info", "/file", "/flow", "ft"}
+	BaseFilter      []string = []string{"/info", "/file", "/flow", "ft", "/metaaccess"}
 	SyncBaseFilter  map[string]struct{}
 	ProtocolsFilter map[string]struct{}
 	OptionLimit     []string = []string{"create", "modify", "revoke", "hide"}
@@ -555,7 +555,7 @@ func handlePathAndOperation(
 func createInfoAdditional(pinNode *pin.PinInscription, path string) (addition pin.MetaIdInfoAdditional) {
 	if len(path) > 7 && path[0:6] == "/info/" {
 		infoPathArr := strings.Split(path, "/")
-		if len(infoPathArr) < 3 || infoPathArr[2] == "name" || infoPathArr[2] == "avatar" || infoPathArr[2] == "bio" {
+		if len(infoPathArr) < 3 || infoPathArr[2] == "name" || infoPathArr[2] == "avatar" || infoPathArr[2] == "bio" || infoPathArr[2] == "background" {
 			return
 		}
 		addition = pin.MetaIdInfoAdditional{
@@ -674,6 +674,8 @@ func metaIdInfoParse(pinNode *pin.PinInscription, path string, metaIdData *map[s
 	case "/info/bio":
 		metaIdInfo.Bio = string(pinNode.ContentBody)
 		metaIdInfo.BioId = pinNode.Id
+	case "/info/background":
+		metaIdInfo.Background = fmt.Sprintf("/content/%s", pinNode.Id)
 	}
 	(*metaIdData)[pinNode.Address] = metaIdInfo
 }

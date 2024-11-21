@@ -5,6 +5,7 @@ import (
 	"log"
 	"manindexer/common"
 	"manindexer/common/mongo_util"
+	"manindexer/database/mongodb"
 	"reflect"
 	"time"
 
@@ -26,8 +27,18 @@ const (
 	TweetCountCollection   string = "metaso_tweet_count"
 	TweetLikeCollection    string = "metaso_tweet_like"
 	TweetCommentCollection string = "metaso_sync_comment"
+	BuzzView               string = "buzzview"
 	HostDataCollection     string = "host_data"
 )
+
+var DataFilter = bson.D{
+	{Key: "$or", Value: bson.A{
+		bson.D{{Key: "path", Value: "/protocols/simplebuzz"}},
+		bson.D{{Key: "path", Value: "/protocols/banana"}},
+		bson.D{{Key: "path", Value: "/protocols/paybuzz"}},
+		bson.D{{Key: "path", Value: "/protocols/subscribebuzz"}},
+	}},
+}
 
 func connectMongoDb() {
 	mg := common.Config.MongoDb
@@ -50,6 +61,7 @@ func connectMongoDb() {
 	}
 	mongoClient = client.Database(mg.DbName)
 	createIndex(mongoClient)
+	createBuzzView()
 }
 func createIndex(mongoClient *mongo.Database) {
 	//Tweet
@@ -80,4 +92,25 @@ func createIndex(mongoClient *mongo.Database) {
 	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "host_height_1", bson.D{{Key: "host", Value: 1}, {Key: "blockHeight", Value: 1}}, true)
 	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "host_1", bson.D{{Key: "host", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "height_1", bson.D{{Key: "blockHeight", Value: 1}}, false)
+}
+func createBuzzView() {
+	views, err := mongoClient.ListCollectionNames(context.Background(), bson.M{"name": BuzzView})
+	if err != nil {
+		return
+	}
+	if len(views) == 0 {
+		mongoClient.CreateView(
+			context.Background(),
+			BuzzView,
+			TweetCollection,
+			bson.A{
+				bson.D{{Key: "$unionWith", Value: bson.D{
+					{Key: "coll", Value: mongodb.MempoolPinsCollection},
+					{Key: "pipeline", Value: mongo.Pipeline{
+						{{Key: "$match", Value: DataFilter}},
+					}},
+				}}},
+			},
+		)
+	}
 }

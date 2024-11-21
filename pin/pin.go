@@ -8,7 +8,7 @@ import (
 const (
 	ProtocolID string = "746573746964" //testid(HEX16)
 	//ProtocolID    string = "6d6574616964" //metaid
-	CompliantPath string = "info;file;protocols;nft;ft;mrc20;follow"
+	CompliantPath string = "info;file;protocols;nft;ft;mrc20;follow;metaaccess"
 )
 
 type PinInscription struct {
@@ -100,6 +100,7 @@ type MetaIdInfo struct {
 	FollowCount   int64  `json:"followCount"`
 	Pdv           int64  `json:"pdv"`
 	Fdv           int64  `json:"fdv"`
+	Background    string `json:"background"`
 }
 type MetaIdDataValue struct {
 	ChainName string `json:"chainName"`

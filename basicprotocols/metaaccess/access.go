@@ -4,15 +4,13 @@ const (
 	ErrOperation      = "operation  error"
 	ErrPinContent     = "pin content  error"
 	ErrGetContronlPin = "get control pin  error"
+	ErrGetPassTx      = "get pass transaction  error"
 )
 
 type AccessControl struct {
 	PinId         string                  `json:"pinId"`
 	Address       string                  `json:"address"`
 	MetaId        string                  `json:"metaId"`
-	PublicContent string                  `json:"publicContent"`
-	PublicPins    []string                `json:"publicPins"`
-	PublicPath    string                  `json:"publicPath"`
 	ControlPins   []string                `json:"controlPins"`
 	ControlPath   string                  `json:"controlPath"`
 	ManDomain     string                  `json:"manDomain"`

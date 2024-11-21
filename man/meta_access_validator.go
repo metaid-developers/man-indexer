@@ -20,8 +20,8 @@ func (validator *MetaAccessValidator) AccessControl(pinNode *pin.PinInscription)
 		err = errors.New(metaaccess.ErrPinContent + ",key null")
 		return
 	}
-	if *data.PayCheck != (metaaccess.AccessControlPayCheck{}) {
-		if data.PayCheck.AccType == "" || data.PayCheck.Amount == "" || data.PayCheck.PayTo == "" || data.PayCheck.ValidPeriod == "" {
+	if data.PayCheck != nil && *data.PayCheck != (metaaccess.AccessControlPayCheck{}) {
+		if data.PayCheck.AccType == "" || data.PayCheck.Amount == "" || data.PayCheck.PayTo == "" {
 			err = errors.New(metaaccess.ErrPinContent + ",payCheck error")
 			return
 		}
@@ -44,7 +44,7 @@ func (validator *MetaAccessValidator) AccessControl(pinNode *pin.PinInscription)
 			return
 		}
 	}
-	if *data.HoldCheck != (metaaccess.AccessControlHoldCheck{}) {
+	if data.HoldCheck != nil && *data.HoldCheck != (metaaccess.AccessControlHoldCheck{}) {
 		if data.HoldCheck.AccType == "" || data.HoldCheck.Amount == "" {
 			err = errors.New(metaaccess.ErrPinContent + ",holdCheck error")
 			return
@@ -64,7 +64,7 @@ func (validator *MetaAccessValidator) AccessControl(pinNode *pin.PinInscription)
 			return
 		}
 	}
-	if *data.HoldCheck == (metaaccess.AccessControlHoldCheck{}) && *data.PayCheck == (metaaccess.AccessControlPayCheck{}) {
+	if data.HoldCheck != nil && *data.HoldCheck == (metaaccess.AccessControlHoldCheck{}) && *data.PayCheck == (metaaccess.AccessControlPayCheck{}) {
 		err = errors.New(metaaccess.ErrPinContent + ",check null")
 		return
 	}
@@ -85,12 +85,20 @@ func (validator *MetaAccessValidator) AccessPass(pinNode *pin.PinInscription) (d
 		return
 	}
 	//get accesscontrol info
-	info, err := DbAdapter.GetControlById(pass.AccessControlID)
+	info, err := DbAdapter.GetControlById(pass.AccessControlID, false)
 	if err != nil {
 		err = errors.New(metaaccess.ErrGetContronlPin)
 		return
 	}
-	//TODO payCheck
+	//payCheck
+	//info.PayCheck.Amount
+	// txResult, err := ChainAdapter[pinNode.ChainName].GetTransaction(pinNode.GenesisTransaction)
+	// if err != nil {
+	// 	err = errors.New(metaaccess.ErrGetPassTx)
+	// 	return
+	// }
+	// tx := txResult.(*btcutil.Tx)
+
 	for _, contentPinId := range info.ControlPins {
 		data = append(data, validator.createPassData(info, "", contentPinId, pinNode))
 	}
@@ -100,13 +108,16 @@ func (validator *MetaAccessValidator) AccessPass(pinNode *pin.PinInscription) (d
 	return
 }
 func (validator *MetaAccessValidator) createPassData(info *metaaccess.AccessControl, controlPath string, contentPinId string, pinNode *pin.PinInscription) (data metaaccess.AccessPassData) {
-	if *info.PayCheck != (metaaccess.AccessControlPayCheck{}) && *info.HoldCheck != (metaaccess.AccessControlHoldCheck{}) {
+	if info == nil {
+		return
+	}
+	if info.PayCheck != nil && info.HoldCheck != nil && *info.PayCheck != (metaaccess.AccessControlPayCheck{}) && *info.HoldCheck != (metaaccess.AccessControlHoldCheck{}) {
 		data.CheckMode = "payAndHold"
 		data.ValidPeriod, _ = strconv.ParseInt(info.PayCheck.ValidPeriod, 10, 64)
-	} else if *info.PayCheck != (metaaccess.AccessControlPayCheck{}) {
+	} else if info.PayCheck != nil && *info.PayCheck != (metaaccess.AccessControlPayCheck{}) {
 		data.CheckMode = "pay"
 		data.ValidPeriod, _ = strconv.ParseInt(info.PayCheck.ValidPeriod, 10, 64)
-	} else if *info.HoldCheck != (metaaccess.AccessControlHoldCheck{}) {
+	} else if info.HoldCheck != nil && *info.HoldCheck != (metaaccess.AccessControlHoldCheck{}) {
 		data.CheckMode = "hold"
 	}
 	data.PinId = pinNode.Id

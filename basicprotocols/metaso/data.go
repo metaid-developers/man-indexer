@@ -27,9 +27,10 @@ func (metaso *MetaSo) synchTweet() (err error) {
 		return
 	}
 	var pinList []*Tweet
-	filter := bson.D{
-		{Key: "path", Value: "/protocols/simplebuzz"},
-	}
+	// filter := bson.D{
+	// 	{Key: "path", Value: "/protocols/simplebuzz"},
+	// }
+	filter := DataFilter
 	if last != primitive.NilObjectID {
 		filter = append(filter, bson.E{Key: "_id", Value: bson.D{{Key: "$gt", Value: last}}})
 	}

@@ -1,6 +1,7 @@
 package metaso
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -8,7 +9,7 @@ import (
 )
 
 func Api(r *gin.Engine) {
-	accessGroup := r.Group("/social/tweet")
+	accessGroup := r.Group("/social/buzz")
 	accessGroup.Use(CorsMiddleware())
 	accessGroup.GET("/newest", newest)
 	accessGroup.GET("/hot", hot)
@@ -61,12 +62,13 @@ func newest(ctx *gin.Context) {
 	if size == 0 {
 		size = 10
 	}
-	list, total, err := getNewest(ctx.Query("lastId"), size, "_id")
+	list, total, err := getNewest(ctx.Query("lastId"), size, "_id", ctx.Query("metaid"), ctx.Query("followed"))
 	lastId := ""
 	if len(list) > 0 {
 		lastId = list[len(list)-1].MogoID.Hex()
 	}
 	if err != nil {
+		fmt.Println(err)
 		ctx.JSON(http.StatusOK, ApiError(-1, "service exception."))
 		return
 	}
@@ -81,7 +83,7 @@ func hot(ctx *gin.Context) {
 	if size == 0 {
 		size = 10
 	}
-	list, total, err := getNewest(ctx.Query("lastId"), size, "hot")
+	list, total, err := getNewest(ctx.Query("lastId"), size, "hot", "", "")
 	lastId := ""
 	if len(list) > 0 {
 		lastId = list[len(list)-1].MogoID.Hex()

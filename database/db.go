@@ -101,7 +101,7 @@ type Db interface {
 	DeleteZmqTx(txList []string) (err error)
 	//metaAccess
 	BatchSaveAccesscontrol(list []*metaaccess.AccessControl) (err error)
-	GetControlById(pinId string) (data *metaaccess.AccessControl, err error)
+	GetControlById(pinId string, isContentId bool) (data *metaaccess.AccessControl, err error)
 	BatchSaveAccessPass(passList []*metaaccess.AccessPassData) (err error)
 	CheckAccessPass(buyerAddress string, contentPinId string, controlPath string) (data *metaaccess.AccessPassData, err error)
 }

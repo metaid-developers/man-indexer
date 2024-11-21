@@ -59,6 +59,10 @@ func (pb *Pebble) GetMetaIdInfo(address string, mempool bool, metaid string) (in
 			info.Bio = mempoolInfo.Bio
 			unconfirmedList = append(unconfirmedList, "bio")
 		}
+		if mempoolInfo.Background != "" {
+			info.Background = mempoolInfo.Background
+			unconfirmedList = append(unconfirmedList, "background")
+		}
 	}
 	if len(unconfirmedList) > 0 {
 		unconfirmed = strings.Join(unconfirmedList, ",")
@@ -84,6 +88,8 @@ func findMetaIdInfoInMempool(address string) (info pin.MetaIdInfo, err error) {
 			info.Avatar = fmt.Sprintf("/content/%s", pinNode.Id)
 		} else if pinNode.OriginalPath == "/info/bid" {
 			info.Bio = string(pinNode.ContentBody)
+		} else if pinNode.OriginalPath == "/info/background" {
+			info.Bio = fmt.Sprintf("/content/%s", pinNode.Id)
 		}
 	}
 

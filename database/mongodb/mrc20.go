@@ -263,6 +263,32 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo, isMempool bool) (err
 	_, err = mongoClient.Collection(collection).BulkWrite(context.Background(), models, bulkWriteOptions)
 	return
 }
+func GetTickBalance(tickId string, address string) (totalAmt decimal.Decimal, err error) {
+	totalAmt = decimal.Zero
+	filter := bson.D{
+		{Key: "mrc20id", Value: tickId},
+		{Key: "toaddress", Value: address},
+		{Key: "status", Value: 0},
+		{Key: "verify", Value: true},
+		{Key: "amtchange", Value: bson.D{
+			{Key: "$gt", Value: 0},
+		}},
+	}
+	result, err := mongoClient.Collection(Mrc20UtxoCollection).Find(context.TODO(), filter)
+	if err != nil {
+		return
+	}
+	var list []mrc20.Mrc20Utxo
+	err = result.All(context.TODO(), &list)
+	if err != nil {
+		return
+	}
+
+	for _, item := range list {
+		totalAmt.Add(item.AmtChange)
+	}
+	return
+}
 func (mg *Mongodb) GetHistoryByAddress(tickId string, address string, cursor int64, size int64, status string, verify string) (list []mrc20.Mrc20Utxo, total int64, err error) {
 	//cursor := (page - 1) * size
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}}).SetSkip(cursor).SetLimit(size)

@@ -6,12 +6,49 @@ import (
 	"crypto/ecdh"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"strconv"
+	"time"
 )
 
-func DecryptionPin(Encrypted []byte, prikey string, creatorPubkey string, encryptedKey string) (result []byte, err error) {
+func CheckSign(publicKey string, priKey string, timestamp int64, address string, sign string) (err error) {
+	currentTimestamp := time.Now().Unix()
+	if currentTimestamp > timestamp+20 {
+		err = errors.New("time error")
+		return
+	}
+	var rePrikey *ecdh.PrivateKey
+	rePrikey, err = BuildPrivateKey(priKey)
+	if err != nil {
+		return
+	}
+	var rePubkey *ecdh.PublicKey
+	rePubkey, err = BuildPublicKey(publicKey)
+	if err != nil {
+		return
+	}
+	var sp []byte
+	sp, err = PerformECDH(rePrikey, rePubkey)
+	if err != nil {
+		return
+	}
+	hash := sha256.Sum256(sp)
+	spStr := hex.EncodeToString(hash[:])
+	timestampStr := strconv.FormatInt(timestamp, 10)
+	str := spStr + timestampStr + address
+	mySignHash := sha256.Sum256([]byte(str))
+	mySign := hex.EncodeToString(mySignHash[:])
+	if mySign != sign {
+		err = errors.New("sign error")
+		return
+	}
+	return
+}
+func DecryptionPin(Encrypted []byte, encryptFiles [][]byte, prikey string, creatorPubkey string, encryptedKey string) (contentResult []byte, filesResult []string, err error) {
 	//get sp
 	var rePrikey *ecdh.PrivateKey
 	rePrikey, err = BuildPrivateKey(prikey)
@@ -41,11 +78,28 @@ func DecryptionPin(Encrypted []byte, prikey string, creatorPubkey string, encryp
 	if err != nil {
 		return
 	}
-	encontentb, err := hex.DecodeString(string(Encrypted))
-	if err != nil {
-		return
+	content := string(Encrypted)
+	if len(Encrypted) > 0 && content != "" && len(content) > 0 {
+		encontentb, err1 := hex.DecodeString(content)
+		if err1 != nil {
+			err = err1
+			return
+		}
+		contentResult, err = DecryptPayloadAES(decryptedP1, encontentb)
 	}
-	result, err = DecryptPayloadAES(decryptedP1, encontentb)
+
+	for _, item := range encryptFiles {
+		encryptedBytes, err := hex.DecodeString(string(item))
+		if err != nil {
+			continue
+		}
+		b, err := DecryptPayloadAES(decryptedP1, encryptedBytes)
+		if err != nil {
+			continue
+		}
+
+		filesResult = append(filesResult, base64.StdEncoding.EncodeToString(b))
+	}
 	return
 }
 func GenerateAESKey() (string, error) {
