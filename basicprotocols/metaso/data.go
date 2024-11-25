@@ -17,6 +17,7 @@ func (metaso *MetaSo) Synchronization() {
 		metaso.synchTweetLike()
 		metaso.synchTweetComment()
 		metaso.syncHostData()
+		metaso.syncMrc20TickData()
 		time.Sleep(time.Second * 10)
 	}
 }

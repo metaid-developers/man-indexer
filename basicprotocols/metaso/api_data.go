@@ -111,3 +111,20 @@ func getBlockInfo(height int64, host string, cursor int64, size int64, orderby s
 	}
 	return
 }
+func getTickByAddress(address string, tickType string) (list []*Mrc20DeployInfo, err error) {
+	filter := bson.D{{Key: "address", Value: address}}
+	if tickType == "idcoins" {
+		filter = append(filter, bson.E{Key: "idcoin", Value: 1})
+	}
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: "tick", Value: 1}})
+	result, err := mongoClient.Collection(MetasoTickCollection).Find(context.TODO(), filter, findOptions)
+	if err != nil {
+		return
+	}
+	err = result.All(context.TODO(), &list)
+	if err == mongo.ErrNoDocuments {
+		err = nil
+	}
+	return
+}

@@ -34,6 +34,25 @@ func CreateIndexIfNotExists(mongoClient *mongo.Database, collectionName, indexNa
 	}
 	return nil
 }
+func CreateIndexWithFilterIfNotExists(mongoClient *mongo.Database, collectionName, indexName string, keys bson.D, unique bool, filter bson.D) error {
+	exists, err := checkIndexExists(mongoClient, collectionName, indexName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		collection := mongoClient.Collection(collectionName)
+		indexModel := mongo.IndexModel{
+			Keys:    keys,
+			Options: options.Index().SetName(indexName).SetUnique(unique).SetPartialFilterExpression(filter),
+		}
+		_, err := collection.Indexes().CreateOne(context.Background(), indexModel)
+		if err != nil {
+			return err
+		}
+		//fmt.Printf("Index %s created successfully\n", indexName)
+	}
+	return nil
+}
 func checkIndexExists(mongoClient *mongo.Database, collectionName, indexName string) (bool, error) {
 	collection := mongoClient.Collection(collectionName)
 	indexView := collection.Indexes()

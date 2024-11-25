@@ -19,6 +19,9 @@ func Api(r *gin.Engine) {
 	hostGroup.GET("/block/sync-newest", syncNewest)
 	hostGroup.GET("/block/info", blockInfo)
 	hostGroup.GET("/info", hostInfo)
+	ftGroup := r.Group("/ft")
+	ftGroup.Use(CorsMiddleware())
+	ftGroup.GET("/mrc20/address/deploy-list", mrc20TickList)
 }
 func CorsMiddleware() gin.HandlerFunc {
 	return func(context *gin.Context) {
@@ -142,6 +145,19 @@ func hostInfo(ctx *gin.Context) {
 		return
 	}
 	list, err := getBlockInfo(0, ctx.Query("host"), cursor, size, ctx.Query("orderby"))
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "service exception"))
+		return
+	}
+	ctx.JSON(http.StatusOK, ApiSuccess(1, "ok", list))
+}
+func mrc20TickList(ctx *gin.Context) {
+	address := ctx.Query("address")
+	if address == "" {
+		ctx.JSON(http.StatusOK, ApiError(-1, "address is null"))
+		return
+	}
+	list, err := getTickByAddress(address, ctx.Query("tickType"))
 	if err != nil {
 		ctx.JSON(http.StatusOK, ApiError(-1, "service exception"))
 		return

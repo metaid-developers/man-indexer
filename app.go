@@ -21,7 +21,7 @@ var (
 func main() {
 	banner := `
     __  ___  ___     _   __
-   /  |/  / /   |   / | / / v0.0.2.1
+   /  |/  / /   |   / | / / v0.0.2.5
   / /|_/ / / /| |  /  |/ / 
  / /  / / / ___ | / /|  /  
 /_/  /_/ /_/  |_|/_/ |_/                   
@@ -42,12 +42,6 @@ func main() {
 		mn := metaname.MetaName{}
 		go mn.Synchronization()
 	}
-
-	// chainList := strings.Split(common.Chain, ",")
-	// for _, chainName := range chainList {
-	// 	mm := man.ManMempool{}
-	// 	go mm.CheckMempool(chainName)
-	// }
 	for {
 		man.IndexerRun(common.TestNet)
 		man.CheckNewBlock()

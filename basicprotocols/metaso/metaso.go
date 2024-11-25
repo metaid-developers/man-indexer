@@ -103,3 +103,38 @@ type PayBuzz struct {
 	PublicFiles    []string `json:"publicFiles"`
 	EncryptFiles   []string `json:"encryptFiles"`
 }
+type Mrc20DeployInfo struct {
+	MogoID       primitive.ObjectID  `bson:"_id,omitempty"`
+	Tick         string              `json:"tick"`
+	TokenName    string              `json:"tokenName"`
+	Decimals     string              `json:"decimals"`
+	AmtPerMint   string              `json:"amtPerMint"`
+	MintCount    uint64              `json:"mintCount"`
+	BeginHeight  string              `json:"beginHeight"`
+	EndHeight    string              `json:"endHeight"`
+	Metadata     string              `json:"metadata"`
+	DeployType   string              `json:"type"`
+	PremineCount uint64              `json:"premineCount"`
+	PinCheck     Mrc20DeployQual     `json:"pinCheck"`
+	PayCheck     Mrc20DeployPayCheck `json:"payCheck"`
+	TotalMinted  uint64              `json:"totalMinted"`
+	Mrc20Id      string              `json:"mrc20Id"`
+	PinNumber    int64               `json:"pinNumber"`
+	Chain        string              `json:"chain"`
+	Holders      uint64              `json:"holders"`
+	TxCount      uint64              `json:"txCount"`
+	MetaId       string              `json:"metaId"`
+	Address      string              `json:"address"`
+	DeployTime   int64               `json:"deployTime"`
+	IdCoin       int                 `json:"idCoin"`
+}
+type Mrc20DeployQual struct {
+	Creator string `json:"creator"`
+	Lv      string `json:"lvl"`
+	Path    string `json:"path"`
+	Count   string `json:"count"`
+}
+type Mrc20DeployPayCheck struct {
+	PayTo     string `json:"payTo"`
+	PayAmount string `json:"payAmount"`
+}

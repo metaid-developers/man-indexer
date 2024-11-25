@@ -266,7 +266,7 @@ func (mg *Mongodb) UpdateMrc20Utxo(list []*mrc20.Mrc20Utxo, isMempool bool) (err
 func GetTickBalance(tickId string, address string) (totalAmt decimal.Decimal, err error) {
 	totalAmt = decimal.Zero
 	filter := bson.D{
-		{Key: "mrc20id", Value: tickId},
+		{Key: "tick", Value: strings.ToUpper(tickId)},
 		{Key: "toaddress", Value: address},
 		{Key: "status", Value: 0},
 		{Key: "verify", Value: true},
@@ -283,9 +283,8 @@ func GetTickBalance(tickId string, address string) (totalAmt decimal.Decimal, er
 	if err != nil {
 		return
 	}
-
 	for _, item := range list {
-		totalAmt.Add(item.AmtChange)
+		totalAmt = totalAmt.Add(item.AmtChange)
 	}
 	return
 }

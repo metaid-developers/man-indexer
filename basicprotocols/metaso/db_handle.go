@@ -29,6 +29,7 @@ const (
 	TweetCommentCollection string = "metaso_sync_comment"
 	BuzzView               string = "buzzview"
 	HostDataCollection     string = "host_data"
+	MetasoTickCollection   string = "metaso_tick"
 )
 
 var DataFilter = bson.D{
@@ -92,6 +93,10 @@ func createIndex(mongoClient *mongo.Database) {
 	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "host_height_1", bson.D{{Key: "host", Value: 1}, {Key: "blockHeight", Value: 1}}, true)
 	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "host_1", bson.D{{Key: "host", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, HostDataCollection, "height_1", bson.D{{Key: "blockHeight", Value: 1}}, false)
+	//MetasoTickCollection
+	mongo_util.CreateIndexWithFilterIfNotExists(mongoClient, MetasoTickCollection, "idcoin_address_1", bson.D{{Key: "address", Value: 1}, {Key: "idcoin", Value: 1}}, true, bson.D{{Key: "idcoin", Value: 1}})
+	mongo_util.CreateIndexIfNotExists(mongoClient, MetasoTickCollection, "address_1", bson.D{{Key: "address", Value: 1}}, false)
+	mongo_util.CreateIndexIfNotExists(mongoClient, MetasoTickCollection, "idconin_1", bson.D{{Key: "idconin", Value: 1}}, false)
 }
 func createBuzzView() {
 	views, err := mongoClient.ListCollectionNames(context.Background(), bson.M{"name": BuzzView})
