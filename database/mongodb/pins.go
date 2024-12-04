@@ -143,7 +143,13 @@ func (mg *Mongodb) GetMempoolPinPageList(page int64, size int64) (pins []*pin.Pi
 	err = result.All(context.TODO(), &pins)
 	return
 }
+func deleteMetaSoMempool(txIds []string) (err error) {
+	filter := bson.M{"pinid": bson.M{"$in": txIds}}
+	_, err = mongoClient.Collection("metaso_mempool").DeleteMany(context.TODO(), filter)
+	return
+}
 func (mg *Mongodb) DeleteMempoolInscription(txIds []string) (err error) {
+	go deleteMetaSoMempool(txIds)
 	filter := bson.M{"id": bson.M{"$in": txIds}}
 	_, err = mongoClient.Collection(MempoolPinsCollection).DeleteMany(context.TODO(), filter)
 	if err != nil {

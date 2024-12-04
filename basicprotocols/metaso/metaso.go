@@ -138,3 +138,13 @@ type Mrc20DeployPayCheck struct {
 	PayTo     string `json:"payTo"`
 	PayAmount string `json:"payAmount"`
 }
+type MempoolData struct {
+	Path          string `json:"path"`
+	PinId         string `json:"pinId"`
+	CreateTime    int64  `json:"createTime"`
+	Target        string `json:"target"`
+	Content       string `json:"content"`
+	IsCancel      int    `json:"isCancel"`
+	CreateMetaId  string `json:"createMetaId"`
+	CreateAddress string `json:"createAddress"`
+}

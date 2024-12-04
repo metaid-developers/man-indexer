@@ -19,6 +19,7 @@ type AccessControl struct {
 	EncryptedKey  string                  `json:"encryptedKey"`
 	HoldCheck     *AccessControlHoldCheck `json:"holdCheck"`
 	PayCheck      *AccessControlPayCheck  `json:"payCheck"`
+	Mempool       int                     `json:"mempool"`
 }
 type AccessControlHoldCheck struct {
 	AccType string `json:"type"` //"chainCoin" or "mrc20"

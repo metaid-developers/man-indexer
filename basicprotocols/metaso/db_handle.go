@@ -23,13 +23,14 @@ var (
 )
 
 const (
-	TweetCollection        string = "metaso_tweet"
-	TweetCountCollection   string = "metaso_tweet_count"
-	TweetLikeCollection    string = "metaso_tweet_like"
-	TweetCommentCollection string = "metaso_sync_comment"
-	BuzzView               string = "buzzview"
-	HostDataCollection     string = "host_data"
-	MetasoTickCollection   string = "metaso_tick"
+	TweetCollection         string = "metaso_tweet"
+	TweetCountCollection    string = "metaso_tweet_count"
+	TweetLikeCollection     string = "metaso_tweet_like"
+	TweetCommentCollection  string = "metaso_sync_comment"
+	BuzzView                string = "buzzview"
+	HostDataCollection      string = "host_data"
+	MetasoTickCollection    string = "metaso_tick"
+	MetaSoMempoolCollection string = "metaso_mempool"
 )
 
 var DataFilter = bson.D{
@@ -97,6 +98,9 @@ func createIndex(mongoClient *mongo.Database) {
 	mongo_util.CreateIndexWithFilterIfNotExists(mongoClient, MetasoTickCollection, "idcoin_address_1", bson.D{{Key: "address", Value: 1}, {Key: "idcoin", Value: 1}}, true, bson.D{{Key: "idcoin", Value: 1}})
 	mongo_util.CreateIndexIfNotExists(mongoClient, MetasoTickCollection, "address_1", bson.D{{Key: "address", Value: 1}}, false)
 	mongo_util.CreateIndexIfNotExists(mongoClient, MetasoTickCollection, "idconin_1", bson.D{{Key: "idconin", Value: 1}}, false)
+	//MetaSoMempoolCollection
+	mongo_util.CreateIndexIfNotExists(mongoClient, MetaSoMempoolCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
+	mongo_util.CreateIndexIfNotExists(mongoClient, MetaSoMempoolCollection, "target_1", bson.D{{Key: "target", Value: 1}}, false)
 }
 func createBuzzView() {
 	views, err := mongoClient.ListCollectionNames(context.Background(), bson.M{"name": BuzzView})

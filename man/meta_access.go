@@ -9,7 +9,7 @@ type MetaAccess struct{}
 
 var validator = MetaAccessValidator{}
 
-func (ma *MetaAccess) PinHandle(pinList []*pin.PinInscription) {
+func (ma *MetaAccess) PinHandle(pinList []*pin.PinInscription, mempool bool) {
 	var controlList []*metaaccess.AccessControl
 	var passList []*metaaccess.AccessPassData
 	for _, pinNode := range pinList {
@@ -18,6 +18,11 @@ func (ma *MetaAccess) PinHandle(pinList []*pin.PinInscription) {
 			data, err := ma.AccessControlHandle(pinNode)
 			//fmt.Println(err)
 			if err == nil {
+				if mempool {
+					data.Mempool = 1
+				} else {
+					data.Mempool = 0
+				}
 				controlList = append(controlList, &data)
 			}
 		case "/metaaccess/accesspass":

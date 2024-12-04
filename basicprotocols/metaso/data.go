@@ -18,7 +18,8 @@ func (metaso *MetaSo) Synchronization() {
 		metaso.synchTweetComment()
 		metaso.syncHostData()
 		metaso.syncMrc20TickData()
-		time.Sleep(time.Second * 10)
+		metaso.synchMempoolData()
+		time.Sleep(time.Second * 3)
 	}
 }
 

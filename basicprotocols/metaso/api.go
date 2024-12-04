@@ -2,6 +2,7 @@ package metaso
 
 import (
 	"fmt"
+	"manindexer/database/mongodb"
 	"net/http"
 	"strconv"
 
@@ -14,6 +15,7 @@ func Api(r *gin.Engine) {
 	accessGroup.GET("/newest", newest)
 	accessGroup.GET("/hot", hot)
 	accessGroup.GET("/info", info)
+	accessGroup.GET("/follow", follow)
 	hostGroup := r.Group("/host")
 	hostGroup.Use(CorsMiddleware())
 	hostGroup.GET("/block/sync-newest", syncNewest)
@@ -104,6 +106,36 @@ func info(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, ApiSuccess(1, "ok", gin.H{"tweet": tweet, "comments": comments, "like": like}))
+}
+
+type followItem struct {
+	Metaid   string `json:"metaid"`
+	Mempool  int    `json:"mempool"`
+	Unfollow int    `json:"unfollow"`
+}
+
+func follow(ctx *gin.Context) {
+	if ctx.Query("metaid") == "" {
+		ctx.JSON(http.StatusOK, ApiError(-1, "metaid id null"))
+		return
+	}
+	mg := &mongodb.Mongodb{}
+	list, _, err := mg.GetFollowDataByMetaId(ctx.Query("metaid"), true, false, int64(0), int64(10000))
+	if err != nil {
+		ctx.JSON(http.StatusOK, ApiError(-1, "service exception"))
+		return
+	}
+	var ret []*followItem
+	for _, metaid := range list {
+		ret = append(ret, &followItem{Metaid: metaid.(string)})
+	}
+	mempoolList, err := getMempoolFollow(ctx.Query("metaid"))
+	if err == nil {
+		for _, metaid := range mempoolList {
+			ret = append(ret, &followItem{Metaid: *metaid, Mempool: 1})
+		}
+	}
+	ctx.JSON(http.StatusOK, ApiSuccess(1, "ok", gin.H{"list": ret}))
 }
 func syncNewest(ctx *gin.Context) {
 	_, height := getSyncHeight()

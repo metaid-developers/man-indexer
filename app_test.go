@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"manindexer/adapter/bitcoin"
 	"manindexer/basicprotocols/metaaccess"
+	"manindexer/basicprotocols/metaso"
 	"manindexer/common"
 	"manindexer/database"
 	"manindexer/database/mongodb"
@@ -300,10 +301,9 @@ func TestEcdh(t *testing.T) {
 	// err := metaaccess.CheckSign(publicKey, prikey, timestamp, address, sign)
 	// fmt.Println(err)
 }
-func TestXxx(t *testing.T) {
-	//var rePubkey *ecdh.PublicKey
-	creatorPubkey := "04782a9b4046f88a8fd717ed4bdf632aca5bcef29b7547506c2a58aef2e47fbc5ad87e7796361773c5deb511eb26e6c65819aabb1d2272aa3a1bd4a1d0107935d6"
-	rePubkey, err := metaaccess.BuildPublicKey(creatorPubkey)
-	fmt.Println(err)
-	fmt.Println(rePubkey.Bytes())
+func TestCheckIdcoin(t *testing.T) {
+	data := `{"message":"","tickSign":"IOjNdOU1Sa1Xq0Uhzptim2IjKnBtLtEQayiFXW7EGaJiFY4dmIaY0pzrrSCNj97pWcyTFRN/MRwRaWKEFrgUth0="}`
+	ret := metaso.CheckIdCoins("main", "OCEAN", data, 1723140496)
+	fmt.Println(">>", ret)
+
 }

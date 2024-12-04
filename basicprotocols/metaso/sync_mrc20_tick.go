@@ -1,21 +1,26 @@
 package metaso
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"manindexer/common"
 	"manindexer/database/mongodb"
 	"strings"
 
-	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+const messageSignatureHeader = "Bitcoin Signed Message:\n"
 
 func getLastMrc20TickId() (lastId string) {
 	findOp := options.FindOne()
@@ -57,7 +62,7 @@ func (metaso *MetaSo) syncMrc20TickData() (err error) {
 		if common.TestNet != "0" {
 			net = "testnet"
 		}
-		idcoin := checkIdCoins(net, deploy.Tick, deploy.Metadata, deploy.DeployTime)
+		idcoin := CheckIdCoins(net, deploy.Tick, deploy.Metadata, deploy.DeployTime)
 		if idcoin == "id-coins" {
 			deploy.IdCoin = 1
 		}
@@ -76,7 +81,7 @@ type MetaDataInfo struct {
 	TickSign string `json:"tickSign"`
 }
 
-func checkIdCoins(net, tick, metaData string, deployTime int64) string {
+func CheckIdCoins(net, tick, metaData string, deployTime int64) string {
 	var (
 		metaDataInfo  *MetaDataInfo
 		err           error
@@ -91,6 +96,7 @@ func checkIdCoins(net, tick, metaData string, deployTime int64) string {
 	}
 	err = json.Unmarshal([]byte(metaData), &metaDataInfo)
 	if err != nil {
+		fmt.Println("json:", err)
 		return ""
 	}
 	tickSign = metaDataInfo.TickSign
@@ -106,6 +112,7 @@ func checkIdCoins(net, tick, metaData string, deployTime int64) string {
 	}
 	verify, err = verifyIdCoinSign(strings.ToUpper(tick), tickSign, signPublic)
 	if err != nil {
+		fmt.Println("verify:", err)
 		return ""
 	}
 	if !verify {
@@ -115,29 +122,21 @@ func checkIdCoins(net, tick, metaData string, deployTime int64) string {
 }
 
 func verifyIdCoinSign(message, messageSign, publicKey string) (bool, error) {
-
-	// Decode hex-encoded serialized public key.
-	pubKeyBytes, err := hex.DecodeString(publicKey)
-	if err != nil {
-		return false, err
-	}
-	pubKey, err := btcec.ParsePubKey(pubKeyBytes)
+	sigBytes, err := base64.StdEncoding.DecodeString(messageSign)
 	if err != nil {
 		return false, err
 	}
 
-	// Decode hex-encoded serialized signature.
-	sigBytes, err := hex.DecodeString(messageSign)
-	if err != nil {
-		return false, err
-	}
-	signature, err := ecdsa.ParseSignature(sigBytes)
+	var buf bytes.Buffer
+	wire.WriteVarString(&buf, 0, messageSignatureHeader)
+	wire.WriteVarString(&buf, 0, message)
+	expectedMessageHash := chainhash.DoubleHashB(buf.Bytes())
+	pk, _, err := ecdsa.RecoverCompact(sigBytes,
+		expectedMessageHash)
 	if err != nil {
 		return false, err
 	}
 
-	// Verify the signature for the message using the public key.
-	messageHash := chainhash.DoubleHashB([]byte(message))
-	verified := signature.Verify(messageHash, pubKey)
-	return verified, nil
+	//fmt.Println(hex.EncodeToString(pk.SerializeCompressed()))
+	return hex.EncodeToString(pk.SerializeCompressed()) == publicKey, nil
 }

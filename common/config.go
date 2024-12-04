@@ -161,6 +161,11 @@ func InitConfig() {
 		Config.Mvc.PopCutNum = 21
 		Config.ProtocolID = "6d6574616964"
 	}
+	if Config.MetaSo.Prikey == "" || Config.MetaSo.Pubkey == "" {
+		ecdhConfig := InitMetasoKey()
+		Config.MetaSo.Pubkey = ecdhConfig.Pubkey
+		Config.MetaSo.Prikey = ecdhConfig.Prikey
+	}
 }
 func GetFlagConfig() (flagConfig map[string]*string, configFile string) {
 	chain := flag.String("chain", "btc", "Which chain to perform indexing")

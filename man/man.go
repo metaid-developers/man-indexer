@@ -6,6 +6,7 @@ import (
 	"manindexer/adapter/bitcoin"
 	"manindexer/adapter/microvisionchain"
 	"manindexer/common"
+
 	"manindexer/database"
 	"manindexer/database/mongodb"
 	"manindexer/database/pebbledb"
@@ -175,6 +176,10 @@ func handleMempoolPin(pinNode *pin.PinInscription) {
 		}
 	}
 	DbAdapter.AddMempoolPin(pinNode)
+	if common.ModuleExist("metaso") && pinNode.Path == "/metaaccess/accesscontrol" {
+		ms := &MetaAccess{}
+		ms.PinHandle([]*pin.PinInscription{pinNode}, true)
+	}
 }
 func handleMempoolTransferPin(pinNode *pin.PinInscription) {
 	transferPin := pin.MemPoolTrasferPin{
@@ -318,7 +323,7 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	//Handle MetaAccess
 	if len(pinNodeList) > 0 {
 		access := MetaAccess{}
-		access.PinHandle(pinNodeList)
+		access.PinHandle(pinNodeList, false)
 	}
 	//}
 	//bar.Finish()

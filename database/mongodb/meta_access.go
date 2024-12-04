@@ -12,17 +12,29 @@ import (
 )
 
 func (mg *Mongodb) BatchSaveAccesscontrol(list []*metaaccess.AccessControl) (err error) {
-	ordered := false
-	option := options.InsertManyOptions{Ordered: &ordered}
-	data := make([]interface{}, len(list))
-	for i, item := range list {
-		data[i] = item
+	// ordered := false
+	// option := options.InsertManyOptions{Ordered: &ordered}
+	// data := make([]interface{}, len(list))
+	// for i, item := range list {
+	// 	data[i] = item
+	// }
+	// _, err = mongoClient.Collection(AccessControlCollection).InsertMany(context.TODO(), data, &option)
+
+	var models []mongo.WriteModel
+	for _, acc := range list {
+		filter := bson.D{{Key: "pinid", Value: acc.PinId}}
+		update := bson.D{{Key: "$set", Value: acc}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(update).SetUpsert(true)
+		models = append(models, m)
 	}
-	_, err = mongoClient.Collection(AccessControlCollection).InsertMany(context.TODO(), data, &option)
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err = mongoClient.Collection(AccessControlCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
+
 	return
 }
 func (mg *Mongodb) GetControlById(pinId string, isContentId bool) (data *metaaccess.AccessControl, err error) {
-	findOp := options.FindOne()
+	findOp := options.FindOne().SetSort(bson.D{{Key: "_id", Value: -1}})
 	filter := bson.D{{Key: "pinid", Value: pinId}}
 	if isContentId {
 		filter = bson.D{
