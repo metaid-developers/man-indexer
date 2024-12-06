@@ -67,15 +67,16 @@ func (indexer *Indexer) CatchMempoolPins(txList []interface{}) (pinInscriptions 
 	//TODO
 	return
 }
-func (indexer *Indexer) CatchTransfer(idMap map[string]struct{}) (trasferMap map[string]*pin.PinTransferInfo) {
+func (indexer *Indexer) CatchTransfer(idMap map[string]string) (trasferMap map[string]*pin.PinTransferInfo) {
 	trasferMap = make(map[string]*pin.PinTransferInfo)
 	block := indexer.Block.(*wire.MsgBlock)
 	for _, tx := range block.Transactions {
 		for _, in := range tx.TxIn {
 			id := fmt.Sprintf("%s:%d", in.PreviousOutPoint.Hash.String(), in.PreviousOutPoint.Index)
-			if _, ok := idMap[id]; ok {
+			if fromAddress, ok := idMap[id]; ok {
 				info, err := indexer.GetOWnerAddress(id, tx)
 				if err == nil && info != nil {
+					info.FromAddress = fromAddress
 					trasferMap[id] = info
 				}
 			}

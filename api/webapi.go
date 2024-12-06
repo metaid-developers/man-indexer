@@ -9,6 +9,7 @@ import (
 	"log"
 	"manindexer/basicprotocols/metaname"
 	"manindexer/basicprotocols/metaso"
+	"manindexer/basicprotocols/mrc721"
 	"manindexer/common"
 	"manindexer/man"
 	"manindexer/pin"
@@ -118,6 +119,7 @@ func Start(f embed.FS) {
 	btcJsonApi(r)
 	mrc20JsonApi(r)
 	metaAccessJsonApi(r)
+	mrc721JsonApi(r)
 	if common.ModuleExist("metaso") {
 		log.Println("use metaso api")
 		metaso.Api(r)
@@ -455,7 +457,7 @@ func mrc721List(ctx *gin.Context) {
 		return
 	}
 	cousor := (page - 1) * 100
-	list, _, err := man.DbAdapter.GetMrc721CollectionList([]string{}, cousor, 100, false)
+	list, _, err := mrc721.GetMrc721CollectionList([]string{}, cousor, 100, false)
 	if err != nil {
 		ctx.String(200, "fail")
 		return
@@ -484,7 +486,7 @@ func mrc721ItemList(ctx *gin.Context) {
 		return
 	}
 	cousor := (page - 1) * 20
-	list, _, err := man.DbAdapter.GetMrc721ItemList(ctx.Param("name"), []string{}, cousor, 20, false)
+	list, _, err := mrc721.GetMrc721ItemList(ctx.Param("name"), "", []string{}, cousor, 20, false)
 	if err != nil {
 		ctx.String(200, "fail")
 		return

@@ -31,6 +31,9 @@ func (pg *Postgresql) BatchAddPins(pins []interface{}) (err error) {
 func (pg *Postgresql) BatchUpdatePins(pins []*pin.PinInscription) (err error) {
 	return
 }
+func (pg *Postgresql) AddTransferHistory(history []*pin.PinTransferHistory) (err error) {
+	return
+}
 func (pg *Postgresql) UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error) {
 	return
 }

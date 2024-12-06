@@ -60,6 +60,17 @@ type PinTransferInfo struct {
 	OutputValue int64  `json:"outputValue"`
 	Offset      uint64 `json:"offset"`
 	Location    string `json:"location"`
+	FromAddress string `json:"fromAddress"`
+}
+type PinTransferHistory struct {
+	PinId          string `json:"pinId"`
+	TransferTime   int64  `json:"transferTime"`
+	TransferHeight int64  `json:"transferHeight"`
+	TransferBlock  string `json:"transferBlock"`
+	TransferTx     string `json:"transferTx"`
+	ChainName      string `json:"chainName"`
+	FromAddress    string `json:"fromAddress"`
+	ToAddress      string `json:"toAddress"`
 }
 type MempollChanMsg struct {
 	PinList []*PinInscription

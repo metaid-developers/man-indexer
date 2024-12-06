@@ -3,7 +3,6 @@ package database
 import (
 	"manindexer/basicprotocols/metaaccess"
 	"manindexer/mrc20"
-	"manindexer/mrc721"
 	"manindexer/pin"
 )
 
@@ -31,6 +30,7 @@ type Db interface {
 	BatchAddPins(pins []interface{}) (err error)
 	BatchUpdatePins(pins []*pin.PinInscription) (err error)
 	UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo) (err error)
+	AddTransferHistory(history []*pin.PinTransferHistory) (err error)
 	AddMempoolPin(pin *pin.PinInscription) (err error)
 	BatchAddPinTree(data []interface{}) (err error)
 	GetPinPageList(page int64, size int64) (pins []*pin.PinInscription, err error)
@@ -87,14 +87,6 @@ type Db interface {
 	GetUsedShovelIdListByAddress(address string, tickId string, cursor int64, size int64) (list []*string, total int64, err error)
 	DeleteMempoolMc20(txIds []string) (err error)
 	CheckOperationtx(operationtx string, isMempool bool) (data *mrc20.Mrc20Utxo, err error)
-	//mrc721
-	SaveMrc721Collection(collection *mrc721.Mrc721CollectionDescPin) (err error)
-	GetMrc721Collection(collectionName, pinId string) (data *mrc721.Mrc721CollectionDescPin, err error)
-	GetMrc721CollectionList(nameList []string, cursor int64, size int64, cnt bool) (data []*mrc721.Mrc721CollectionDescPin, total int64, err error)
-	BatchUpdateMrc721CollectionCount(nameList []string) (err error)
-	SaveMrc721Item(itemList []*mrc721.Mrc721ItemDescPin) (err error)
-	GetMrc721ItemList(collectionName string, pinIdList []string, cursor int64, size int64, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error)
-	UpdateMrc721ItemDesc(itemList []*mrc721.Mrc721ItemDescPin) (err error)
 	//zmqTx
 	SaveZmqReciveTx(data *pin.ZmqReciveTx) (err error)
 	GetOneZmqTx(tx string) (data *pin.ZmqReciveTx, err error)

@@ -593,3 +593,6 @@ func (pb *Pebble) GetMempoolTransferById(pinId string) (result *pin.MemPoolTrasf
 func (pb *Pebble) GetPinCheckListByIdList(idList []string) (result map[string]*pin.PinStatus, err error) {
 	return
 }
+func (pb *Pebble) AddTransferHistory(history []*pin.PinTransferHistory) (err error) {
+	return
+}

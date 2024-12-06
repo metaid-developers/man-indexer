@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"manindexer/common"
 	"manindexer/database/mongodb"
 	"strings"
@@ -96,7 +95,6 @@ func CheckIdCoins(net, tick, metaData string, deployTime int64) string {
 	}
 	err = json.Unmarshal([]byte(metaData), &metaDataInfo)
 	if err != nil {
-		fmt.Println("json:", err)
 		return ""
 	}
 	tickSign = metaDataInfo.TickSign
@@ -112,7 +110,6 @@ func CheckIdCoins(net, tick, metaData string, deployTime int64) string {
 	}
 	verify, err = verifyIdCoinSign(strings.ToUpper(tick), tickSign, signPublic)
 	if err != nil {
-		fmt.Println("verify:", err)
 		return ""
 	}
 	if !verify {

@@ -75,7 +75,15 @@ func (mg *Mongodb) UpdateTransferPin(trasferMap map[string]*pin.PinTransferInfo)
 	}
 	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
 	_, err = mongoClient.Collection(PinsCollection).BulkWrite(context.Background(), models, bulkWriteOptions)
-
+	return
+}
+func (mg *Mongodb) AddTransferHistory(history []*pin.PinTransferHistory) (err error) {
+	insertOpts := options.InsertMany().SetOrdered(false)
+	var insertDocs []interface{}
+	for _, his := range history {
+		insertDocs = append(insertDocs, his)
+	}
+	_, err = mongoClient.Collection(PinTransferHistory).InsertMany(context.TODO(), insertDocs, insertOpts)
 	return
 }
 func (mg *Mongodb) BatchUpdatePins(pins []*pin.PinInscription) (err error) {

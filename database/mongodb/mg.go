@@ -22,6 +22,7 @@ import (
 const (
 	ZmqReciveTx                   string = "zmqrecivetx"
 	PinsCollection                string = "pins"
+	PinTransferHistory            string = "pintransferhistory"
 	PinsView                      string = "pinsview"
 	MempoolPinsCollection         string = "mempoolpins"
 	MempoolTransferPinsCollection string = "mempooltransferpins"
@@ -34,8 +35,6 @@ const (
 	Mrc20TickCollection           string = "mrc20ticks"
 	Mrc20UtxoView                 string = "mrc20utxoview"
 	//Mrc20MintShovel               string = "mrc20shovel"
-	Mrc721Collection string = "mrc721collection"
-	Mrc721Item       string = "mrc721item"
 	//MetaAccess
 	AccessControlCollection string = "accesscontrol"
 	AccessPassCollection    string = "accesspass"
@@ -87,6 +86,10 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, PinsCollection, "operation_1", bson.D{{Key: "operation", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "address_status_1", bson.D{{Key: "address", Value: 1}, {Key: "status", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, PinsCollection, "host_1", bson.D{{Key: "host", Value: 1}}, false)
+	//PinTransferHistory
+	createIndexIfNotExists(mongoClient, PinTransferHistory, "transfertx_1", bson.D{{Key: "transfertx", Value: 1}}, true)
+	createIndexIfNotExists(mongoClient, PinTransferHistory, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, false)
+	createIndexIfNotExists(mongoClient, PinTransferHistory, "transferheight_1", bson.D{{Key: "transferheight", Value: 1}}, false)
 
 	createIndexIfNotExists(mongoClient, MempoolPinsCollection, "id_1", bson.D{{Key: "id", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, MetaIdInfoCollection, "address_1", bson.D{{Key: "address", Value: 1}}, true)
@@ -111,13 +114,6 @@ func connectMongoDb() {
 	createIndexIfNotExists(mongoClient, Mrc20UtxoMempoolCollection, "mrc20id_operationtx_1", bson.D{{Key: "operationtx", Value: 1}}, false)
 	createIndexIfNotExists(mongoClient, Mrc20UtxoMempoolCollection, "mrc20balance_1", bson.D{{Key: "toaddress", Value: 1}, {Key: "status", Value: 1}, {Key: "verify", Value: 1}, {Key: "mrcoption", Value: 1}}, false)
 
-	//mrc721
-	createIndexIfNotExists(mongoClient, Mrc721Collection, "collectionname_1", bson.D{{Key: "collectionname", Value: 1}}, true)
-	createIndexIfNotExists(mongoClient, Mrc721Collection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
-	createIndexIfNotExists(mongoClient, Mrc721Item, "itempinid_1", bson.D{{Key: "itempinid", Value: 1}}, true)
-	createIndexIfNotExists(mongoClient, Mrc721Item, "collectionname_1", bson.D{{Key: "collectionname", Value: 1}}, false)
-	createIndexIfNotExists(mongoClient, Mrc721Item, "collectionname_itempinid_1", bson.D{{Key: "collectionname", Value: 1}, {Key: "itempinid", Value: 1}}, false)
-	createIndexIfNotExists(mongoClient, Mrc721Item, "itempinid_descadded_1", bson.D{{Key: "itempinid", Value: 1}, {Key: "descadded", Value: 1}}, false)
 	//meatAccess
 	createIndexIfNotExists(mongoClient, AccessControlCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
 	createIndexIfNotExists(mongoClient, AccessControlCollection, "address_1", bson.D{{Key: "address", Value: 1}}, false)

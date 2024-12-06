@@ -104,8 +104,11 @@ func InitAdapter(chainType, dbType, test, server string) {
 				DbAdapter:   &DbAdapter,
 				ChainName:   chain,
 			}
-			//Mrc20HeightLimit[chain] = common.Config.Btc.Mrc20Height
-			Mrc20HeightLimit[chain] = int64(855888)
+			if test == "2" {
+				Mrc20HeightLimit[chain] = common.Config.Btc.Mrc20Height
+			} else {
+				Mrc20HeightLimit[chain] = int64(855888)
+			}
 		case "mvc":
 			ChainAdapter[chain] = &microvisionchain.MicroVisionChain{}
 			IndexerAdapter[chain] = &microvisionchain.Indexer{
@@ -293,7 +296,7 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 			idList = append(idList, p.Output)
 			pinNodeList = append(pinNodeList, p)
 		}
-		handleTransfer(chainName, idList)
+		handleTransfer(chainName, idList, height)
 	}
 
 	if len(pinTreeData) > 0 {
@@ -315,11 +318,10 @@ func DoIndexerRun(chainName string, height int64) (err error) {
 	if height >= Mrc20HeightLimit[chainName] {
 		Mrc20Handle(chainName, height, mrc20List, mrc20TransferPinTx, txInList, false)
 	}
-
-	if len(pinNodeList) > 0 && height >= Mrc20HeightLimit[chainName] {
-		// m721 := Mrc721{}
-		// m721.PinHandle(pinNodeList)
-	}
+	// if len(pinNodeList) > 0 && height >= Mrc20HeightLimit[chainName] {
+	// 	m721 := Mrc721{}
+	// 	m721.PinHandle(pinNodeList)
+	// }
 	//Handle MetaAccess
 	if len(pinNodeList) > 0 {
 		access := MetaAccess{}
@@ -350,7 +352,7 @@ func GetSaveData(chainName string, blockHeight int64) (
 	var pins []*pin.PinInscription
 	pins, txInList = IndexerAdapter[chainName].CatchPins(blockHeight)
 	//check transfer
-	handleTransfer(chainName, txInList)
+	handleTransfer(chainName, txInList, blockHeight)
 	// transferCheck, err := DbAdapter.GetPinListByOutPutList(txInList)
 	// if err == nil && len(transferCheck) > 0 {
 	// 	idMap := make(map[string]struct{})
@@ -398,17 +400,30 @@ func GetSaveData(chainName string, blockHeight int64) (
 	createMetaIdNumber(metaIdData)
 	return
 }
-func handleTransfer(chainName string, outputList []string) {
+func handleTransfer(chainName string, outputList []string, blockHeight int64) {
 	transferCheck, err := DbAdapter.GetPinListByOutPutList(outputList)
 	if err == nil && len(transferCheck) > 0 {
-		idMap := make(map[string]struct{})
+		idMap := make(map[string]string)
 		for _, t := range transferCheck {
-			idMap[t.Output] = struct{}{}
+			idMap[t.Output] = t.Address
 		}
 		trasferMap := IndexerAdapter[chainName].CatchTransfer(idMap)
 		DbAdapter.UpdateTransferPin(trasferMap)
+		var transferHistoryList []*pin.PinTransferHistory
+		tranferTime := time.Now().Unix()
+		for pinid, info := range trasferMap {
+			transferHistoryList = append(transferHistoryList, &pin.PinTransferHistory{
+				PinId:          strings.ReplaceAll(pinid, ":", "i"),
+				TransferTime:   tranferTime,
+				TransferHeight: blockHeight,
+				TransferTx:     info.Location,
+				ChainName:      chainName,
+				FromAddress:    info.FromAddress,
+				ToAddress:      info.Address,
+			})
+		}
+		DbAdapter.AddTransferHistory(transferHistoryList)
 	}
-
 }
 func handleProtocolsData(pinNode *pin.PinInscription) int {
 	if len(ProtocolsFilter) > 0 && pinNode.Path != "" {

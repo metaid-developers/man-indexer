@@ -1,21 +1,18 @@
-package man
+package mrc721
 
 import (
-	"manindexer/mrc721"
-	"manindexer/pin"
+	"net/url"
 	"strings"
 )
 
-type Mrc721 struct{}
-
-func (m721 *Mrc721) PinHandle(pinList []*pin.PinInscription) {
+func (m721 *Mrc721) PinHandle(pinList []*Mrc721Pin) {
 	validator := Mrc721Validator{}
-	var itemList []*mrc721.Mrc721ItemDescPin
-	var itemDescList []*mrc721.Mrc721ItemDescPin
+	var itemList []*Mrc721ItemDescPin
+	var itemDescList []*Mrc721ItemDescPin
 	curBlockItemCount := make(map[string]int64)
-	collections := make(map[string]mrc721.Mrc721CollectionDescPin)
-	var itemPinList []*pin.PinInscription
-	var itemDescPinList []*pin.PinInscription
+	collections := make(map[string]Mrc721CollectionDescPin)
+	var itemPinList []*Mrc721Pin
+	var itemDescPinList []*Mrc721Pin
 	nameList := make(map[string]struct{})
 	for _, pinNode := range pinList {
 		pathLow := strings.ToLower(pinNode.Path)
@@ -26,7 +23,7 @@ func (m721 *Mrc721) PinHandle(pinList []*pin.PinInscription) {
 		if pathLow[0:11] != "/nft/mrc721" || len(pathArray) < 4 {
 			continue
 		}
-		collectionName := pathArray[3]
+		collectionName := url.PathEscape(pathArray[3])
 		op := ""
 		if len(pathArray) > 4 {
 			op = pathArray[4]
@@ -34,8 +31,8 @@ func (m721 *Mrc721) PinHandle(pinList []*pin.PinInscription) {
 		switch op {
 		case "collection_desc":
 			collection, err := m721.collectionHandle(collectionName, pinNode, validator)
-			if err == nil {
-				DbAdapter.SaveMrc721Collection(collection)
+			if err == nil && pinNode.Number != -1 {
+				SaveMrc721Collection(collection)
 			}
 		case "item_desc":
 			itemDescPinList = append(itemDescPinList, pinNode)
@@ -49,7 +46,7 @@ func (m721 *Mrc721) PinHandle(pinList []*pin.PinInscription) {
 		for k := range nameList {
 			keys = append(keys, k)
 		}
-		collectionList, _, err := DbAdapter.GetMrc721CollectionList(keys, 0, 100000, false)
+		collectionList, _, err := GetMrc721CollectionList(keys, 0, 100000, false)
 		if err == nil && len(collectionList) > 0 {
 			for _, cocollection := range collectionList {
 				collections[cocollection.CollectionName] = *cocollection
@@ -64,7 +61,7 @@ func (m721 *Mrc721) PinHandle(pinList []*pin.PinInscription) {
 		}
 	}
 	if len(itemList) > 0 {
-		DbAdapter.SaveMrc721Item(itemList)
+		SaveMrc721Item(itemList)
 	}
 	for _, pinNode := range itemDescPinList {
 		list, err := m721.itemDescHandle(pinNode, validator)
@@ -73,18 +70,18 @@ func (m721 *Mrc721) PinHandle(pinList []*pin.PinInscription) {
 		}
 	}
 	if len(itemDescList) > 0 {
-		DbAdapter.UpdateMrc721ItemDesc(itemDescList)
+		UpdateMrc721ItemDesc(itemDescList)
 	}
 	if len(nameList) > 0 {
 		keys := make([]string, 0, len(nameList))
 		for k := range nameList {
 			keys = append(keys, k)
 		}
-		DbAdapter.BatchUpdateMrc721CollectionCount(keys)
+		BatchUpdateMrc721CollectionCount(keys)
 	}
 }
 
-func (m721 *Mrc721) collectionHandle(collectionName string, pinNode *pin.PinInscription, validator Mrc721Validator) (collection *mrc721.Mrc721CollectionDescPin, err error) {
+func (m721 *Mrc721) collectionHandle(collectionName string, pinNode *Mrc721Pin, validator Mrc721Validator) (collection *Mrc721CollectionDescPin, err error) {
 	collection, err = validator.Collection(collectionName, pinNode)
 	collection.Address = pinNode.Address
 	collection.CollectionName = collectionName
@@ -93,7 +90,7 @@ func (m721 *Mrc721) collectionHandle(collectionName string, pinNode *pin.PinInsc
 	collection.PinId = pinNode.Id
 	return
 }
-func (m721 *Mrc721) itemDescHandle(pinNode *pin.PinInscription, validator Mrc721Validator) (itemList []*mrc721.Mrc721ItemDescPin, err error) {
+func (m721 *Mrc721) itemDescHandle(pinNode *Mrc721Pin, validator Mrc721Validator) (itemList []*Mrc721ItemDescPin, err error) {
 	pathLow := strings.ToLower(pinNode.Path)
 	pathArray := strings.Split(pathLow, "/")
 	collectionName := pathArray[3]
@@ -102,7 +99,7 @@ func (m721 *Mrc721) itemDescHandle(pinNode *pin.PinInscription, validator Mrc721
 		return
 	}
 	for _, item := range itemDesc.Items {
-		var itemPin mrc721.Mrc721ItemDescPin
+		var itemPin Mrc721ItemDescPin
 		itemPin.DescPinId = pinNode.Id
 		itemPin.ItemPinId = item.PinId
 		itemPin.Name = item.Name
@@ -113,7 +110,7 @@ func (m721 *Mrc721) itemDescHandle(pinNode *pin.PinInscription, validator Mrc721
 	}
 	return
 }
-func (m721 *Mrc721) itemHandle(pinNode *pin.PinInscription, validator Mrc721Validator, curBlockItemCount *map[string]int64, collections *map[string]mrc721.Mrc721CollectionDescPin) (itemDesc *mrc721.Mrc721ItemDescPin, err error) {
+func (m721 *Mrc721) itemHandle(pinNode *Mrc721Pin, validator Mrc721Validator, curBlockItemCount *map[string]int64, collections *map[string]Mrc721CollectionDescPin) (itemDesc *Mrc721ItemDescPin, err error) {
 	itemDesc, _, err = validator.Item(pinNode, curBlockItemCount, collections)
 	return
 }

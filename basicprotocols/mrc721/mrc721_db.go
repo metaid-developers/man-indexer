@@ -1,19 +1,18 @@
-package mongodb
+package mrc721
 
 import (
 	"context"
-	"manindexer/mrc721"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (mg *Mongodb) SaveMrc721Collection(collection *mrc721.Mrc721CollectionDescPin) (err error) {
+func SaveMrc721Collection(collection *Mrc721CollectionDescPin) (err error) {
 	_, err = mongoClient.Collection(Mrc721Collection).InsertOne(context.TODO(), collection)
 	return
 }
-func (mg *Mongodb) GetMrc721Collection(collectionName, pinId string) (data *mrc721.Mrc721CollectionDescPin, err error) {
+func GetMrc721Collection(collectionName, pinId string) (data *Mrc721CollectionDescPin, err error) {
 	if collectionName == "" && pinId == "" {
 		return
 	}
@@ -30,7 +29,7 @@ func (mg *Mongodb) GetMrc721Collection(collectionName, pinId string) (data *mrc7
 	}
 	return
 }
-func (mg *Mongodb) GetMrc721CollectionList(nameList []string, cursor int64, size int64, cnt bool) (data []*mrc721.Mrc721CollectionDescPin, total int64, err error) {
+func GetMrc721CollectionList(nameList []string, cursor int64, size int64, cnt bool) (data []*Mrc721CollectionDescPin, total int64, err error) {
 	filter := bson.D{}
 	if len(nameList) > 0 {
 		filter = append(filter, bson.E{Key: "collectionname", Value: bson.M{"$in": nameList}})
@@ -47,7 +46,7 @@ func (mg *Mongodb) GetMrc721CollectionList(nameList []string, cursor int64, size
 	return
 }
 
-func (mg *Mongodb) BatchUpdateMrc721CollectionCount(nameList []string) (err error) {
+func BatchUpdateMrc721CollectionCount(nameList []string) (err error) {
 	groupFilter := bson.M{"collectionname": bson.M{"$in": nameList}}
 	pipelineCount := bson.A{
 		bson.D{{Key: "$match", Value: groupFilter}},
@@ -83,22 +82,31 @@ func (mg *Mongodb) BatchUpdateMrc721CollectionCount(nameList []string) (err erro
 
 	return
 }
-func (mg *Mongodb) SaveMrc721Item(itemList []*mrc721.Mrc721ItemDescPin) (err error) {
-	ordered := false
-	option := options.InsertManyOptions{Ordered: &ordered}
-	var data []interface{}
+func SaveMrc721Item(itemList []*Mrc721ItemDescPin) (err error) {
+	var models []mongo.WriteModel
 	for _, item := range itemList {
-		data = append(data, item)
+		filter := bson.D{{Key: "itempinid", Value: item.ItemPinId}}
+		update := bson.D{{Key: "$set", Value: item}}
+		m := mongo.NewUpdateOneModel()
+		m.SetFilter(filter).SetUpdate(update).SetUpsert(true)
+		models = append(models, m)
 	}
-	_, err = mongoClient.Collection(Mrc721Item).InsertMany(context.TODO(), data, &option)
+	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
+	_, err = mongoClient.Collection(Mrc721Item).BulkWrite(context.Background(), models, bulkWriteOptions)
+
 	return
 }
-func (mg *Mongodb) GetMrc721ItemList(collectionName string, pinIdList []string, cursor int64, size int64, cnt bool) (itemList []*mrc721.Mrc721ItemDescPin, total int64, err error) {
-	if collectionName == "" {
+func GetMrc721ItemList(collectionName string, collectionPin string, pinIdList []string, cursor int64, size int64, cnt bool) (itemList []*Mrc721ItemDescPin, total int64, err error) {
+	if collectionName == "" && collectionPin == "" {
 		return
 	}
 	filter := bson.D{
 		bson.E{Key: "collectionname", Value: collectionName},
+	}
+	if collectionPin != "" {
+		filter = bson.D{
+			bson.E{Key: "collectionpinid", Value: collectionPin},
+		}
 	}
 	if len(pinIdList) > 0 {
 		filter = append(filter, bson.E{Key: "itempinid", Value: bson.M{"$in": pinIdList}})
@@ -114,7 +122,7 @@ func (mg *Mongodb) GetMrc721ItemList(collectionName string, pinIdList []string, 
 	}
 	return
 }
-func (mg *Mongodb) UpdateMrc721ItemDesc(itemList []*mrc721.Mrc721ItemDescPin) (err error) {
+func UpdateMrc721ItemDesc(itemList []*Mrc721ItemDescPin) (err error) {
 	var models []mongo.WriteModel
 	for _, item := range itemList {
 		filter := bson.D{{Key: "itempinid", Value: item.ItemPinId}, {Key: "descadded", Value: false}}
@@ -140,5 +148,56 @@ func (mg *Mongodb) UpdateMrc721ItemDesc(itemList []*mrc721.Mrc721ItemDescPin) (e
 	bulkWriteOptions := options.BulkWrite().SetOrdered(false)
 	_, err = mongoClient.Collection(Mrc721Item).BulkWrite(context.Background(), models, bulkWriteOptions)
 
+	return
+}
+func GetMrc721CollectionByAddress(address string, cursor int64, size int64, cnt bool) (data []*Mrc721CollectionDescPin, total int64, err error) {
+	distinctResult, err := mongoClient.Collection(Mrc721Item).Distinct(context.Background(), "collectionpinid", bson.M{"address": address})
+	if err != nil {
+		return
+	}
+	var collectionIDs []string
+	for _, id := range distinctResult {
+		collectionIDs = append(collectionIDs, id.(string))
+	}
+	if len(collectionIDs) == 0 {
+		return
+	}
+	filter := bson.D{{Key: "pinid", Value: bson.M{"$in": collectionIDs}}}
+	opts := options.Find().SetSkip(cursor).SetLimit(size)
+	result, err := mongoClient.Collection(Mrc721Collection).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return
+	}
+	err = result.All(context.TODO(), &data)
+	if cnt {
+		total, err = mongoClient.Collection(Mrc721Collection).CountDocuments(context.TODO(), filter)
+	}
+	return
+}
+func GetMrc721ItemByAddress(address string, collectionId string, cursor int64, size int64, cnt bool) (data []*Mrc721ItemDescPin, total int64, err error) {
+	filter := bson.D{{Key: "address", Value: address}}
+	opts := options.Find().SetSkip(cursor).SetLimit(size)
+	if collectionId != "" {
+		filter = append(filter, bson.E{Key: "collectionpinid", Value: collectionId})
+	}
+	result, err := mongoClient.Collection(Mrc721Item).Find(context.TODO(), filter, opts)
+	if err != nil {
+		return
+	}
+	err = result.All(context.TODO(), &data)
+	if cnt {
+		total, err = mongoClient.Collection(Mrc721Item).CountDocuments(context.TODO(), filter)
+	}
+	return
+}
+func GetMrc721Item(pinId string) (data *Mrc721ItemDescPin, err error) {
+	if pinId == "" {
+		return
+	}
+	filter := bson.D{{Key: "itempinid", Value: pinId}}
+	err = mongoClient.Collection(Mrc721Item).FindOne(context.TODO(), filter).Decode(&data)
+	if err == mongo.ErrNoDocuments {
+		err = nil
+	}
 	return
 }

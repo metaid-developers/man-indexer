@@ -147,8 +147,8 @@ func (indexer *Indexer) ZmqRun(chanMsg chan pin.MempollChanMsg) {
 			log.Println("MVC ZMQ RecvMessage Err,", err)
 			continue
 		} else {
-			s, _ := subscriber.GetEvents()
-			log.Println("Recive MVC ZMQ message", len(recvmsg), s.String())
+			//s, _ := subscriber.GetEvents()
+			//log.Println("Recive MVC ZMQ message", len(recvmsg), s.String())
 			if recvmsg == "rawtx" || len(recvmsg) < 10 {
 				continue
 			}
@@ -156,8 +156,8 @@ func (indexer *Indexer) ZmqRun(chanMsg chan pin.MempollChanMsg) {
 			if err := msgTx.Deserialize(bytes.NewReader([]byte(recvmsg))); err != nil {
 				continue
 			}
-			newHash, _ := GetNewHash(&msgTx)
-			log.Println("TxHash:", newHash)
+			//newHash, _ := GetNewHash(&msgTx)
+			//log.Println("TxHash:", newHash)
 			pinInscriptions := indexer.CatchPinsByTx(&msgTx, 0, 0, "", "", 0)
 			if len(pinInscriptions) > 0 {
 				chanMsg <- pin.MempollChanMsg{PinList: pinInscriptions, Tx: msgTx}

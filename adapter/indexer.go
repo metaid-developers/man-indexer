@@ -9,7 +9,7 @@ type Indexer interface {
 	InitIndexer()
 	CatchPins(blockHeight int64) (pinInscriptions []*pin.PinInscription, txInList []string)
 	CatchMempoolPins(txList []interface{}) (pinInscriptions []*pin.PinInscription, txInList []string)
-	CatchTransfer(idMap map[string]struct{}) (trasferMap map[string]*pin.PinTransferInfo)
+	CatchTransfer(idMap map[string]string) (trasferMap map[string]*pin.PinTransferInfo)
 	GetAddress(pkScript []byte) (address string)
 	ZmqRun(chanMsg chan pin.MempollChanMsg)
 	GetBlockTxHash(blockHeight int64) (txhashList []string, pinIdList []string)
