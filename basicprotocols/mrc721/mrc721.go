@@ -77,19 +77,19 @@ type Mrc721CollectionDesc struct {
 }
 
 type Mrc721CollectionDescPin struct {
-	CollectionName string `json:"collectionname"`
-	Name           string `json:"name"`
-	TotalSupply    int64  `json:"totalsupply"`
-	RoyaltyRate    int    `json:"royaltyrate"`
-	Desc           string `json:"desc"`
-	Website        string `json:"website"`
-	Cover          string `json:"cover"`
-	Metadata       string `json:"metadata"`
-	PinId          string `json:"pinid"`
-	Address        string `json:"address"`
-	MetaId         string `json:"metaid"`
-	CreateTime     int64  `json:"createtime"`
-	TotalNum       int64  `json:"totalnum"`
+	CollectionName string      `json:"collectionname"`
+	Name           string      `json:"name"`
+	TotalSupply    int64       `json:"totalsupply"`
+	RoyaltyRate    int         `json:"royaltyrate"`
+	Desc           string      `json:"desc"`
+	Website        string      `json:"website"`
+	Cover          string      `json:"cover"`
+	Metadata       interface{} `json:"metadata"`
+	PinId          string      `json:"pinid"`
+	Address        string      `json:"address"`
+	MetaId         string      `json:"metaid"`
+	CreateTime     int64       `json:"createtime"`
+	TotalNum       int64       `json:"totalnum"`
 }
 
 type Mrc721ItemDescList struct {

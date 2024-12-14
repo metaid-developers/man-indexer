@@ -49,9 +49,10 @@ func connectMongoDb() {
 func createIndex(mongoClient *mongo.Database) {
 	//MeatNameCollection
 	mongo_util.CreateIndexIfNotExists(mongoClient, MeatNameCollection, "pinid_1", bson.D{{Key: "pinid", Value: 1}}, true)
-	mongo_util.CreateIndexIfNotExists(mongoClient, MeatNameCollection, "name_1", bson.D{{Key: "name", Value: 1}}, true)
+	mongo_util.CreateIndexIfNotExists(mongoClient, MeatNameCollection, "name_space_1", bson.D{{Key: "name", Value: 1}, {Key: "space", Value: 1}}, true)
+	mongo_util.CreateIndexIfNotExists(mongoClient, MeatNameCollection, "fullname_1", bson.D{{Key: "fullname", Value: 1}}, false)
 
 	mongo_util.CreateIndexIfNotExists(mongoClient, MeatNameHistoryCollection, "oppinid_1", bson.D{{Key: "oppinid", Value: 1}}, true)
-	mongo_util.CreateIndexIfNotExists(mongoClient, MeatNameHistoryCollection, "name_1", bson.D{{Key: "name", Value: 1}}, false)
-
+	mongo_util.CreateIndexIfNotExists(mongoClient, MeatNameHistoryCollection, "name_space_1", bson.D{{Key: "name", Value: 1}, {Key: "space", Value: 1}}, false)
+	mongo_util.CreateIndexIfNotExists(mongoClient, MeatNameHistoryCollection, "fullname_1", bson.D{{Key: "fullname", Value: 1}}, false)
 }

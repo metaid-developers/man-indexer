@@ -36,6 +36,7 @@ func GetMrc721CollectionList(nameList []string, cursor int64, size int64, cnt bo
 	}
 	opts := options.Find().SetSkip(cursor).SetLimit(size)
 	result, err := mongoClient.Collection(Mrc721Collection).Find(context.TODO(), filter, opts)
+
 	if err != nil {
 		return
 	}

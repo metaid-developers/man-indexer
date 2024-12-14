@@ -28,7 +28,7 @@ var (
 	//Number          int64    = 0
 	MaxHeight       map[string]int64
 	CurBlockHeight  map[string]int64
-	BaseFilter      []string = []string{"/info", "/file", "/flow", "ft", "/metaaccess"}
+	BaseFilter      []string = []string{"/info", "/file", "/flow", "ft", "/metaaccess", "/metaname"}
 	SyncBaseFilter  map[string]struct{}
 	ProtocolsFilter map[string]struct{}
 	OptionLimit     []string = []string{"create", "modify", "revoke", "hide"}

@@ -45,23 +45,41 @@ type MetaNamePin struct {
 	Mrc20MintId        []string           `json:"mrc20MintId"`
 	MogoID             primitive.ObjectID `bson:"_id,omitempty"`
 }
+type PinTransferHistory struct {
+	PinId          string             `json:"pinId"`
+	TransferTime   int64              `json:"transferTime"`
+	TransferHeight int64              `json:"transferHeight"`
+	TransferBlock  string             `json:"transferBlock"`
+	TransferTx     string             `json:"transferTx"`
+	ChainName      string             `json:"chainName"`
+	FromAddress    string             `json:"fromAddress"`
+	ToAddress      string             `json:"toAddress"`
+	MogoID         primitive.ObjectID `bson:"_id,omitempty"`
+}
 type MetaNameProtocol struct {
-	Op     string `json:"op"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
-	Rev    string `json:"rev"`
-	Relay  string `json:"relay"`
+	Space    string `json:"space"`
+	Name     string `json:"name"`
+	FullName string `json:"fullName"`
+	Metadata string `json:"metadata"`
+	Rev      string `json:"rev"`
+	Relay    string `json:"relay"`
 }
 type MetaNameData struct {
-	Name   string             `json:"name"`
-	Avatar string             `json:"avatar"`
-	Rev    string             `json:"rev"`
-	Relay  string             `json:"relay"`
-	PinId  string             `json:"pinId"`
-	MogoID primitive.ObjectID `json:"mongoId" bson:"_id"`
+	Space    string             `json:"space"`
+	Name     string             `json:"name"`
+	FullName string             `json:"fullName"`
+	Metadata string             `json:"metadata"`
+	Rev      string             `json:"rev"`
+	Relay    string             `json:"relay"`
+	PinId    string             `json:"pinId"`
+	Address  string             `json:"opAddress"`
+	MetaId   string             `json:"opMetaId"`
+	MogoID   primitive.ObjectID `json:"mongoId" bson:"_id,omitempty"`
 }
 type MetaNameHistory struct {
 	Name      string `json:"name"`
+	Space     string `json:"space"`
+	FullName  string `json:"fullName"`
 	Op        string `json:"op"`
 	OpAddress string `json:"opAddress"`
 	OpMetaId  string `json:"opMetaId"`

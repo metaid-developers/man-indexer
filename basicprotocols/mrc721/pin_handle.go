@@ -1,7 +1,6 @@
 package mrc721
 
 import (
-	"net/url"
 	"strings"
 )
 
@@ -23,7 +22,8 @@ func (m721 *Mrc721) PinHandle(pinList []*Mrc721Pin) {
 		if pathLow[0:11] != "/nft/mrc721" || len(pathArray) < 4 {
 			continue
 		}
-		collectionName := url.PathEscape(pathArray[3])
+		//collectionName := url.PathEscape(pathArray[3])
+		collectionName := pathArray[3]
 		op := ""
 		if len(pathArray) > 4 {
 			op = pathArray[4]
